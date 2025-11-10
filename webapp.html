@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мониторинг kentuckyv.ru</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --tg-color-scheme: light;
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-hint-color: #999999;
+            --tg-theme-link-color: #0088cc;
+            --tg-theme-button-color: #5cb85c;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #f5f5f5;
+            --tg-theme-accent-text-color: #0088cc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            padding: 10px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: var(--tg-theme-bg-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--tg-theme-link-color) 0%, #0066aa 100%);
+            color: var(--tg-theme-button-text-color);
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 15px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--tg-theme-secondary-bg-color);
+            border-radius: 8px;
+            border-left: 4px solid var(--tg-theme-link-color);
+        }
+
+        .section h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--tg-theme-link-color);
+        }
+
+        /* Кнопки управления */
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background-color: var(--tg-theme-secondary-bg-color);
+            color: var(--tg-theme-text-color);
+            border: 2px solid var(--tg-theme-link-color);
+        }
+
+        /* Статистика */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: var(--tg-theme-bg-color);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-secondary-bg-color);
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .label {
+            font-size: 0.8em;
+            color: var(--tg-theme-hint-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: var(--tg-theme-link-color);
+        }
+
+        .stat-card.success .value {
+            color: #31a24c;
+        }
+
+        .stat-card.error .value {
+            color: #e53935;
+        }
+
+        .stat-card.info .value {
+            color: var(--tg-theme-link-color);
+        }
+
+        /* Графики */
+        .chart-container {
+            position: relative;
+            margin: 15px 0;
+            background: var(--tg-theme-bg-color);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+
+        /* Загрузка */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            gap: 10px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--tg-theme-secondary-bg-color);
+            border-top: 3px solid var(--tg-theme-link-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Сообщение об ошибке */
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #c62828;
+        }
+
+        .success-message {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2e7d32;
+        }
+
+        /* Footer */
+        footer {
+            padding: 15px;
+            text-align: center;
+            color: var(--tg-theme-hint-color);
+            font-size: 0.85em;
+            border-top: 1px solid var(--tg-theme-secondary-bg-color);
+            margin-top: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .content {
+                padding: 10px;
+            }
+
+            .section {
+                padding: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .controls {
+                gap: 6px;
+            }
+
+            .btn {
+                min-width: 80px;
+                padding: 8px 10px;
+                font-size: 0.85em;
+            }
+        }
+
+        /* Темная тема */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --tg-theme-bg-color: #1a1a1a;
+                --tg-theme-secondary-bg-color: #2d2d2d;
+                --tg-theme-text-color: #ffffff;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Мониторинг kentuckyv.ru</h1>
+            <p>Отслеживание доступности и производительности</p>
+        </header>
+
+        <div class="content">
+            <!-- Управление -->
+            <div class="section">
+                <h2>⏱️ Выберите период анализа</h2>
+                <div class="controls">
+                    <button class="btn" onclick="loadData(1)">📈 Последний час</button>
+                    <button class="btn" onclick="loadData(24)">📅 24 часа</button>
+                    <button class="btn btn-secondary" onclick="loadData(0)">📊 Все время</button>
+                </div>
+            </div>
+
+            <!-- Статус загрузки -->
+            <div id="loadingIndicator" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <span>Загружаю данные...</span>
+            </div>
+
+            <!-- Сообщения -->
+            <div id="messageContainer"></div>
+
+            <!-- Статистика -->
+            <div class="section" id="statsSection" style="display: none;">
+                <h2>📈 Статистика</h2>
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+
+            <!-- График 1: Время отклика -->
+            <div class="section" id="responseTimeSection" style="display: none;">
+                <h2>⚡ Время отклика сервера (мс)</h2>
+                <div class="chart-container">
+                    <div class="chart-wrapper">
+                        <canvas id="responseTimeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- График 2: Доступность -->
+            <div class="section" id="availabilitySection" style="display: none;">
+                <h2>✅ Доступность сайта</h2>
+                <div class="chart-container">
+                    <div class="chart-wrapper">
+                        <canvas id="availabilityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- График 3: Статус-коды -->
+            <div class="section" id="statusCodesSection" style="display: none;">
+                <h2>📋 Распределение статус-кодов</h2>
+                <div class="chart-container">
+                    <div class="chart-wrapper">
+                        <canvas id="statusCodesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Действие -->
+            <div class="section" style="text-align: center; margin-top: 20px;">
+                <button class="btn" onclick="sendDataToBot()" style="width: 100%;">
+                    📤 Отправить результат боту
+                </button>
+            </div>
+
+            <footer>
+                <p>🤖 Telegram бот для мониторинга kentuckyv.ru</p>
+                <p>Обновлено: <span id="updateTime">-</span></p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Инициализация Telegram WebApp -->
+    <script>
+        const tg = window.Telegram.WebApp;
+        let currentData = null;
+        let charts = {};
+
+        // Инициализируем Telegram WebApp
+        tg.ready();
+        tg.expand();
+
+        // Функция для загрузки данных
+        async function loadData(hours) {
+            showLoading(true);
+            clearMessages();
+
+            try {
+                // Примечание: В реальном приложении здесь должен быть запрос к API вашего бота
+                // Для демонстрации используем локальные данные
+
+                // Генерируем демо-данные
+                const data = generateDemoData(hours);
+                currentData = data;
+                displayData(data);
+                showMessage('✅ Данные загружены успешно', 'success');
+            } catch (error) {
+                showMessage('❌ Ошибка загрузки данных: ' + error.message, 'error');
+                console.error(error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Функция для отображения данных
+        function displayData(data) {
+            if (!data || !data.stats) return;
+
+            // Отображаем статистику
+            displayStats(data.stats);
+
+            // Отображаем графики
+            displayCharts(data);
+
+            // Обновляем время
+            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString('ru-RU');
+        }
+
+        // Отображение статистики
+        function displayStats(stats) {
+            const statsSection = document.getElementById('statsSection');
+            const statsGrid = document.getElementById('statsGrid');
+
+            statsGrid.innerHTML = `
+                <div class="stat-card success">
+                    <div class="label">Онлайн</div>
+                    <div class="value">${stats.uptime_pct}%</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="label">Проверок</div>
+                    <div class="value">${stats.total}</div>
+                </div>
+                <div class="stat-card success">
+                    <div class="label">Работало</div>
+                    <div class="value">${stats.online}x</div>
+                </div>
+                <div class="stat-card error">
+                    <div class="label">Упало</div>
+                    <div class="value">${stats.offline}x</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="label">Средний отклик</div>
+                    <div class="value">${stats.avg_rt}мс</div>
+                </div>
+                <div class="stat-card info">
+                    <div class="label">Макс отклик</div>
+                    <div class="value">${stats.max_rt}мс</div>
+                </div>
+            `;
+
+            statsSection.style.display = 'block';
+        }
+
+        // Отображение графиков
+        function displayCharts(data) {
+            const labels = data.labels.map((ts, i) => {
+                const date = new Date(ts);
+                return date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'});
+            });
+
+            // График 1: Время отклика
+            createResponseTimeChart(labels, data.response_times, data.is_online);
+
+            // График 2: Доступность
+            createAvailabilityChart(labels, data.is_online);
+
+            // График 3: Статус-коды
+            createStatusCodesChart(data.stats.status_codes);
+
+            // Показываем графики
+            document.getElementById('responseTimeSection').style.display = 'block';
+            document.getElementById('availabilitySection').style.display = 'block';
+            document.getElementById('statusCodesSection').style.display = 'block';
+        }
+
+        // График 1: Время отклика
+        function createResponseTimeChart(labels, responseTimes, isOnline) {
+            const ctx = document.getElementById('responseTimeChart');
+
+            // Уничтожаем старый график если существует
+            if (charts.responseTime) {
+                charts.responseTime.destroy();
+            }
+
+            const colors = isOnline.map(online => online ? 'rgba(76, 175, 80, 0.6)' : 'rgba(244, 67, 54, 0.6)');
+            const borderColors = isOnline.map(online => online ? 'rgba(76, 175, 80, 1)' : 'rgba(244, 67, 54, 1)');
+
+            charts.responseTime = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Время отклика (мс)',
+                        data: responseTimes,
+                        borderColor: 'rgba(0, 136, 204, 1)',
+                        backgroundColor: 'rgba(0, 136, 204, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 4,
+                        pointBackgroundColor: colors,
+                        pointBorderColor: borderColors,
+                        pointBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-text-color')
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-hint-color')
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-hint-color')
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // График 2: Доступность
+        function createAvailabilityChart(labels, isOnline) {
+            const ctx = document.getElementById('availabilityChart');
+
+            if (charts.availability) {
+                charts.availability.destroy();
+            }
+
+            const data = isOnline.map(online => online ? 1 : 0);
+
+            charts.availability = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Статус',
+                        data: data,
+                        borderColor: 'rgba(76, 175, 80, 1)',
+                        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-text-color')
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: -0.1,
+                            max: 1.1,
+                            ticks: {
+                                callback: function(value) {
+                                    return value === 1 ? 'Онлайн' : 'Оффлайн';
+                                },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-hint-color')
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-hint-color')
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // График 3: Статус-коды
+        function createStatusCodesChart(statusCodes) {
+            const ctx = document.getElementById('statusCodesChart');
+
+            if (charts.statusCodes) {
+                charts.statusCodes.destroy();
+            }
+
+            const labels = Object.keys(statusCodes).map(code => {
+                if (code == 0) return 'ERROR';
+                return code;
+            });
+
+            const values = Object.values(statusCodes);
+            const colors = labels.map(code => {
+                if (code === 'ERROR') return 'rgba(244, 67, 54, 0.7)';
+                if (code == 200) return 'rgba(76, 175, 80, 0.7)';
+                if (code < 400) return 'rgba(255, 152, 0, 0.7)';
+                return 'rgba(244, 67, 54, 0.7)';
+            });
+
+            charts.statusCodes = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Количество',
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.7', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-text-color')
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-hint-color')
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--tg-theme-hint-color')
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Функция для отправки данных боту
+        function sendDataToBot() {
+            if (!currentData) {
+                showMessage('❌ Нет данных для отправки', 'error');
+                return;
+            }
+
+            const message = {
+                type: 'chart_data',
+                stats: currentData.stats,
+                timestamp: new Date().toISOString()
+            };
+
+            // Отправляем данные боту через Telegram WebApp API
+            tg.sendData(JSON.stringify(message));
+            showMessage('✅ Данные отправлены боту!', 'success');
+        }
+
+        // Вспомогательные функции
+        function showLoading(show) {
+            document.getElementById('loadingIndicator').style.display = show ? 'flex' : 'none';
+        }
+
+        function showMessage(text, type) {
+            const container = document.getElementById('messageContainer');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            container.innerHTML = `<div class="${messageClass}">${text}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+
+        function clearMessages() {
+            document.getElementById('messageContainer').innerHTML = '';
+        }
+
+        // Генерация демо-данных (замените на реальный API запрос)
+        function generateDemoData(hours) {
+            const now = new Date();
+            const points = hours === 1 ? 60 : hours === 24 ? 144 : 500;
+            const timestamps = [];
+            const responseTimes = [];
+            const isOnline = [];
+            const statusCodes = [];
+
+            for (let i = points; i > 0; i--) {
+                const time = new Date(now - i * (hours === 0 ? 10 * 60 * 1000 : hours * 60 * 60 * 1000 / points));
+                timestamps.push(time.toISOString());
+
+                // Генерируем случайные данные
+                const online = Math.random() > 0.05; // 95% упtime
+                isOnline.push(online);
+                responseTimes.push(online ? Math.random() * 200 + 50 : 0);
+                statusCodes.push(online ? 200 : 0);
+            }
+
+            // Подсчитываем статистику
+            const online = isOnline.filter(x => x).length;
+            const validRT = responseTimes.filter((rt, i) => isOnline[i] && rt > 0);
+            const avgRT = validRT.length > 0 ? validRT.reduce((a, b) => a + b) / validRT.length : 0;
+
+            return {
+                labels: timestamps,
+                response_times: responseTimes,
+                is_online: isOnline,
+                status_codes: statusCodes,
+                stats: {
+                    total: points,
+                    online: online,
+                    offline: points - online,
+                    uptime_pct: parseFloat(((online / points) * 100).toFixed(2)),
+                    avg_rt: parseFloat(avgRT.toFixed(2)),
+                    min_rt: parseFloat(Math.min(...validRT).toFixed(2)),
+                    max_rt: parseFloat(Math.max(...validRT).toFixed(2)),
+                    status_codes: {200: online, 0: points - online}
+                }
+            };
+        }
+
+        // При загрузке страницы загружаем последний час
+        window.onload = () => {
+            loadData(1);
+        };
+    </script>
+</body>
+</html>
