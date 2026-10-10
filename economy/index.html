@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Экономика Kentucky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Onest:wght@400;500;600;700&family=Unbounded:wght@600;700&display=swap">
+<style>
+/* Layout: казначейская книга — шапка со «штампом» якоря, полоса статусов, вкладки-листы; одна колонка до 1180px */
+:root{
+  --bg:#0B0C0E; --panel:#141720; --panel-2:#1B1F29; --panel-3:#232834;
+  --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.15);
+  --text:#F3F5F8; --text-2:#A7AEBB; --muted:#737A88;
+  --red:#FF203E; --red-deep:#CE154D; --on-red:#FFFFFF;
+  --ok:#35D399; --warn:#FFB020; --info:#4FAAF9; --violet:#B69CFF;
+  --ok-bg:rgba(53,211,153,.13); --warn-bg:rgba(255,176,32,.13); --info-bg:rgba(79,170,249,.13);
+  --red-bg:rgba(255,32,62,.13); --muted-bg:rgba(167,174,187,.11); --violet-bg:rgba(182,156,255,.14);
+  --shadow:0 24px 60px rgba(0,0,0,.5);
+  --backdrop:rgba(5,6,8,.66);
+  --f-display:'Unbounded','Onest',system-ui,sans-serif;
+  --f-body:'Onest',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'Cascadia Mono',Consolas,monospace;
+  --r:12px;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#F2F3F6; --panel:#FFFFFF; --panel-2:#F7F8FA; --panel-3:#E8EBF1;
+    --line:rgba(16,19,30,.09); --line-2:rgba(16,19,30,.17);
+    --text:#12141A; --text-2:#475061; --muted:#727A89;
+    --red:#E0102D; --red-deep:#B40E41; --on-red:#FFFFFF;
+    --ok:#0A8A5E; --warn:#9E6400; --info:#1A6BC0; --violet:#6546D1;
+    --ok-bg:rgba(10,138,94,.11); --warn-bg:rgba(158,100,0,.11); --info-bg:rgba(26,107,192,.10);
+    --red-bg:rgba(224,16,45,.09); --muted-bg:rgba(71,80,97,.08); --violet-bg:rgba(101,70,209,.10);
+    --shadow:0 24px 60px rgba(20,24,40,.18);
+    --backdrop:rgba(18,20,26,.42);
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F2F3F6; --panel:#FFFFFF; --panel-2:#F7F8FA; --panel-3:#E8EBF1;
+  --line:rgba(16,19,30,.09); --line-2:rgba(16,19,30,.17);
+  --text:#12141A; --text-2:#475061; --muted:#727A89;
+  --red:#E0102D; --red-deep:#B40E41; --on-red:#FFFFFF;
+  --ok:#0A8A5E; --warn:#9E6400; --info:#1A6BC0; --violet:#6546D1;
+  --ok-bg:rgba(10,138,94,.11); --warn-bg:rgba(158,100,0,.11); --info-bg:rgba(26,107,192,.10);
+  --red-bg:rgba(224,16,45,.09); --muted-bg:rgba(71,80,97,.08); --violet-bg:rgba(101,70,209,.10);
+  --shadow:0 24px 60px rgba(20,24,40,.18);
+  --backdrop:rgba(18,20,26,.42);
+  color-scheme:light;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{background:var(--bg);margin:0}
+body{color:var(--text);font:15px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--info)}
+.mono{font-family:var(--f-mono);font-size:.86em;font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:22px 64px;display:flex;flex-direction:column;gap:18px}
+@media (max-width:560px){.wrap{padding-inline:16px}}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px;border-radius:6px}
+
+/* ── шапка ─────────────────────────────────── */
+.top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px}
+.brand{display:flex;gap:14px;align-items:center;min-width:0}
+.mark{flex:none;width:46px;height:46px;border-radius:12px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--red),var(--red-deep));color:var(--on-red);
+  font:700 15px/1 var(--f-display);letter-spacing:-.02em}
+.brand h1{margin:0;font:700 clamp(19px,2.6vw,24px)/1.15 var(--f-display);letter-spacing:-.01em;text-wrap:balance}
+.brand p{margin:3px 0 0;color:var(--text-2);font-size:13.5px}
+.top-side{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:flex-end}
+.stamp{display:flex;align-items:center;gap:10px;padding:7px 8px 7px 12px;border:1px dashed var(--line-2);border-radius:10px;background:var(--panel)}
+.stamp .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stamp .v{font:600 13px/1.2 var(--f-mono);font-variant-numeric:tabular-nums}
+.people{display:flex;align-items:center;gap:8px}
+.faces{display:flex}
+.faces .av{margin-left:-6px;box-shadow:0 0 0 2px var(--bg)}
+.faces .av:first-child{margin-left:0}
+.sync{font-size:12.5px;color:var(--text-2);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.sync::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.sync.busy::before{background:var(--warn)}
+.sync.off::before{background:var(--muted)}
+
+/* ── кнопки ────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--panel-2);
+  border-radius:9px;padding:7px 12px;font-size:13.5px;font-weight:500;cursor:pointer;white-space:nowrap;line-height:1.2}
+.btn:hover{background:var(--panel-3)}
+.btn.primary{background:linear-gradient(135deg,var(--red),var(--red-deep));color:var(--on-red);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--text-2)}
+.btn.ghost:hover{background:var(--panel-3);color:var(--text)}
+.btn.danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent);background:transparent}
+.btn.danger.armed{background:var(--red);color:var(--on-red)}
+.btn.sm{padding:5px 9px;font-size:12.5px;border-radius:8px}
+.btn[disabled]{opacity:.5;cursor:default}
+.icon-btn{border:0;background:transparent;color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;display:inline-grid;place-items:center;font-size:15px}
+.icon-btn:hover{background:var(--panel-3);color:var(--text)}
+.icon-btn svg{width:16px;height:16px}
+
+/* ── полоса статусов ───────────────────────── */
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+@media (max-width:820px){.summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--panel);padding:14px 16px 15px;display:flex;flex-direction:column;gap:6px;text-align:left;border:0;cursor:pointer;min-width:0}
+.tile:hover{background:var(--panel-2)}
+.tile .k{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted)}
+.tile .n{font:700 22px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.tile .n small{font:500 13px var(--f-body);color:var(--text-2);margin-left:4px}
+.tile .s{font-size:12.5px;color:var(--text-2);min-height:1.2em}
+.bar{display:flex;height:5px;border-radius:3px;overflow:hidden;background:var(--panel-3);gap:1px}
+.bar i{display:block;height:100%}
+
+/* ── вкладки ───────────────────────────────── */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:10px 12px 11px;font-size:14px;font-weight:500;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;display:flex;gap:7px;align-items:center}
+.tab:hover{color:var(--text)}
+.tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--red)}
+.tab .c{font:600 11px/1 var(--f-mono);padding:3px 6px;border-radius:6px;background:var(--panel-3);color:var(--text-2)}
+
+/* ── общие элементы ────────────────────────── */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.toolbar .grow{flex:1 1 200px;min-width:0}
+.input,.select,textarea.input{background:var(--panel);border:1px solid var(--line-2);border-radius:9px;padding:8px 11px;font-size:14px;width:100%}
+.input:focus,.select:focus,textarea.input:focus{outline:2px solid color-mix(in srgb,var(--red) 70%,transparent);outline-offset:0;border-color:transparent}
+textarea.input{resize:vertical;line-height:1.5}
+.select{width:auto;padding-right:28px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{border:1px solid var(--line);background:transparent;border-radius:8px;padding:5px 10px;font-size:13px;color:var(--text-2);cursor:pointer;display:flex;gap:6px;align-items:center}
+.seg button:hover{color:var(--text);background:var(--panel-2)}
+.seg button[aria-pressed="true"]{background:var(--panel-3);color:var(--text);border-color:var(--line-2)}
+.seg .c{font:600 11px var(--f-mono);color:var(--muted)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap;line-height:1.35}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.t-ok{color:var(--ok);background:var(--ok-bg)} .t-warn{color:var(--warn);background:var(--warn-bg)}
+.t-info{color:var(--info);background:var(--info-bg)} .t-red{color:var(--red);background:var(--red-bg)}
+.t-muted{color:var(--text-2);background:var(--muted-bg)} .t-violet{color:var(--violet);background:var(--violet-bg)}
+.chip-select{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;padding:4px 24px 4px 11px;font-size:12px;font-weight:600;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 12px) 52%,calc(100% - 8px) 52%;background-size:4px 4px;background-repeat:no-repeat}
+.chip-select option{color:var(--text);background:var(--panel)}
+.chip-select.t-ok{background-color:var(--ok-bg)} .chip-select.t-warn{background-color:var(--warn-bg)}
+.chip-select.t-info{background-color:var(--info-bg)} .chip-select.t-red{background-color:var(--red-bg)}
+.chip-select.t-muted{background-color:var(--muted-bg)} .chip-select.t-violet{background-color:var(--violet-bg)}
+
+.av{width:24px;height:24px;border-radius:50%;flex:none;object-fit:cover;background:var(--panel-3);display:inline-grid;place-items:center;font:700 10px var(--f-display);color:var(--on-red)}
+.av.claude{background:linear-gradient(135deg,var(--red),var(--red-deep))}
+.who{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--text-2);min-width:0}
+.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.editing-now{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--warn);font-weight:600}
+.editing-now::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+.meta-line{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.ro{font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-bg);padding:4px 9px;border-radius:8px}
+
+.empty{border:1px dashed var(--line-2);border-radius:14px;padding:28px 22px;display:flex;flex-direction:column;gap:10px;align-items:flex-start;color:var(--text-2);max-width:640px}
+.empty h3{margin:0;color:var(--text);font:600 16px var(--f-body)}
+.empty p{margin:0}
+.notice{border-radius:12px;padding:12px 14px;font-size:13.5px;background:var(--warn-bg);color:var(--text)}
+.notice b{color:var(--warn)}
+
+/* ── план (разделы) ────────────────────────── */
+.plan{display:flex;flex-direction:column;gap:14px}
+.section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.section-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.section-head h2{margin:0;font:600 17px/1.3 var(--f-display);letter-spacing:-.005em;text-wrap:balance}
+.actions{display:flex;gap:2px;flex:none}
+.md{max-width:78ch;color:var(--text);min-width:0}
+.md p{margin:0 0 .7em}
+.md h3,.md h4{margin:1em 0 .45em;font-weight:600;font-size:15px}
+.md ul,.md ol{margin:0 0 .8em;padding-left:1.3em}
+.md li{margin:.2em 0}
+.md li::marker{color:var(--muted)}
+.md code{font-family:var(--f-mono);font-size:.85em;background:var(--panel-3);padding:1px 5px;border-radius:5px;word-break:break-word}
+.md strong{font-weight:600}
+.md blockquote{margin:0 0 .8em;padding:8px 12px;border-left:2px solid var(--line-2);color:var(--text-2)}
+.md-table{overflow-x:auto;margin:0 0 .9em;border:1px solid var(--line);border-radius:10px;max-width:100%}
+.md-table table{border-collapse:collapse;width:100%;font-size:13.5px}
+.md-table th,.md-table td{padding:7px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.md-table th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--panel-2)}
+.md-table tr:last-child td{border-bottom:0}
+.md-table td{font-variant-numeric:tabular-nums}
+.md>*:last-child{margin-bottom:0}
+
+/* ── таблица параметров ────────────────────── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+table.grid{border-collapse:collapse;width:100%;min-width:860px;font-size:13.5px}
+table.grid th{position:sticky;top:0;background:var(--panel-2);text-align:left;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+table.grid td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.grid tr:last-child td{border-bottom:0}
+table.grid tr.grp td{background:var(--panel-2);font-weight:600;font-size:12.5px;padding:8px 12px;color:var(--text)}
+table.grid tr.grp td span{color:var(--muted);font-weight:500;margin-left:6px}
+table.grid tbody tr:not(.grp):hover td{background:color-mix(in srgb,var(--panel-2) 60%,transparent)}
+.pname{font-weight:600}
+.where{color:var(--muted);margin-top:2px;word-break:break-word}
+.pnote{color:var(--text-2);font-size:12.5px;margin-top:5px;white-space:pre-wrap}
+.val{font-family:var(--f-mono);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:pre-wrap;word-break:break-word}
+.val.cur{color:var(--text-2)}
+.hours{display:block;font-family:var(--f-body);font-size:11.5px;color:var(--muted);margin-top:3px}
+.rej td{opacity:.55}
+
+/* ── баги, этапы ───────────────────────────── */
+.list{display:flex;flex-direction:column;gap:10px}
+.row{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;position:relative;overflow:hidden}
+.row.sev::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--sev,var(--muted))}
+.row h3{margin:0;font:600 15px/1.35 var(--f-body)}
+.row .body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.row .side{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.row .txt{color:var(--text-2);font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.row .txt b{color:var(--text);font-weight:600}
+.row.done{opacity:.62}
+@media (max-width:640px){.row{grid-template-columns:minmax(0,1fr)}.row .side{flex-direction:row;flex-wrap:wrap;align-items:center}}
+.stage-n{font:700 13px var(--f-display);color:var(--muted);margin-right:8px}
+
+/* ── решения ───────────────────────────────── */
+.decision{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.decision h3{margin:0;font:600 16px/1.35 var(--f-display);text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{border:1px solid var(--line);border-radius:11px;padding:11px 13px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;align-items:center;background:var(--panel-2)}
+.opt.chosen{border-color:var(--ok);background:var(--ok-bg)}
+.opt .l{font-weight:600;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.opt .d{grid-column:1;color:var(--text-2);font-size:13px;white-space:pre-wrap}
+.opt .ctrl{grid-column:2;grid-row:1 / span 2;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:11px;font-weight:600;padding:2px 7px;border-radius:6px;letter-spacing:.02em}
+.btn.voted{border-color:var(--info);color:var(--info);background:var(--info-bg)}
+@media (max-width:640px){.opt{grid-template-columns:minmax(0,1fr)}.opt .ctrl{grid-column:1;grid-row:auto;justify-content:flex-start}}
+
+/* ── журнал ────────────────────────────────── */
+.composer{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.composer textarea{flex:1 1 320px;min-height:64px}
+.log{display:flex;flex-direction:column}
+.day{font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);margin:16px 0 6px}
+.entry{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:start}
+.entry .t{font-size:13.5px;min-width:0}
+.entry .t b{font-weight:600}
+.entry .t q{quotes:"«" "»"}
+.entry .when{font-size:12px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.diff{margin:5px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.diff li{font-size:12.5px;color:var(--text-2);word-break:break-word}
+.diff .f{color:var(--muted)}
+.diff del{color:var(--muted);text-decoration-color:color-mix(in srgb,var(--red) 60%,transparent)}
+.diff ins{text-decoration:none;color:var(--text)}
+.note-text{white-space:pre-wrap;margin-top:3px;color:var(--text)}
+
+/* ── редактор ──────────────────────────────── */
+dialog{border:1px solid var(--line-2);border-radius:16px;background:var(--panel);color:var(--text);padding:0;width:min(680px,calc(100vw - 24px));max-height:calc(100dvh - 32px);box-shadow:var(--shadow)}
+dialog::backdrop{background:var(--backdrop)}
+.ed{display:flex;flex-direction:column;max-height:calc(100dvh - 34px)}
+.ed-head{padding:16px 20px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ed-head h2{margin:0;font:600 16px/1.3 var(--f-display)}
+.ed-body{padding:16px 20px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:600;color:var(--text-2)}
+.field .hint{font-size:12px;color:var(--muted)}
+.field.mono .input{font-family:var(--f-mono);font-size:13px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.two{grid-template-columns:1fr}}
+.ed-foot{padding:12px 20px 16px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ed-foot .sp{flex:1}
+.form-err{color:var(--red);font-size:13px;font-weight:500}
+
+/* ── уведомления ───────────────────────────── */
+.toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;z-index:50;width:min(520px,calc(100vw - 32px));pointer-events:none}
+.toast{background:var(--panel-3);color:var(--text);border:1px solid var(--line-2);border-radius:11px;padding:10px 14px;font-size:13.5px;box-shadow:var(--shadow);pointer-events:auto}
+.toast.err{border-color:color-mix(in srgb,var(--red) 55%,transparent)}
+.foot{color:var(--muted);font-size:12.5px;display:flex;flex-wrap:wrap;gap:6px 16px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<dialog id="ed" aria-labelledby="ed-title"><form class="ed" id="ed-form" novalidate></form></dialog>
+<dialog id="cp" aria-label="Текст для копирования"><div class="ed"><div class="ed-head"><h2>Скопируйте текст</h2><button class="icon-btn" type="button" data-action="close-cp" aria-label="Закрыть">✕</button></div><div class="ed-body"><p class="hint" style="margin:0;color:var(--text-2);font-size:13px">Браузер не дал скопировать автоматически. Текст выделен — нажмите Ctrl+C.</p><textarea id="cp-text" class="input mono" rows="16" readonly></textarea></div></div></dialog>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* Подключение к базе Firebase. Конфиг веб-приложения не секретный — его видно в коде любой страницы на Firebase. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBkbA5B_Tb9lxYhuahRYT4wnwAqPx8nzdc",
+  authDomain: "kentucky-economy.firebaseapp.com",
+  projectId: "kentucky-economy",
+  storageBucket: "kentucky-economy.firebasestorage.app",
+  messagingSenderId: "238727156509",
+  appId: "1:238727156509:web:ae68581d3bc6277cf507f4"
+};
+</script>
+<script>
+(() => {
+'use strict';
+
+/* ── словари ─────────────────────────────────── */
+const PARAM_STATUS = [['idea','Идея'],['proposed','Предложено'],['agreed','Согласовано'],['done','Внедрено'],['rejected','Отклонено']];
+const BUG_SEV = [['critical','Критично'],['high','Высокая'],['medium','Средняя'],['low','Низкая']];
+const BUG_STATUS = [['open','Открыт'],['progress','В работе'],['fixed','Исправлен'],['wontfix','Не будем']];
+const STAGE_STATUS = [['todo','Не начат'],['progress','В работе'],['blocked','Заблокирован'],['done','Готов']];
+const TONE = {idea:'muted',proposed:'info',agreed:'violet',done:'ok',rejected:'red',critical:'red',high:'warn',medium:'info',low:'muted',open:'red',progress:'warn',fixed:'ok',wontfix:'muted',todo:'muted',blocked:'red'};
+const SEV_VAR = {critical:'var(--red)',high:'var(--warn)',medium:'var(--info)',low:'var(--muted)'};
+const TABS = [['plan','План'],['params','Параметры'],['bugs','Баги'],['stages','Этапы'],['decisions','Решения'],['log','Журнал']];
+const COLLS = ['sections','params','bugs','stages','decisions'];
+const NOUN = {
+  sections:{n:'раздел',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'},
+  params:{n:'параметр',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'},
+  bugs:{n:'баг',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'},
+  stages:{n:'этап',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'},
+  decisions:{n:'решение',a:'добавлено',c:'изменено',d:'удалено',r:'восстановлено'},
+  meta:{n:'якорь',a:'задан',c:'изменён',d:'удалён',r:'восстановлен'}
+};
+const lab = (list,v) => (list.find(x=>x[0]===v)||[,v||'—'])[1];
+
+const SCHEMA = {
+  sections:{label:'Раздел',title:d=>d.title||'Без названия',fields:[
+    {k:'title',t:'text',l:'Заголовок',req:true},
+    {k:'body',t:'textarea',l:'Текст',rows:16,mono:false,hint:'Разметка: **жирный**, `код`, строки «- » — список, «1. » — нумерованный, строки через | — таблица, «### » — подзаголовок.'}
+  ]},
+  params:{label:'Параметр',title:d=>d.name||'Без названия',fields:[
+    {k:'name',t:'text',l:'Параметр',req:true},
+    {k:'group',t:'group',l:'Группа',req:true},
+    {k:'where',t:'text',l:'Где в коде или БД',mono:true},
+    {k:'current',t:'textarea',l:'Сейчас',rows:2,mono:true,half:true},
+    {k:'proposed',t:'textarea',l:'Предлагаю',rows:2,mono:true,half:true},
+    {k:'status',t:'select',l:'Статус',options:PARAM_STATUS,half:true},
+    {k:'assignee',t:'person',l:'Ответственный',half:true},
+    {k:'note',t:'textarea',l:'Заметка',rows:3}
+  ]},
+  bugs:{label:'Баг',title:d=>d.title||'Без названия',fields:[
+    {k:'title',t:'text',l:'Проблема',req:true},
+    {k:'where',t:'text',l:'Где',mono:true},
+    {k:'impact',t:'textarea',l:'Что происходит',rows:3},
+    {k:'severity',t:'select',l:'Важность',options:BUG_SEV,half:true},
+    {k:'status',t:'select',l:'Статус',options:BUG_STATUS,half:true},
+    {k:'assignee',t:'person',l:'Ответственный',half:true},
+    {k:'note',t:'textarea',l:'Заметка',rows:2}
+  ]},
+  stages:{label:'Этап',title:d=>d.title||'Без названия',fields:[
+    {k:'title',t:'text',l:'Этап',req:true},
+    {k:'details',t:'textarea',l:'Что делаем',rows:4},
+    {k:'depends',t:'text',l:'Зависит от',half:true},
+    {k:'status',t:'select',l:'Статус',options:STAGE_STATUS,half:true},
+    {k:'assignee',t:'person',l:'Ответственный',half:true},
+    {k:'note',t:'textarea',l:'Заметка',rows:2}
+  ]},
+  decisions:{label:'Решение',title:d=>d.question||'Без названия',fields:[
+    {k:'question',t:'text',l:'Вопрос',req:true},
+    {k:'options',t:'options',l:'Варианты',rows:6,hint:'Один вариант на строку: «Название — пояснение».',req:true},
+    {k:'recommended',t:'number',l:'Рекомендуемый вариант (номер строки, 0 — нет)',half:true},
+    {k:'note',t:'textarea',l:'Заметка',rows:3}
+  ]},
+  meta:{label:'Якорь',title:()=>'Якорь',fields:[
+    {k:'anchor',t:'number',l:'Доход за час работы новичка, $',req:true,hint:'Все пометки «≈ N ч работы» на странице считаются от этого числа.'}
+  ]},
+  me:{label:'Имя',heading:'Представьтесь',title:()=>'Имя',fields:[
+    {k:'name',t:'text',l:'Ваше имя',req:true,hint:'Его увидят коллеги в журнале и рядом с вашими правками. Запоминается в этом браузере.'}
+  ]}
+};
+
+/* ── состояние ───────────────────────────────── */
+const S = {
+  tab:'plan', data:{sections:[],params:[],bugs:[],stages:[],decisions:[],log:[]},
+  meta:{anchor:3000000}, loaded:new Set(), dbState:'connecting',
+  db:null, me:null, myName:'', readOnly:false,
+  people:{}, presence:{editing:null}, pending:0, draft:'',
+  f:{status:'all',group:'all',q:'',hideFixed:false,hideDone:false},
+  editing:null
+};
+const ME_KEY = 'kyEconomyMe';
+{
+  let m = {};
+  try { m = JSON.parse(localStorage.getItem(ME_KEY)||'{}') || {}; } catch (e) {}
+  if (!m.id) { m.id = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2,10); try { localStorage.setItem(ME_KEY, JSON.stringify(m)); } catch (e) {} }
+  S.me = m.id; S.myName = m.name || '';
+}
+function saveMe(){ try { localStorage.setItem(ME_KEY, JSON.stringify({id:S.me, name:S.myName})); } catch (e) {} }
+const PREFS_KEY = 'kyEconomyPrefs';
+try { const p = JSON.parse(localStorage.getItem(PREFS_KEY)||'{}'); if (p.tab) S.tab = p.tab; if (p.f) Object.assign(S.f, p.f, {q:''}); } catch (e) {}
+function savePrefs(){ try { localStorage.setItem(PREFS_KEY, JSON.stringify({tab:S.tab,f:{status:S.f.status,group:S.f.group,hideFixed:S.f.hideFixed,hideDone:S.f.hideDone}})); } catch (e) {} }
+{ const h = (location.hash||'').replace('#',''); if (TABS.some(t=>t[0]===h)) S.tab = h; }
+
+/* ── утилиты ─────────────────────────────────── */
+const $ = (s,r=document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nf = new Intl.NumberFormat('ru-RU');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const clip = (s,n=160) => { s = String(s ?? ''); return s.length>n ? s.slice(0,n-1)+'…' : s; };
+const find = (coll,id) => S.data[coll].find(d=>d.id===id);
+const byOrder = (a,b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.id).localeCompare(String(b.id));
+
+function parseMoney(s){
+  s = String(s ?? '').replace(/[  ]/g,' ');
+  if (/[%×]/.test(s)) return null;
+  const m = s.match(/(\d[\d ]*(?:[.,]\d+)*)\s*(трлн|млрд|млн|тыс)?/i);
+  if (!m) return null;
+  let raw = m[1].trim().replace(/ /g,'');
+  let v;
+  if (/^\d{1,3}([.,]\d{3})+$/.test(raw)) v = Number(raw.replace(/[.,]/g,''));
+  else v = Number(raw.replace(',','.'));
+  if (!isFinite(v)) return null;
+  const mult = {трлн:1e12,млрд:1e9,млн:1e6,тыс:1e3}[(m[2]||'').toLowerCase()] || 1;
+  return v*mult;
+}
+function workTime(v){
+  const a = Number(S.meta.anchor) || 3e6; const h = v/a;
+  if (h < 1/60) return 'меньше минуты работы';
+  if (h < 1) return '≈ '+Math.round(h*60)+' мин работы';
+  if (h < 10) return '≈ '+nf.format(Math.round(h*10)/10)+' ч работы';
+  return '≈ '+nf.format(Math.round(h))+' ч работы';
+}
+const dtf = new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit'});
+const dayf = new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',weekday:'short'});
+const fullf = new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+function ago(t){
+  if (!t) return '';
+  const d = Date.now()-t;
+  if (d < 60e3) return 'только что';
+  if (d < 3600e3) return Math.round(d/60e3)+' мин назад';
+  if (d < 86400e3) return Math.round(d/3600e3)+' ч назад';
+  return fullf.format(new Date(t));
+}
+
+/* ── люди ────────────────────────────────────── */
+function knownIds(){
+  const ids = new Set();
+  if (S.me) ids.add(S.me);
+  for (const c of COLLS) for (const d of S.data[c]) {
+    if (d.updatedBy) ids.add(d.updatedBy);
+    if (d.createdBy) ids.add(d.createdBy);
+    if (d.assignee) ids.add(d.assignee);
+    if (d.votes) Object.keys(d.votes).forEach(k=>ids.add(k));
+  }
+  for (const l of S.data.log) if (l.by) ids.add(l.by);
+  for (const id of Object.keys(S.people)) if (S.people[id] && S.people[id].name) ids.add(id);
+  if (S.meta.updatedBy) ids.add(S.meta.updatedBy);
+  ids.delete('claude');
+  return [...ids];
+}
+async function resolveProfiles(){}
+function nameOf(id){
+  if (id === 'claude') return 'Claude';
+  if (id === S.me && S.myName) return S.myName;
+  const p = S.people[id];
+  return (p && p.name) || '';
+}
+function pname(id){
+  if (!id) return 'не назначен';
+  const n = nameOf(id) || 'Участник';
+  return id === S.me ? n + ' (вы)' : n;
+}
+function colorOf(id){ let h = 7; for (const c of String(id)) h = (h*31 + c.charCodeAt(0)) >>> 0; return `hsl(${h%360} 52% 44%)`; }
+function initials(id){ const n = nameOf(id) || '?'; return n.split(/\s+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function avatar(id, size){
+  const st = size ? `width:${size}px;height:${size}px;` : '';
+  if (id === 'claude') return `<span class="av claude" style="${st}" aria-hidden="true">C</span>`;
+  if (!id) return `<span class="av" style="${st}" aria-hidden="true"></span>`;
+  return `<span class="av" style="${st}background:${colorOf(id)};color:#fff" aria-hidden="true">${esc(initials(id))}</span>`;
+}
+const someone = id => id ? pname(id) : 'другой участник';
+function whoChip(id){ return id ? `<span class="who">${avatar(id)}<span>${esc(pname(id))}</span></span>` : `<span class="who" style="color:var(--muted)">не назначен</span>`; }
+const ONLINE_MS = 150000;
+function onlinePeople(){
+  const t = Date.now() - ONLINE_MS;
+  return Object.keys(S.people).filter(id => S.people[id] && S.people[id].lastSeen > t && S.people[id].name);
+}
+function editorsOf(path){
+  return onlinePeople().filter(id => id !== S.me && S.people[id].editing === path);
+}
+function editingBadge(path){
+  const ids = editorsOf(path); if (!ids.length) return '';
+  return `<span class="editing-now">редактирует ${esc(ids.map(someone).join(', '))}</span>`;
+}
+function setPresence(patch){
+  Object.assign(S.presence, patch||{});
+  if (!S.db || !S.myName) return;
+  S.db.collection('people').doc(S.me).set({name:S.myName, lastSeen:Date.now(), tab:S.tab, editing:S.presence.editing ?? null}, {merge:true}).catch(()=>{});
+}
+
+/* ── отрисовка ───────────────────────────────── */
+let queued = false;
+function schedule(){
+  if (queued) return; queued = true;
+  const run = async () => { queued = false; await resolveProfiles(); paint(); };
+  if (document.hidden) setTimeout(run, 0); else requestAnimationFrame(run);
+}
+function canEdit(){ return !!S.db && !S.readOnly && S.dbState === 'ready' && !!S.myName; }
+
+function paint(){
+  const app = $('#app');
+  const a = document.activeElement;
+  const fid = a && a.id && app.contains(a) ? a.id : null;
+  const sel = fid && 'selectionStart' in a ? [a.selectionStart, a.selectionEnd] : null;
+  app.innerHTML = header() + summary() + tabs() + `<main id="view">${view()}</main>` + footer();
+  if (fid) { const el = document.getElementById(fid); if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
+  refreshEditorNotice();
+}
+function paintSync(){
+  const el = $('#sync'); if (!el) return;
+  const [cls,txt] = syncState(); el.className = 'sync '+cls; el.textContent = txt;
+}
+function syncState(){
+  if (S.dbState === 'setup') return ['off','База не подключена'];
+  if (S.dbState === 'absent') return ['off','Нет связи с базой'];
+  if (S.dbState === 'connecting') return ['busy','Подключаемся…'];
+  if (S.pending > 0) return ['busy','Сохраняем…'];
+  return ['','Всё сохранено'];
+}
+
+function header(){
+  const [cls,txt] = syncState();
+  const uniq = onlinePeople();
+  const faces = uniq.slice(0,6).map(id => `<span title="${esc(pname(id))}">${avatar(id,26)}</span>`).join('');
+  const meBtn = S.db ? `<button class="btn ${S.myName?'ghost':'primary'} sm" data-action="name">${S.myName ? 'Вы: '+esc(clip(S.myName,24)) : 'Представиться, чтобы править'}</button>` : '';
+  const anchor = Number(S.meta.anchor) || 3e6;
+  return `<header class="top">
+    <div class="brand"><div class="mark" aria-hidden="true">K$</div><div><h1>Экономика Kentucky</h1><p>Рабочее место команды: план, параметры, баги, этапы и решения. Правки видны всем сразу.</p></div></div>
+    <div class="top-side">
+      ${S.readOnly ? '<span class="ro">Только просмотр</span>' : ''}
+      <div class="stamp" title="Все пометки «≈ N ч работы» считаются от этого числа"><div><div class="k">Якорь</div><div class="v">${nf.format(anchor)} $ = 1 ч</div></div>${canEdit()?'<button class="icon-btn" data-action="edit-anchor" aria-label="Изменить якорь">'+ICON.pen+'</button>':''}</div>
+      ${uniq.length ? `<div class="people" aria-label="Сейчас на странице"><div class="faces">${faces}</div></div>` : ''}
+      ${meBtn}
+      <span id="sync" class="sync ${cls}">${esc(txt)}</span>
+      <button class="btn" data-action="copy-md">${ICON.copy}Скопировать как Markdown</button>
+    </div>
+  </header>`;
+}
+
+function summary(){
+  const P = S.data.params, B = S.data.bugs, St = S.data.stages, D = S.data.decisions;
+  const pc = s => P.filter(p=>p.status===s).length;
+  const live = P.length - pc('rejected');
+  const pBar = ['done','agreed','proposed','idea'].map(s => { const n = pc(s); return n ? `<i style="flex:${n};background:var(--${TONE[s]==='muted'?'muted':TONE[s]})"></i>` : ''; }).join('');
+  const openB = B.filter(b=>b.status==='open'||b.status==='progress');
+  const crit = openB.filter(b=>b.severity==='critical').length;
+  const doneSt = St.filter(s=>s.status==='done').length;
+  const curSt = [...St].sort(byOrder).find(s=>s.status!=='done');
+  const decided = D.filter(d=>d.chosen!=null && d.chosen!=='').length;
+  const stBar = St.length ? `<i style="flex:${doneSt};background:var(--ok)"></i><i style="flex:${St.length-doneSt};background:transparent"></i>` : '';
+  const dBar = D.length ? `<i style="flex:${decided};background:var(--ok)"></i><i style="flex:${D.length-decided};background:transparent"></i>` : '';
+  return `<section class="summary" aria-label="Сводка">
+    <button class="tile" data-action="tab" data-tab="params"><span class="k">Параметры</span><span class="n">${pc('agreed')+pc('done')}<small>из ${live} согласовано</small></span><span class="bar">${pBar}</span><span class="s">${pc('done')} внедрено · ${pc('proposed')} ждут обсуждения</span></button>
+    <button class="tile" data-action="tab" data-tab="bugs"><span class="k">Баги</span><span class="n">${openB.length}<small>открыто</small></span><span class="bar">${openB.length?`<i style="flex:${crit};background:var(--red)"></i><i style="flex:${openB.length-crit};background:var(--warn)"></i>`:''}</span><span class="s">${crit ? crit+' критичных' : 'критичных нет'}</span></button>
+    <button class="tile" data-action="tab" data-tab="stages"><span class="k">Этапы</span><span class="n">${doneSt}<small>из ${St.length} готово</small></span><span class="bar">${stBar}</span><span class="s">${curSt ? 'Сейчас: '+esc(clip(curSt.title,48)) : (St.length?'Все этапы готовы':'Этапов пока нет')}</span></button>
+    <button class="tile" data-action="tab" data-tab="decisions"><span class="k">Решения</span><span class="n">${decided}<small>из ${D.length} принято</small></span><span class="bar">${dBar}</span><span class="s">${D.length-decided ? (D.length-decided)+' ждут решения' : (D.length?'Все решения приняты':'Вопросов пока нет')}</span></button>
+  </section>`;
+}
+
+function tabs(){
+  const cnt = {plan:S.data.sections.length, params:S.data.params.length, bugs:S.data.bugs.filter(b=>b.status==='open'||b.status==='progress').length, stages:S.data.stages.length, decisions:S.data.decisions.filter(d=>d.chosen==null||d.chosen==='').length, log:null};
+  return `<nav class="tabs" role="tablist">${TABS.map(([k,l]) => `<button class="tab" role="tab" id="tab-${k}" aria-selected="${S.tab===k}" data-action="tab" data-tab="${k}">${l}${cnt[k]?`<span class="c">${cnt[k]}</span>`:''}</button>`).join('')}</nav>`;
+}
+
+function footer(){
+  return `<footer class="foot"><span>Править может любой, у кого есть ссылка, — ссылку не публикуйте.</span><span>Удалённую запись можно вернуть из «Журнала».</span></footer>`;
+}
+
+function view(){
+  if (S.dbState === 'setup') return `<div class="empty"><h3>Сайт ещё не подключён к базе</h3><p>В файле страницы не заполнен <code>FIREBASE_CONFIG</code>. Без него план, параметры и решения негде хранить.</p></div>`;
+  if (S.dbState === 'absent') return `<div class="empty"><h3>Нет связи с базой</h3><p>Проверьте интернет и обновите страницу. Если не помогает — база Firebase недоступна или закрыта правилами доступа.</p></div>`;
+  if (S.dbState === 'connecting') return `<div class="empty"><h3>Загружаем рабочее место…</h3><p>Здесь появятся разделы плана, таблица параметров экономики, список багов, этапы работ и решения, по которым команда голосует.</p></div>`;
+  switch (S.tab) {
+    case 'params': return vParams();
+    case 'bugs': return vBugs();
+    case 'stages': return vStages();
+    case 'decisions': return vDecisions();
+    case 'log': return vLog();
+    default: return vPlan();
+  }
+}
+function addBtn(coll, text){ return canEdit() ? `<button class="btn primary" data-action="new" data-coll="${coll}">${ICON.plus}${text}</button>` : ''; }
+function rowActions(coll, id, movable){
+  if (!canEdit()) return '';
+  return `<div class="actions">${movable?`<button class="icon-btn" data-action="move" data-dir="-1" data-coll="${coll}" data-id="${esc(id)}" aria-label="Выше">${ICON.up}</button><button class="icon-btn" data-action="move" data-dir="1" data-coll="${coll}" data-id="${esc(id)}" aria-label="Ниже">${ICON.down}</button>`:''}<button class="icon-btn" data-action="edit" data-coll="${coll}" data-id="${esc(id)}" aria-label="Изменить">${ICON.pen}</button></div>`;
+}
+function stamp(d){
+  const by = d.updatedBy;
+  if (!d.updatedAt) return '';
+  return `<span>Изменено: ${esc(pname(by||'claude'))}, ${esc(ago(d.updatedAt))}</span>`;
+}
+function emptyState(title, text, coll, btn){
+  return `<div class="empty"><h3>${title}</h3><p>${text}</p>${addBtn(coll,btn)}</div>`;
+}
+function statusSelect(coll, d, options){
+  const v = d.status || options[0][0];
+  if (!canEdit()) return `<span class="chip t-${TONE[v]||'muted'}">${esc(lab(options,v))}</span>`;
+  return `<select class="chip-select t-${TONE[v]||'muted'}" data-change="status" data-coll="${coll}" data-id="${esc(d.id)}" aria-label="Статус">${options.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select>`;
+}
+
+/* ── вкладка: план ─────────────────────────── */
+function vPlan(){
+  const list = [...S.data.sections].sort(byOrder);
+  if (!list.length) return emptyState('В плане пока нет разделов','Разделы — это текст плана: диагноз, принципы, цели. Каждый раздел можно править и переставлять.','sections','Добавить раздел');
+  return `<div class="plan">${list.map(s => `<article class="section">
+      <div class="section-head"><h2>${esc(s.title)}</h2>${rowActions('sections', s.id, true)}</div>
+      <div class="md">${md(s.body)}</div>
+      <div class="meta-line">${stamp(s)}${editingBadge('sections/'+s.id)}</div>
+    </article>`).join('')}
+    <div>${addBtn('sections','Добавить раздел')}</div></div>`;
+}
+
+/* ── вкладка: параметры ────────────────────── */
+function groupsOrdered(){
+  const g = new Map();
+  for (const p of [...S.data.params].sort(byOrder)) { const k = p.group || 'Без группы'; if (!g.has(k)) g.set(k, []); g.get(k).push(p); }
+  return g;
+}
+function vParams(){
+  const all = S.data.params;
+  if (!all.length) return emptyState('Параметров пока нет','Параметр — одна настройка экономики: где она в коде, сколько сейчас, сколько предлагаем и согласовано ли.','params','Добавить параметр');
+  const g = groupsOrdered();
+  const q = S.f.q.trim().toLowerCase();
+  const cnt = s => all.filter(p => p.status === s).length;
+  const seg = [['all','Все',all.length], ...PARAM_STATUS.map(([k,l])=>[k,l,cnt(k)])];
+  let rows = '', shown = 0;
+  for (const [name, items] of g) {
+    if (S.f.group !== 'all' && S.f.group !== name) continue;
+    const vis = items.filter(p => (S.f.status==='all' || p.status===S.f.status) && (!q || [p.name,p.where,p.current,p.proposed,p.note].join(' ').toLowerCase().includes(q)));
+    if (!vis.length) continue;
+    shown += vis.length;
+    rows += `<tr class="grp"><td colspan="6">${esc(name)}<span>${vis.length}</span></td></tr>`;
+    rows += vis.map(p => {
+      const pv = parseMoney(p.proposed);
+      const hrs = pv && pv >= 1000 ? `<span class="hours">${workTime(pv)}</span>` : '';
+      return `<tr class="${p.status==='rejected'?'rej':''}">
+        <td><div class="pname">${esc(p.name)}</div>${p.where?`<div class="where mono">${esc(p.where)}</div>`:''}${p.note?`<div class="pnote">${esc(p.note)}</div>`:''}${editingBadge('params/'+p.id)}</td>
+        <td><div class="val cur">${esc(p.current||'—')}</div></td>
+        <td><div class="val">${esc(p.proposed||'—')}</div>${hrs}</td>
+        <td>${statusSelect('params', p, PARAM_STATUS)}</td>
+        <td>${whoChip(p.assignee)}</td>
+        <td style="width:40px">${canEdit()?`<button class="icon-btn" data-action="edit" data-coll="params" data-id="${esc(p.id)}" aria-label="Изменить">${ICON.pen}</button>`:''}</td>
+      </tr>`; }).join('');
+  }
+  return `<div class="toolbar" style="margin-bottom:12px">
+      <div class="seg" role="group" aria-label="Фильтр по статусу">${seg.map(([k,l,n])=>`<button data-action="f-status" data-v="${k}" aria-pressed="${S.f.status===k}">${l}<span class="c">${n}</span></button>`).join('')}</div>
+    </div>
+    <div class="toolbar" style="margin-bottom:14px">
+      <select class="select input" id="f-group" aria-label="Группа"><option value="all">Все группы</option>${[...g.keys()].map(k=>`<option${S.f.group===k?' selected':''}>${esc(k)}</option>`).join('')}</select>
+      <input class="input grow" id="f-q" type="search" placeholder="Поиск: название, файл, значение" value="${esc(S.f.q)}" aria-label="Поиск по параметрам">
+      ${addBtn('params','Добавить параметр')}
+    </div>
+    ${shown ? `<div class="tbl-wrap"><table class="grid"><thead><tr><th>Параметр</th><th>Сейчас</th><th>Предлагаю</th><th>Статус</th><th>Ответственный</th><th aria-label="Действия"></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="empty"><h3>Ничего не нашлось</h3><p>Под фильтр не подходит ни один параметр. Сбросьте статус, группу или поиск.</p><button class="btn" data-action="f-reset">Сбросить фильтры</button></div>`}`;
+}
+
+/* ── вкладка: баги ─────────────────────────── */
+const sevRank = {critical:0,high:1,medium:2,low:3}, bStRank = {progress:0,open:1,fixed:2,wontfix:3};
+function vBugs(){
+  const all = S.data.bugs;
+  if (!all.length) return emptyState('Багов пока нет','Сюда записываем ошибки и эксплойты, которые влияют на экономику: где, что происходит, насколько срочно.','bugs','Добавить баг');
+  const list = [...all].sort((a,b)=>(bStRank[a.status]??1)-(bStRank[b.status]??1) || (sevRank[a.severity]??2)-(sevRank[b.severity]??2) || byOrder(a,b))
+    .filter(b => !S.f.hideFixed || (b.status!=='fixed' && b.status!=='wontfix'));
+  const closed = all.filter(b=>b.status==='fixed'||b.status==='wontfix').length;
+  return `<div class="toolbar" style="margin-bottom:14px">
+      <div class="seg"><button data-action="toggle" data-k="hideFixed" aria-pressed="${S.f.hideFixed}">Скрыть закрытые<span class="c">${closed}</span></button></div>
+      <span class="grow"></span>${addBtn('bugs','Добавить баг')}
+    </div>
+    <div class="list">${list.map(b => `<article class="row sev ${b.status==='fixed'||b.status==='wontfix'?'done':''}" style="--sev:${SEV_VAR[b.severity]||'var(--muted)'}">
+      <div class="body">
+        <h3>${esc(b.title)}</h3>
+        ${b.where?`<div class="where mono">${esc(b.where)}</div>`:''}
+        ${b.impact?`<div class="txt">${esc(b.impact)}</div>`:''}
+        ${b.note?`<div class="txt"><b>Заметка:</b> ${esc(b.note)}</div>`:''}
+        <div class="meta-line">${stamp(b)}${editingBadge('bugs/'+b.id)}</div>
+      </div>
+      <div class="side">
+        <span class="chip t-${TONE[b.severity]||'muted'}">${esc(lab(BUG_SEV,b.severity))}</span>
+        ${statusSelect('bugs', b, BUG_STATUS)}
+        ${whoChip(b.assignee)}
+        ${rowActions('bugs', b.id, false)}
+      </div>
+    </article>`).join('')}</div>`;
+}
+
+/* ── вкладка: этапы ────────────────────────── */
+function vStages(){
+  const all = [...S.data.stages].sort(byOrder);
+  if (!all.length) return emptyState('Этапов пока нет','Этап — шаг плана работ: что делаем, от чего зависит, кто ведёт и в каком он состоянии.','stages','Добавить этап');
+  const list = all.map((s,i)=>[s,i+1]).filter(([s]) => !S.f.hideDone || s.status!=='done');
+  const done = all.filter(s=>s.status==='done').length;
+  return `<div class="toolbar" style="margin-bottom:14px">
+      <div class="seg"><button data-action="toggle" data-k="hideDone" aria-pressed="${S.f.hideDone}">Скрыть готовые<span class="c">${done}</span></button></div>
+      <span class="grow"></span>${addBtn('stages','Добавить этап')}
+    </div>
+    <div class="list">${list.map(([s,n]) => `<article class="row ${s.status==='done'?'done':''}">
+      <div class="body">
+        <h3><span class="stage-n">${n}</span>${esc(s.title)}</h3>
+        ${s.details?`<div class="txt">${esc(s.details)}</div>`:''}
+        ${s.depends?`<div class="txt"><b>Зависит от:</b> ${esc(s.depends)}</div>`:''}
+        ${s.note?`<div class="txt"><b>Заметка:</b> ${esc(s.note)}</div>`:''}
+        <div class="meta-line">${stamp(s)}${editingBadge('stages/'+s.id)}</div>
+      </div>
+      <div class="side">
+        ${statusSelect('stages', s, STAGE_STATUS)}
+        ${whoChip(s.assignee)}
+        ${rowActions('stages', s.id, true)}
+      </div>
+    </article>`).join('')}</div>`;
+}
+
+/* ── вкладка: решения ──────────────────────── */
+function vDecisions(){
+  const all = [...S.data.decisions].sort(byOrder);
+  if (!all.length) return emptyState('Решений пока нет','Решение — вопрос с вариантами. Каждый голосует за свой вариант, потом один из вас фиксирует итог.','decisions','Добавить вопрос');
+  return `<div class="toolbar" style="margin-bottom:14px"><span class="grow" style="color:var(--text-2);font-size:13.5px">Голосуйте за вариант, затем зафиксируйте итог кнопкой «Принять».</span>${addBtn('decisions','Добавить вопрос')}</div>
+    <div class="list">${all.map(d => {
+      const opts = Array.isArray(d.options) ? d.options : [];
+      const votes = d.votes || {};
+      const chosen = (d.chosen===null||d.chosen===undefined||d.chosen==='') ? null : Number(d.chosen);
+      const rec = Number(d.recommended)||0;
+      return `<article class="decision">
+        <div class="section-head"><h3>${esc(d.question)}</h3>${rowActions('decisions', d.id, true)}</div>
+        <div>${chosen!=null && opts[chosen] ? `<span class="chip t-ok">Принято: ${esc(opts[chosen].label)}</span>` : '<span class="chip t-warn">Ждёт решения</span>'}</div>
+        <div class="opts">${opts.map((o,i) => {
+          const voters = Object.keys(votes).filter(k => votes[k]===i);
+          const mine = S.me && votes[S.me]===i;
+          return `<div class="opt ${chosen===i?'chosen':''}">
+            <div class="l"><span>${i+1}. ${esc(o.label)}</span>${rec===i+1?'<span class="badge t-info">рекомендовано</span>':''}${chosen===i?'<span class="badge t-ok">принято</span>':''}</div>
+            ${o.desc?`<div class="d">${esc(o.desc)}</div>`:''}
+            <div class="ctrl">
+              <span class="faces" title="${esc(voters.map(v=>pname(v)).join(', '))}">${voters.map(v=>avatar(v,22)).join('')}</span>
+              ${canEdit()?`<button class="btn sm ${mine?'voted':''}" data-action="vote" data-id="${esc(d.id)}" data-i="${i}" aria-pressed="${!!mine}">${mine?'Ваш голос':'Голосую'}</button>
+              <button class="btn sm ${chosen===i?'':'ghost'}" data-action="choose" data-id="${esc(d.id)}" data-i="${chosen===i?'':i}">${chosen===i?'Отменить итог':'Принять'}</button>`:''}
+            </div>
+          </div>`; }).join('')}</div>
+        ${d.note?`<div class="txt" style="color:var(--text-2);font-size:13.5px;white-space:pre-wrap"><b style="color:var(--text)">Заметка:</b> ${esc(d.note)}</div>`:''}
+        <div class="meta-line">${stamp(d)}${editingBadge('decisions/'+d.id)}</div>
+      </article>`; }).join('')}</div>`;
+}
+
+/* ── вкладка: журнал ───────────────────────── */
+function logText(l){
+  const N = NOUN[l.coll] || {n:'запись',a:'добавлена',c:'изменена',d:'удалена'};
+  const t = l.title ? ` <q>${esc(clip(l.title,90))}</q>` : '';
+  switch (l.action) {
+    case 'create': return `${N.a} ${N.n}${t}`;
+    case 'update': return `${N.c} ${N.n}${t}`;
+    case 'delete': return `${N.d} ${N.n}${t}`;
+    case 'restore': return `${N.r||'восстановлена'} ${N.n}${t}`;
+    case 'status': return `статус: ${N.n}${t}`;
+    case 'vote': return `голос в решении${t}`;
+    case 'choose': return `итог решения${t}`;
+    case 'note': return 'заметка';
+    default: return esc(l.action||'');
+  }
+}
+function vLog(){
+  const comp = canEdit() ? `<div class="composer"><textarea id="log-draft" class="input" placeholder="Заметка для команды: что обсудили, что проверили в игре, какие цифры получили" aria-label="Заметка">${esc(S.draft)}</textarea><button class="btn primary" data-action="add-note">Добавить заметку</button></div>` : '';
+  const list = S.data.log;
+  if (!list.length) return comp + `<div class="empty" style="margin-top:14px"><h3>Журнал пуст</h3><p>Здесь появится каждое изменение: кто, что и когда поменял — и заметки команды.</p></div>`;
+  let out = '', lastDay = '';
+  for (const l of list) {
+    const d = new Date(l.at||0); const day = dayf.format(d);
+    if (day !== lastDay) { out += `<div class="day">${esc(day)}</div>`; lastDay = day; }
+    const diff = Array.isArray(l.diff) && l.diff.length ? `<ul class="diff">${l.diff.map(x=>`<li><span class="f">${esc(x.f)}:</span> <del>${esc(x.from||'—')}</del> → <ins>${esc(x.to||'—')}</ins></li>`).join('')}</ul>` : '';
+    const canRestore = canEdit() && l.action === 'delete' && l.snapshot && COLLS.includes(l.coll) && !find(l.coll, l.docId);
+    const restore = canRestore ? `<div style="margin-top:6px"><button class="btn sm" data-action="restore" data-id="${esc(l.id)}">Восстановить</button></div>` : '';
+    out += `<div class="entry">${avatar(l.by||'claude')}<div class="t"><b>${esc(pname(l.by||'claude'))}</b> — ${logText(l)}${l.text?`<div class="note-text">${esc(l.text)}</div>`:''}${diff}${restore}</div><span class="when">${esc(dtf.format(d))}</span></div>`;
+  }
+  return comp + `<div class="log" style="margin-top:6px">${out}</div>${list.length>=300?'<p class="foot" style="margin-top:12px">Показаны последние 300 записей.</p>':''}`;
+}
+
+/* ── мини-markdown ───────────────────────────── */
+function inline(t){
+  return esc(t)
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[\s(«])\*([^*\s][^*]*?)\*(?=[\s.,;:!?)»]|$)/g,'$1<em>$2</em>');
+}
+function md(src){
+  const L = String(src||'').replace(/\r/g,'').split('\n');
+  const out = []; let i = 0;
+  const isTable = s => /^\s*\|/.test(s);
+  const isUl = s => /^\s*[-•]\s+/.test(s);
+  const isOl = s => /^\s*\d+[.)]\s+/.test(s);
+  const isH = s => /^\s*#{1,4}\s+/.test(s);
+  const isQ = s => /^\s*>\s?/.test(s);
+  while (i < L.length) {
+    const s = L[i];
+    if (!s.trim()) { i++; continue; }
+    if (isH(s)) { const lvl = s.match(/^\s*(#+)/)[1].length; out.push(`<${lvl<=2?'h3':'h4'}>${inline(s.replace(/^\s*#+\s+/,''))}</${lvl<=2?'h3':'h4'}>`); i++; continue; }
+    if (isTable(s)) {
+      const rows = [];
+      while (i < L.length && isTable(L[i])) { rows.push(L[i]); i++; }
+      const cells = r => r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
+      const body = rows.filter(r => !/^[\s|:\-]+$/.test(r));
+      const head = body.shift();
+      if (!head) continue;
+      out.push(`<div class="md-table"><table><thead><tr>${cells(head).map(c=>`<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${body.map(r=>`<tr>${cells(r).map(c=>`<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      continue;
+    }
+    if (isUl(s) || isOl(s)) {
+      const ol = isOl(s); const items = [];
+      while (i < L.length && (ol ? isOl(L[i]) : isUl(L[i]))) { items.push(L[i].replace(ol ? /^\s*\d+[.)]\s+/ : /^\s*[-•]\s+/, '')); i++; }
+      out.push(`<${ol?'ol':'ul'}>${items.map(x=>`<li>${inline(x)}</li>`).join('')}</${ol?'ol':'ul'}>`);
+      continue;
+    }
+    if (isQ(s)) { const q = []; while (i < L.length && isQ(L[i])) { q.push(L[i].replace(/^\s*>\s?/,'')); i++; } out.push(`<blockquote>${inline(q.join(' '))}</blockquote>`); continue; }
+    const p = [];
+    while (i < L.length && L[i].trim() && !isH(L[i]) && !isTable(L[i]) && !isUl(L[i]) && !isOl(L[i]) && !isQ(L[i])) { p.push(L[i]); i++; }
+    out.push(`<p>${p.map(inline).join('<br>')}</p>`);
+  }
+  return out.join('');
+}
+
+/* ── запись в базу ───────────────────────────── */
+async function guard(fn){
+  if (!S.db) { toast('Нет связи с базой.','err'); return false; }
+  S.pending++; paintSync();
+  try { await fn(); return true; }
+  catch (e) {
+    if (e && e.code === 'unavailable') { await sleep(400+Math.random()*700); try { await fn(); return true; } catch (e2) { fail(e2); return false; } }
+    fail(e); return false;
+  } finally { S.pending--; paintSync(); }
+}
+function fail(e){
+  const c = e && e.code;
+  if (c === 'permission-denied') { toast('База закрыта на запись: проверьте правила доступа Firestore в консоли Firebase.','err',9000); S.readOnly = true; schedule(); }
+  else if (c === 'not-found') toast('Эту запись уже удалили — обновите вкладку.','err');
+  else if (c === 'resource-exhausted') toast('Исчерпан дневной лимит бесплатной базы Firebase или слишком много изменений подряд. Попробуйте позже.','err',8000);
+  else if (c === 'unavailable') toast('Нет связи с базой. Изменение отправится, когда связь вернётся.','err');
+  else toast('Не удалось сохранить: '+((e && e.message) || 'неизвестная ошибка'),'err');
+}
+function log(entry){
+  if (!S.db) return;
+  const body = Object.assign({at:Date.now(), by:S.me||null}, entry);
+  S.db.collection('log').doc().set(body).catch(()=>{});
+}
+const stampNow = () => ({updatedAt:Date.now(), updatedBy:S.me||null});
+
+async function quickStatus(coll, id, v){
+  const d = find(coll,id); if (!d || d.status === v) return;
+  const opts = coll==='params'?PARAM_STATUS:coll==='bugs'?BUG_STATUS:STAGE_STATUS;
+  const ok = await guard(()=>S.db.collection(coll).doc(id).update(Object.assign({status:v}, stampNow())));
+  if (ok) log({action:'status', coll, docId:id, title:SCHEMA[coll].title(d), diff:[{f:'Статус', from:lab(opts,d.status), to:lab(opts,v)}]});
+}
+async function move(coll, id, dir){
+  const list = [...S.data[coll]].sort(byOrder);
+  const i = list.findIndex(x=>x.id===id), j = i+dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const norm = list.map((x,k)=>({id:x.id, order:x.order}));
+  const needRenum = norm.some((x,k)=>typeof x.order !== 'number') || new Set(norm.map(x=>x.order)).size !== norm.length;
+  await guard(async () => {
+    if (needRenum) { for (let k=0;k<list.length;k++) { const want = k===i?j:k===j?i:k; if (list[k].order !== want) await S.db.collection(coll).doc(list[k].id).update({order:want}); } }
+    else { await S.db.collection(coll).doc(list[i].id).update({order:list[j].order}); await S.db.collection(coll).doc(list[j].id).update({order:list[i].order}); }
+  });
+}
+async function vote(id, i){
+  if (!S.myName) { openEditor('me','me'); return; }
+  const d = find('decisions',id); if (!d) return;
+  const cur = d.votes ? d.votes[S.me] : undefined;
+  const nv = cur === i ? null : i;
+  const ok = await guard(()=>S.db.collection('decisions').doc(id).update(Object.assign({['votes.'+S.me]:nv}, stampNow())));
+  const opts = d.options||[];
+  if (ok) log({action:'vote', coll:'decisions', docId:id, title:d.question, diff:[{f:'Голос', from: cur!=null&&opts[cur]?opts[cur].label:'', to: nv!=null&&opts[nv]?opts[nv].label:'снят'}]});
+}
+async function choose(id, iStr){
+  const d = find('decisions',id); if (!d) return;
+  const v = iStr === '' ? null : Number(iStr);
+  const opts = d.options||[];
+  const ok = await guard(()=>S.db.collection('decisions').doc(id).update(Object.assign({chosen:v}, stampNow())));
+  if (ok) { log({action:'choose', coll:'decisions', docId:id, title:d.question, diff:[{f:'Итог', from: d.chosen!=null&&opts[d.chosen]?opts[d.chosen].label:'', to: v!=null&&opts[v]?opts[v].label:'отменён'}]}); toast(v==null?'Итог отменён':'Решение принято'); }
+}
+async function addNote(){
+  const text = S.draft.trim(); if (!text) { toast('Напишите текст заметки.','err'); return; }
+  const id = S.db.collection('log').doc().id;
+  const ok = await guard(()=>S.db.collection('log').doc(id).set({at:Date.now(), by:S.me||null, action:'note', text:clip(text,4000)}));
+  if (ok) { S.draft = ''; schedule(); toast('Заметка добавлена'); }
+}
+async function restore(logId){
+  const l = S.data.log.find(x => x.id === logId);
+  if (!l || !l.snapshot || !COLLS.includes(l.coll)) return;
+  if (find(l.coll, l.docId)) { toast('Эта запись уже есть на странице.','err'); return; }
+  const body = Object.assign({}, l.snapshot, stampNow());
+  delete body.id;
+  const ok = await guard(()=>S.db.collection(l.coll).doc(l.docId).set(body));
+  if (ok) { log({action:'restore', coll:l.coll, docId:l.docId, title:l.title||''}); toast('Восстановлено'); }
+}
+
+/* ── редактор ────────────────────────────────── */
+const dlg = $('#ed'), form = $('#ed-form');
+function optionsToText(o){ return (Array.isArray(o)?o:[]).map(x => x.desc ? `${x.label} — ${x.desc}` : x.label).join('\n'); }
+function textToOptions(t){ return String(t||'').split('\n').map(s=>s.trim()).filter(Boolean).map(s => { const m = s.split(/\s+[—–-]\s+/); return {label:m[0].trim(), desc:m.slice(1).join(' — ').trim()}; }); }
+function defaults(coll){
+  if (coll==='params') return {status:'proposed', group: S.f.group!=='all' ? S.f.group : ''};
+  if (coll==='bugs') return {severity:'medium', status:'open'};
+  if (coll==='stages') return {status:'todo'};
+  if (coll==='decisions') return {recommended:0};
+  return {};
+}
+function fieldHtml(f, v){
+  const id = 'f_'+f.k;
+  const lbl = `<label for="${id}">${esc(f.l)}${f.req?' *':''}</label>`;
+  const hint = f.hint ? `<span class="hint">${esc(f.hint)}</span>` : '';
+  let ctl = '';
+  switch (f.t) {
+    case 'text': ctl = `<input class="input" id="${id}" value="${esc(v)}" autocomplete="off">`; break;
+    case 'textarea': ctl = `<textarea class="input" id="${id}" rows="${f.rows||3}">${esc(v)}</textarea>`; break;
+    case 'options': ctl = `<textarea class="input" id="${id}" rows="${f.rows||5}">${esc(optionsToText(v))}</textarea>`; break;
+    case 'number': ctl = `<input class="input" id="${id}" type="number" inputmode="numeric" value="${esc(v ?? '')}">`; break;
+    case 'select': ctl = `<select class="input" id="${id}">${f.options.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select>`; break;
+    case 'person': {
+      const ids = knownIds(); if (v && v!=='claude' && !ids.includes(v)) ids.push(v);
+      ctl = `<select class="input" id="${id}"><option value="">Не назначен</option>${ids.map(x=>`<option value="${esc(x)}"${x===v?' selected':''}>${esc(pname(x))}</option>`).join('')}</select>`; break;
+    }
+    case 'group': {
+      const gs = [...new Set(S.data.params.map(p=>p.group).filter(Boolean))];
+      ctl = `<input class="input" id="${id}" list="dl-groups" value="${esc(v)}" autocomplete="off"><datalist id="dl-groups">${gs.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`; break;
+    }
+  }
+  return `<div class="field${f.mono?' mono':''}">${lbl}${ctl}${hint}</div>`;
+}
+function openEditor(coll, id){
+  const special = coll==='meta' || coll==='me';
+  if (coll==='me' ? !S.db : !canEdit()) return;
+  if (dlg.open) dlg.close();
+  const sch = SCHEMA[coll]; const isNew = !id && !special;
+  const cur = coll==='meta' ? S.meta : coll==='me' ? {name:S.myName} : (isNew ? defaults(coll) : find(coll,id));
+  if (!cur) { toast('Эту запись уже удалили.','err'); return; }
+  S.editing = {coll, id: coll==='meta' ? 'settings' : coll==='me' ? 'me' : id, isNew, base: cur.updatedAt || null};
+  let body = '', buf = [];
+  const flush = () => { if (buf.length) { body += buf.length===2 ? `<div class="two">${buf.join('')}</div>` : buf.join(''); buf = []; } };
+  for (const f of sch.fields) {
+    const h = fieldHtml(f, cur[f.k]);
+    if (f.half) { buf.push(h); if (buf.length===2) flush(); } else { flush(); body += h; }
+  }
+  flush();
+  const del = (!isNew && !special) ? `<button class="btn danger" type="button" data-action="del">Удалить</button>` : '';
+  const heading = sch.heading || ((isNew?'Новый: ':'') + sch.label.toLowerCase());
+  form.innerHTML = `<div class="ed-head"><div><h2 id="ed-title">${esc(heading)}</h2>${!isNew&&cur.updatedAt?`<div class="meta-line" style="margin-top:4px">${stamp(cur)}</div>`:''}</div><button class="icon-btn" type="button" data-action="close-ed" aria-label="Закрыть">✕</button></div>
+    <div class="ed-body"><div id="ed-notice"></div>${body}<div id="ed-err" class="form-err" role="alert"></div></div>
+    <div class="ed-foot">${del}<span class="sp"></span><button class="btn" type="button" data-action="close-ed">${coll==='me'&&!S.myName?'Только смотреть':'Отмена'}</button><button class="btn primary" type="submit">${isNew?'Добавить':coll==='me'?'Готово':'Сохранить'}</button></div>`;
+  dlg.showModal();
+  const first = form.querySelector('.input'); if (first) first.focus();
+  if (!isNew && !special) setPresence({editing: coll+'/'+id});
+  refreshEditorNotice();
+}
+function refreshEditorNotice(){
+  const box = $('#ed-notice'); if (!box || !S.editing || S.editing.isNew || S.editing.coll==='meta' || S.editing.coll==='me') return;
+  const others = editorsOf(S.editing.coll+'/'+S.editing.id);
+  box.innerHTML = others.length ? `<div class="notice"><b>Одновременная правка.</b> Эту запись сейчас открыл(а) ${esc(others.map(someone).join(', '))}. Сохранит тот, кто нажмёт последним — договоритесь, кто правит.</div>` : '';
+}
+function readForm(sch){
+  const v = {};
+  for (const f of sch.fields) {
+    const el = document.getElementById('f_'+f.k); if (!el) continue;
+    if (f.t==='options') v[f.k] = textToOptions(el.value);
+    else if (f.t==='number') v[f.k] = el.value==='' ? null : Number(el.value);
+    else if (f.t==='person') v[f.k] = el.value || null;
+    else v[f.k] = f.t==='text'||f.t==='group' ? el.value.trim() : el.value.replace(/\s+$/,'');
+  }
+  return v;
+}
+const show = (f,x) => f.t==='options' ? optionsToText(x).replace(/\n/g,' · ') : f.t==='select' ? lab(f.options,x) : f.t==='person' ? (x?pname(x):'') : String(x ?? '');
+function diffOf(sch, cur, v){
+  const out = [];
+  for (const f of sch.fields) {
+    const a = cur[f.k] ?? (f.t==='options'?[]:f.t==='number'||f.t==='person'?null:'');
+    const b = v[f.k];
+    if (JSON.stringify(a) !== JSON.stringify(b)) out.push({k:f.k, f:f.l, from:clip(show(f,a)), to:clip(show(f,b))});
+  }
+  return out;
+}
+let conflictArmed = false;
+async function saveEditor(){
+  const ed = S.editing; if (!ed) return;
+  const sch = SCHEMA[ed.coll]; const err = $('#ed-err'); err.textContent = '';
+  const v = readForm(sch);
+  for (const f of sch.fields) {
+    const x = v[f.k];
+    if (f.req && (x==null || (Array.isArray(x)?!x.length:String(x).trim()===''))) { err.textContent = `Заполните поле «${f.l}».`; return; }
+  }
+  if (ed.coll==='me') {
+    S.myName = clip(v.name, 40); saveMe(); setPresence({}); closeEditor(); schedule();
+    toast('Готово, '+S.myName+'. Теперь можно править.');
+    return;
+  }
+  if (ed.coll==='meta' && !(v.anchor > 0)) { err.textContent = 'Якорь должен быть положительным числом.'; return; }
+  if (ed.coll==='decisions') { const n = v.recommended||0; if (n<0 || n>v.options.length) { err.textContent = `Номер рекомендуемого варианта — от 0 до ${v.options.length}.`; return; } }
+  if (ed.coll==='meta') {
+    const from = S.meta.anchor;
+    const ok = await guard(()=>S.db.doc('meta/settings').set(Object.assign({}, S.meta, {anchor:v.anchor}, stampNow())));
+    if (ok) { log({action:'update', coll:'meta', title:'Якорь', diff:[{f:'$ за час', from:nf.format(from||0), to:nf.format(v.anchor)}]}); closeEditor(); toast('Якорь обновлён'); }
+    return;
+  }
+  const coll = ed.coll;
+  if (ed.isNew) {
+    const list = S.data[coll];
+    const order = list.reduce((m,x)=>Math.max(m, typeof x.order==='number'?x.order:0), 0) + 1;
+    const body = Object.assign({}, v, {order, createdAt:Date.now(), createdBy:S.me||null}, stampNow());
+    if (coll==='decisions') { body.votes = {}; body.chosen = null; }
+    const ref = S.db.collection(coll).doc();
+    const ok = await guard(()=>ref.set(body));
+    if (ok) { log({action:'create', coll, docId:ref.id, title:sch.title(body)}); closeEditor(); toast('Добавлено'); }
+    return;
+  }
+  const cur = find(coll, ed.id);
+  if (!cur) { err.textContent = 'Эту запись уже удалили — сохранить изменения нельзя. Скопируйте текст, если он нужен.'; return; }
+  if (!conflictArmed && ed.base && cur.updatedAt && cur.updatedAt !== ed.base && cur.updatedBy !== S.me) {
+    err.innerHTML = `Пока вы правили, ${esc(pname(cur.updatedBy||'claude'))} сохранил(а) свою версию. Нажмите «Сохранить» ещё раз, чтобы записать вашу поверх, или «Отмена», чтобы посмотреть изменения.`;
+    conflictArmed = true; return;
+  }
+  const diff = diffOf(sch, cur, v);
+  if (!diff.length) { closeEditor(); return; }
+  const patch = stampNow(); diff.forEach(d => patch[d.k] = v[d.k]);
+  if (coll==='decisions' && patch.options) { const n = patch.options.length; if (cur.chosen!=null && cur.chosen>=n) patch.chosen = null; }
+  const ok = await guard(()=>S.db.collection(coll).doc(ed.id).update(patch));
+  if (ok) { log({action:'update', coll, docId:ed.id, title:sch.title(Object.assign({},cur,v)), diff:diff.map(({f,from,to})=>({f,from,to})).slice(0,8)}); closeEditor(); toast('Сохранено'); }
+}
+async function deleteEditing(btn){
+  const ed = S.editing; if (!ed) return;
+  if (!btn.classList.contains('armed')) { btn.classList.add('armed'); btn.textContent = 'Точно удалить?'; setTimeout(()=>{ if (btn.isConnected) { btn.classList.remove('armed'); btn.textContent = 'Удалить'; } }, 4000); return; }
+  const cur = find(ed.coll, ed.id);
+  const ok = await guard(()=>S.db.collection(ed.coll).doc(ed.id).delete());
+  if (ok) {
+    let snapshot = null;
+    if (cur) { snapshot = Object.assign({}, cur); delete snapshot.id; }
+    log({action:'delete', coll:ed.coll, docId:ed.id, title: cur ? SCHEMA[ed.coll].title(cur) : '', snapshot});
+    closeEditor(); toast('Удалено. Вернуть можно из «Журнала».');
+  }
+}
+function closeEditor(){ if (dlg.open) dlg.close(); }
+dlg.addEventListener('close', () => { S.editing = null; conflictArmed = false; setPresence({editing:null}); });
+form.addEventListener('submit', e => { e.preventDefault(); saveEditor(); });
+
+/* ── Markdown для репозитория ────────────────── */
+function toMarkdown(){
+  const L = [];
+  const cell = s => String(s ?? '').replace(/\|/g,'\\|').replace(/\n+/g,' ');
+  L.push('# План экономики Kentucky RolePlay','',`Выгружено со страницы «Экономика Kentucky» ${fullf.format(new Date())}. Якорь: ${nf.format(Number(S.meta.anchor)||3e6)} $ за час работы новичка.`,'');
+  for (const s of [...S.data.sections].sort(byOrder)) L.push('## '+s.title,'',String(s.body||'').trim(),'');
+  L.push('## Параметры','');
+  for (const [g, items] of groupsOrdered()) {
+    L.push('### '+g,'','| Параметр | Где | Сейчас | Предлагаю | Статус | Ответственный |','|---|---|---|---|---|---|');
+    for (const p of items) L.push(`| ${cell(p.name)}${p.note?' — '+cell(p.note):''} | ${p.where?'`'+cell(p.where)+'`':''} | ${cell(p.current)} | ${cell(p.proposed)} | ${lab(PARAM_STATUS,p.status)} | ${p.assignee?cell(pname(p.assignee).replace(' (вы)','')):''} |`);
+    L.push('');
+  }
+  L.push('## Баги','','| Проблема | Где | Что происходит | Важность | Статус |','|---|---|---|---|---|');
+  for (const b of [...S.data.bugs].sort((a,b)=>(sevRank[a.severity]??2)-(sevRank[b.severity]??2)||byOrder(a,b))) L.push(`| ${cell(b.title)} | ${b.where?'`'+cell(b.where)+'`':''} | ${cell(b.impact)} | ${lab(BUG_SEV,b.severity)} | ${lab(BUG_STATUS,b.status)} |`);
+  L.push('','## Этапы','','| # | Этап | Что делаем | Зависит от | Статус |','|---|---|---|---|---|');
+  [...S.data.stages].sort(byOrder).forEach((s,i)=>L.push(`| ${i+1} | ${cell(s.title)} | ${cell(s.details)} | ${cell(s.depends)} | ${lab(STAGE_STATUS,s.status)} |`));
+  L.push('','## Решения','');
+  [...S.data.decisions].sort(byOrder).forEach((d,i) => {
+    const o = d.options||[]; const ch = d.chosen;
+    L.push(`${i+1}. **${d.question}** — ${ch!=null&&o[ch] ? 'принято: '+o[ch].label : 'ждёт решения'}`);
+    o.forEach((x,k) => { const v = Object.keys(d.votes||{}).filter(u=>d.votes[u]===k).length; L.push(`   - ${x.label}${x.desc?' — '+x.desc:''}${Number(d.recommended)===k+1?' (рекомендовано)':''}${v?` — голосов: ${v}`:''}`); });
+    if (d.note) L.push('   - Заметка: '+String(d.note).replace(/\n+/g,' '));
+  });
+  L.push('');
+  return L.join('\n');
+}
+function copyMd(){
+  const text = toMarkdown();
+  const fallback = () => { const cp = $('#cp'); const ta = $('#cp-text'); ta.value = text; cp.showModal(); ta.focus(); ta.select(); };
+  try { navigator.clipboard.writeText(text).then(()=>toast('Скопировано. Можно вставить в docs/ECONOMY_PLAN.md.'), fallback); } catch (e) { fallback(); }
+}
+
+/* ── уведомления ─────────────────────────────── */
+function toast(msg, kind, ms){
+  const box = $('#toasts'); const el = document.createElement('div');
+  el.className = 'toast'+(kind==='err'?' err':''); el.textContent = msg; box.appendChild(el);
+  setTimeout(()=>el.remove(), ms || (kind==='err'?6000:2600));
+}
+
+/* ── события ─────────────────────────────────── */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]'); if (!b) return;
+  const a = b.dataset.action;
+  switch (a) {
+    case 'tab': S.tab = b.dataset.tab; savePrefs(); try { history.replaceState(null,'','#'+S.tab); } catch (x) {} setPresence({}); paint(); window.scrollTo({top:0}); break;
+    case 'new': openEditor(b.dataset.coll, null); break;
+    case 'edit': openEditor(b.dataset.coll, b.dataset.id); break;
+    case 'edit-anchor': openEditor('meta', 'settings'); break;
+    case 'move': move(b.dataset.coll, b.dataset.id, Number(b.dataset.dir)); break;
+    case 'vote': vote(b.dataset.id, Number(b.dataset.i)); break;
+    case 'choose': choose(b.dataset.id, b.dataset.i); break;
+    case 'f-status': S.f.status = b.dataset.v; savePrefs(); paint(); break;
+    case 'f-reset': S.f.status = 'all'; S.f.group = 'all'; S.f.q = ''; savePrefs(); paint(); break;
+    case 'toggle': S.f[b.dataset.k] = !S.f[b.dataset.k]; savePrefs(); paint(); break;
+    case 'add-note': addNote(); break;
+    case 'copy-md': copyMd(); break;
+    case 'close-ed': closeEditor(); break;
+    case 'del': deleteEditing(b); break;
+    case 'name': openEditor('me','me'); break;
+    case 'restore': restore(b.dataset.id); break;
+    case 'close-cp': $('#cp').close(); break;
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset && t.dataset.change === 'status') quickStatus(t.dataset.coll, t.dataset.id, t.value);
+  else if (t.id === 'f-group') { S.f.group = t.value; savePrefs(); paint(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'f-q') { S.f.q = t.value; paint(); }
+  else if (t.id === 'log-draft') S.draft = t.value;
+});
+window.addEventListener('hashchange', () => { const h = location.hash.replace('#',''); if (TABS.some(x=>x[0]===h) && h !== S.tab) { S.tab = h; paint(); } });
+setInterval(() => { if (!document.hidden && !S.editing && S.dbState==='ready') paint(); }, 60000);
+
+/* ── иконки ──────────────────────────────────── */
+const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+var ICON = {
+  pen: svg('<path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>'),
+  up: svg('<path d="M12 19V5M6 11l6-6 6 6"/>'),
+  down: svg('<path d="M12 5v14M6 13l6 6 6-6"/>'),
+  plus: svg('<path d="M12 5v14M5 12h14"/>'),
+  copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>')
+};
+
+/* ── подключение ─────────────────────────────── */
+function subscribe(){
+  let warned = false;
+  const onErr = e => {
+    if (e && e.code === 'permission-denied') S.dbState = 'absent';
+    else if (!warned) { warned = true; toast('Связь с базой прервалась. Обновите страницу.','err'); }
+    schedule();
+  };
+  const ready = () => { if (COLLS.every(c=>S.loaded.has(c)) && S.dbState==='connecting') S.dbState = 'ready'; };
+  for (const c of COLLS) {
+    S.db.collection(c).onSnapshot(snap => {
+      S.data[c] = snap.docs.filter(d=>d.exists).map(d => Object.assign({id:d.id}, d.data()));
+      S.loaded.add(c); ready(); schedule();
+    }, onErr);
+  }
+  S.db.collection('log').orderBy('at','desc').limit(300).onSnapshot(snap => { S.data.log = snap.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id}, d.data())); schedule(); }, onErr);
+  S.db.doc('meta/settings').onSnapshot(d => { if (d.exists) S.meta = Object.assign({anchor:3000000}, d.data()); schedule(); }, onErr);
+  S.db.collection('people').onSnapshot(snap => { const p = {}; snap.docs.forEach(d => { p[d.id] = d.data(); }); S.people = p; schedule(); }, () => {});
+}
+function init(){
+  paint();
+  if (!window.firebase || !FIREBASE_CONFIG || !FIREBASE_CONFIG.apiKey || !FIREBASE_CONFIG.projectId) {
+    S.dbState = window.firebase ? 'setup' : 'absent'; paint(); return;
+  }
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const fs = firebase.firestore();
+    fs.settings({ignoreUndefinedProperties:true});
+    S.db = fs;
+  } catch (e) { S.dbState = 'absent'; paint(); return; }
+  subscribe();
+  if (!S.myName) openEditor('me','me'); else setPresence({});
+  setInterval(() => { if (!document.hidden) setPresence({}); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) setPresence({}); });
+}
+init();
+})();
+</script>
+</body></html>
