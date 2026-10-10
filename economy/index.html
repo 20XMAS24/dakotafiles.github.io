@@ -186,6 +186,7 @@ textarea.input{resize:vertical;line-height:1.5}
 .md-table th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--panel-2)}
 .md-table tr:last-child td{border-bottom:0}
 .md-table td{font-variant-numeric:tabular-nums}
+.md-table td.num,.md-table th.num{text-align:right;white-space:nowrap}
 .md>*:last-child{margin-bottom:0}
 
 /* ── таблица параметров ────────────────────── */
@@ -250,6 +251,25 @@ table.grid tbody tr:not(.grp):hover td{background:color-mix(in srgb,var(--panel-
 
 /* ── редактор ──────────────────────────────── */
 dialog{border:1px solid var(--line-2);border-radius:16px;background:var(--panel);color:var(--text);padding:0;width:min(680px,calc(100vw - 24px));max-height:calc(100dvh - 32px);box-shadow:var(--shadow)}
+dialog.wide{width:min(1160px,calc(100vw - 24px))}
+/* редактор таблиц */
+.te-wrap{overflow:auto;border:1px solid var(--line-2);border-radius:10px;max-height:52vh;background:var(--panel)}
+table.te{border-collapse:separate;border-spacing:0;min-width:100%}
+table.te th,table.te td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;vertical-align:top;background:var(--panel)}
+table.te thead th{position:sticky;top:0;background:var(--panel-2);z-index:1}
+table.te th.te-rowctl{position:sticky;left:0;z-index:1;background:var(--panel-2);white-space:nowrap;padding:3px 4px;vertical-align:middle}
+table.te thead th.te-corner{left:0;z-index:2}
+.te-in{display:block;width:100%;min-width:150px;border:0;border-radius:0;background:transparent;padding:8px 10px;font-size:13.5px;color:var(--text)}
+.te-in:focus{outline:2px solid color-mix(in srgb,var(--red) 75%,transparent);outline-offset:-2px;background:var(--panel-3)}
+.te-head{font-weight:600}
+.te-colctl{display:flex;justify-content:flex-end;gap:1px;padding:3px 4px 0}
+.te-mini{border:0;background:transparent;color:var(--muted);width:24px;height:22px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:inline-grid;place-items:center}
+.te-mini:hover{background:var(--panel-3);color:var(--text)}
+.te-mini.del:hover{color:var(--red)}
+.te-mini[disabled]{opacity:.28;cursor:default;background:transparent}
+.te-n{display:inline-block;min-width:20px;font:600 11px var(--f-mono);color:var(--muted);text-align:right;margin-right:2px;vertical-align:middle}
+.te-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.te-actions .hint{font-size:12px;color:var(--muted)}
 dialog::backdrop{background:var(--backdrop)}
 .ed{display:flex;flex-direction:column;max-height:calc(100dvh - 34px)}
 .ed-head{padding:16px 20px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
@@ -591,15 +611,30 @@ function statusSelect(coll, d, options){
 }
 
 /* ── вкладка: план ─────────────────────────── */
+function planButtons(){
+  if (!canEdit()) return '';
+  return `<div class="toolbar">${addBtn('sections','Добавить раздел')}<button class="btn" data-action="new-table">${ICON.grid}Добавить таблицу</button></div>`;
+}
+const isNumCell = v => { v = String(v ?? '').trim(); return /\d/.test(v) && /^[-−+≈~]?\s?[\d\s.,]+\s?(%|\$|₽|RB|тыс|млн|млрд|трлн)?$/.test(v); };
+function tableHtml(s){
+  const cols = Array.isArray(s.columns) ? s.columns : [];
+  const rows = Array.isArray(s.rowOrder) ? s.rowOrder : [];
+  const cells = s.cells || {};
+  if (!cols.length) return `<p style="margin:0;color:var(--muted)">Таблица пустая.</p>`;
+  const cell = (r,c) => (cells[r] || {})[c.id] || '';
+  const numCol = cols.map(c => { const vals = rows.map(r => cell(r,c)).filter(v => String(v).trim()); return vals.length > 0 && vals.every(isNumCell); });
+  const cls = i => numCol[i] ? ' class="num"' : '';
+  return `<div class="md-table"><table><thead><tr>${cols.map((c,i)=>`<th${cls(i)}>${inline(c.name||'')}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map((c,i)=>`<td${cls(i)}>${inline(cell(r,c))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
 function vPlan(){
   const list = [...S.data.sections].sort(byOrder);
-  if (!list.length) return emptyState('В плане пока нет разделов','Разделы — это текст плана: диагноз, принципы, цели. Каждый раздел можно править и переставлять.','sections','Добавить раздел');
+  if (!list.length) return `<div class="empty"><h3>В плане пока нет разделов</h3><p>Раздел — это текст плана, таблица — сетка строк и столбцов. И то и другое можно править и переставлять.</p>${planButtons()}</div>`;
   return `<div class="plan">${list.map(s => `<article class="section">
       <div class="section-head"><h2>${esc(s.title)}</h2>${rowActions('sections', s.id, true)}</div>
-      <div class="md">${md(s.body)}</div>
+      ${s.kind === 'table' ? tableHtml(s) + (s.note ? `<div class="md">${md(s.note)}</div>` : '') : `<div class="md">${md(s.body)}</div>`}
       <div class="meta-line">${stamp(s)}${editingBadge('sections/'+s.id)}</div>
     </article>`).join('')}
-    <div>${addBtn('sections','Добавить раздел')}</div></div>`;
+    ${planButtons()}</div>`;
 }
 
 /* ── вкладка: параметры ────────────────────── */
@@ -913,7 +948,149 @@ function fieldHtml(f, v){
   }
   return `<div class="field${f.mono?' mono':''}">${lbl}${ctl}${hint}</div>`;
 }
+/* ── редактор таблиц ─────────────────────────── */
+let TE = null;
+const newId = p => p + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2,7);
+function openTableEditor(id){
+  if (!canEdit()) return;
+  if (dlg.open) dlg.close();
+  const cur = id ? find('sections', id) : null;
+  if (id && !cur) { toast('Эту таблицу уже удалили.','err'); return; }
+  if (cur) TE = { columns: (cur.columns||[]).map(c => ({id:c.id, name:c.name||''})), rowOrder: [...(cur.rowOrder||[])], cells: JSON.parse(JSON.stringify(cur.cells||{})) };
+  else TE = { columns: [newId('c'), newId('c'), newId('c')].map(c => ({id:c, name:''})), rowOrder: [newId('r'), newId('r'), newId('r')], cells: {} };
+  S.editing = {coll:'sections', id: id || null, isNew: !id, base: cur ? cur.updatedAt || null : null, table: true};
+  dlg.classList.add('wide');
+  form.innerHTML = `<div class="ed-head"><div><h2 id="ed-title">${id ? 'Таблица' : 'Новая таблица'}</h2>${cur && cur.updatedAt ? `<div class="meta-line" style="margin-top:4px">${stamp(cur)}</div>` : ''}</div><button class="icon-btn" type="button" data-action="close-ed" aria-label="Закрыть">✕</button></div>
+    <div class="ed-body"><div id="ed-notice"></div>
+      <div class="field"><label for="te-title">Заголовок</label><input class="input" id="te-title" value="${esc(cur ? cur.title : '')}" placeholder="Например: Выплаты работ в час" autocomplete="off"></div>
+      <div class="field"><label>Таблица</label><div id="te-grid"></div></div>
+      <div class="te-actions"><button class="btn sm" type="button" data-te="row-add">${ICON.plus}Строка</button><button class="btn sm" type="button" data-te="col-add">${ICON.plus}Столбец</button><span class="hint">Enter — на строку ниже. Можно вставить диапазон из Excel или Google Таблиц: встаньте в ячейку и нажмите Ctrl+V.</span></div>
+      <div class="field"><label for="te-note">Пояснение под таблицей</label><textarea class="input" id="te-note" rows="2">${esc(cur ? cur.note || '' : '')}</textarea></div>
+      <div id="ed-err" class="form-err" role="alert"></div></div>
+    <div class="ed-foot">${id ? '<button class="btn danger" type="button" data-action="del">Удалить</button>' : ''}<span class="sp"></span><button class="btn" type="button" data-action="close-ed">Отмена</button><button class="btn primary" type="submit">${id ? 'Сохранить' : 'Добавить'}</button></div>`;
+  renderTE();
+  dlg.showModal();
+  $('#te-title').focus();
+  if (id) setPresence({editing:'sections/'+id});
+  refreshEditorNotice();
+}
+function renderTE(focus){
+  const g = $('#te-grid'); if (!g || !TE) return;
+  const {columns:cols, rowOrder:rows, cells} = TE;
+  const nc = cols.length, nr = rows.length;
+  g.innerHTML = `<div class="te-wrap"><table class="te"><thead><tr><th class="te-rowctl te-corner"></th>${cols.map((c,ci) => `<th>
+      <div class="te-colctl"><button type="button" class="te-mini" data-te="col-left" data-i="${ci}" ${ci===0?'disabled':''} aria-label="Столбец левее">‹</button><button type="button" class="te-mini" data-te="col-right" data-i="${ci}" ${ci===nc-1?'disabled':''} aria-label="Столбец правее">›</button><button type="button" class="te-mini del" data-te="col-del" data-i="${ci}" ${nc<=1?'disabled':''} aria-label="Удалить столбец">×</button></div>
+      <input class="te-in te-head" data-tc="${ci}" value="${esc(c.name)}" placeholder="Столбец ${ci+1}" aria-label="Название столбца ${ci+1}" autocomplete="off"></th>`).join('')}</tr></thead>
+    <tbody>${rows.map((r,ri) => `<tr><th class="te-rowctl"><span class="te-n">${ri+1}</span><button type="button" class="te-mini" data-te="row-up" data-i="${ri}" ${ri===0?'disabled':''} aria-label="Строку выше">↑</button><button type="button" class="te-mini" data-te="row-down" data-i="${ri}" ${ri===nr-1?'disabled':''} aria-label="Строку ниже">↓</button><button type="button" class="te-mini del" data-te="row-del" data-i="${ri}" aria-label="Удалить строку">×</button></th>${cols.map((c,ci) => `<td><input class="te-in" data-r="${ri}" data-c="${ci}" value="${esc((cells[r]||{})[c.id] ?? '')}" aria-label="Строка ${ri+1}, столбец ${ci+1}" autocomplete="off"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  if (focus) { const el = g.querySelector(focus); if (el) { el.focus(); if (el.select) el.select(); } }
+}
+function teSet(ri, ci, v){
+  const r = TE.rowOrder[ri], c = TE.columns[ci]; if (!r || !c) return;
+  (TE.cells[r] = TE.cells[r] || {})[c.id] = v;
+}
+function teOp(op, i){
+  const T = TE; i = Number(i);
+  const swap = (a, x, y) => { const t = a[x]; a[x] = a[y]; a[y] = t; };
+  switch (op) {
+    case 'row-add': T.rowOrder.push(newId('r')); renderTE(`[data-r="${T.rowOrder.length-1}"][data-c="0"]`); return;
+    case 'col-add': T.columns.push({id:newId('c'), name:''}); renderTE(`[data-tc="${T.columns.length-1}"]`); return;
+    case 'row-del': { const r = T.rowOrder.splice(i,1)[0]; delete T.cells[r]; break; }
+    case 'col-del': if (T.columns.length > 1) T.columns.splice(i,1); break;
+    case 'row-up': if (i > 0) swap(T.rowOrder, i, i-1); break;
+    case 'row-down': if (i < T.rowOrder.length-1) swap(T.rowOrder, i, i+1); break;
+    case 'col-left': if (i > 0) swap(T.columns, i, i-1); break;
+    case 'col-right': if (i < T.columns.length-1) swap(T.columns, i, i+1); break;
+  }
+  renderTE();
+}
+function tePaste(e){
+  const t = e.target; if (!TE || !t.classList.contains('te-in') || t.dataset.r === undefined) return;
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  if (!/[\t\n]/.test(text)) return;
+  e.preventDefault();
+  const lines = text.replace(/\r/g,'').replace(/\n+$/,'').split('\n').map(l => l.split('\t'));
+  const r0 = Number(t.dataset.r), c0 = Number(t.dataset.c);
+  const width = Math.max(...lines.map(l => l.length));
+  while (TE.columns.length < c0 + width) TE.columns.push({id:newId('c'), name:''});
+  while (TE.rowOrder.length < r0 + lines.length) TE.rowOrder.push(newId('r'));
+  lines.forEach((l, dr) => l.forEach((v, dc) => teSet(r0+dr, c0+dc, v.trim())));
+  renderTE(`[data-r="${r0}"][data-c="${c0}"]`);
+  toast(`Вставлено: ${lines.length} × ${width}`);
+}
+form.addEventListener('input', e => {
+  const t = e.target; if (!TE) return;
+  if (t.dataset.tc !== undefined) TE.columns[Number(t.dataset.tc)].name = t.value;
+  else if (t.dataset.r !== undefined) teSet(Number(t.dataset.r), Number(t.dataset.c), t.value);
+});
+form.addEventListener('click', e => { const b = e.target.closest('[data-te]'); if (b && TE && !b.disabled) teOp(b.dataset.te, b.dataset.i); });
+form.addEventListener('paste', tePaste);
+form.addEventListener('keydown', e => {
+  const t = e.target; if (!TE || e.key !== 'Enter') return;
+  if (t.id === 'te-title') { e.preventDefault(); const h = form.querySelector('[data-tc="0"]'); if (h) h.focus(); return; }
+  if (!t.classList || !t.classList.contains('te-in')) return;
+  e.preventDefault();
+  if (t.dataset.tc !== undefined) { renderTE(`[data-r="0"][data-c="${t.dataset.tc}"]`); if (!TE.rowOrder.length) teOp('row-add'); return; }
+  const r = Number(t.dataset.r) + (e.shiftKey ? -1 : 1), c = Number(t.dataset.c);
+  if (r < 0) return;
+  if (r >= TE.rowOrder.length) TE.rowOrder.push(newId('r'));
+  renderTE(`[data-r="${r}"][data-c="${c}"]`);
+});
+function tableBody(){
+  const columns = TE.columns.map((c,i) => ({id:c.id, name:(c.name||'').trim() || `Столбец ${i+1}`}));
+  const cells = {};
+  for (const r of TE.rowOrder) {
+    const row = TE.cells[r] || {}, out = {};
+    for (const c of columns) { const v = String(row[c.id] ?? '').trim(); if (v) out[c.id] = clip(v, 2000); }
+    if (Object.keys(out).length) cells[r] = out;
+  }
+  const rowOrder = [...TE.rowOrder];
+  while (rowOrder.length > 1 && !cells[rowOrder[rowOrder.length-1]]) rowOrder.pop(); // пустые строки в конце — обычно лишний Enter
+  return {kind:'table', title: ($('#te-title').value||'').trim() || 'Таблица', note: ($('#te-note').value||'').replace(/\s+$/,''), columns, rowOrder, cells};
+}
+function tableDiff(a, b){
+  const out = [];
+  const ac = a.columns||[], ar = a.rowOrder||[];
+  if ((a.title||'') !== b.title) out.push({f:'Заголовок', from:clip(a.title), to:clip(b.title)});
+  const addedR = b.rowOrder.filter(r => !ar.includes(r)).length, removedR = ar.filter(r => !b.rowOrder.includes(r)).length;
+  if (addedR || removedR) out.push({f:'Строки', from:String(ar.length), to:`${b.rowOrder.length}${addedR?` (+${addedR})`:''}${removedR?` (−${removedR})`:''}`});
+  else if (JSON.stringify(ar) !== JSON.stringify(b.rowOrder)) out.push({f:'Порядок строк', from:'', to:'изменён'});
+  const an = ac.map(c=>c.name).join(' · '), bn = b.columns.map(c=>c.name).join(' · ');
+  if (an !== bn) out.push({f:'Столбцы', from:clip(an), to:clip(bn)});
+  let changed = 0;
+  const bc = new Set(b.columns.map(c=>c.id));
+  for (const r of ar) if (b.rowOrder.includes(r)) for (const c of ac) if (bc.has(c.id)) {
+    const x = ((a.cells||{})[r]||{})[c.id] || '', y = (b.cells[r]||{})[c.id] || '';
+    if (x !== y) changed++;
+  }
+  if (changed) out.push({f:'Ячейки', from:'', to:`изменено: ${changed}`});
+  if ((a.note||'') !== b.note) out.push({f:'Пояснение', from:clip(a.note), to:clip(b.note)});
+  return out;
+}
+async function saveTable(){
+  const ed = S.editing; const err = $('#ed-err'); err.textContent = '';
+  const body = tableBody();
+  if (!body.columns.length) { err.textContent = 'Добавьте хотя бы один столбец.'; return; }
+  if (ed.isNew) {
+    const order = S.data.sections.reduce((m,x)=>Math.max(m, typeof x.order==='number'?x.order:0), 0) + 1;
+    const ref = S.db.collection('sections').doc();
+    const ok = await guard(()=>ref.set(Object.assign({}, body, {order, createdAt:Date.now(), createdBy:S.me||null}, stampNow())));
+    if (ok) { log({action:'create', coll:'sections', docId:ref.id, title:body.title}); closeEditor(); toast('Таблица добавлена'); }
+    return;
+  }
+  const cur = find('sections', ed.id);
+  if (!cur) { err.textContent = 'Эту таблицу уже удалили — сохранить изменения нельзя.'; return; }
+  if (!conflictArmed && ed.base && cur.updatedAt && cur.updatedAt !== ed.base && cur.updatedBy !== S.me) {
+    err.innerHTML = `Пока вы правили, ${esc(pname(cur.updatedBy||'claude'))} сохранил(а) свою версию таблицы. Нажмите «Сохранить» ещё раз, чтобы записать вашу поверх, или «Отмена», чтобы посмотреть изменения.`;
+    conflictArmed = true; return;
+  }
+  const diff = tableDiff(cur, body);
+  if (!diff.length) { closeEditor(); return; }
+  const ok = await guard(()=>S.db.collection('sections').doc(ed.id).update(Object.assign({}, body, stampNow())));
+  if (ok) { log({action:'update', coll:'sections', docId:ed.id, title:body.title, diff:diff.slice(0,8)}); closeEditor(); toast('Сохранено'); }
+}
+
 function openEditor(coll, id){
+  if (coll === 'sections' && id) { const d = find('sections', id); if (d && d.kind === 'table') return openTableEditor(id); }
   const special = coll==='meta' || coll==='me';
   if (coll==='me' ? !S.db : !canEdit()) return;
   if (dlg.open) dlg.close();
@@ -967,6 +1144,7 @@ function diffOf(sch, cur, v){
 let conflictArmed = false;
 async function saveEditor(){
   const ed = S.editing; if (!ed) return;
+  if (ed.table) return saveTable();
   const sch = SCHEMA[ed.coll]; const err = $('#ed-err'); err.textContent = '';
   const v = readForm(sch);
   for (const f of sch.fields) {
@@ -1023,7 +1201,7 @@ async function deleteEditing(btn){
   }
 }
 function closeEditor(){ if (dlg.open) dlg.close(); }
-dlg.addEventListener('close', () => { S.editing = null; conflictArmed = false; setPresence({editing:null}); });
+dlg.addEventListener('close', () => { S.editing = null; TE = null; dlg.classList.remove('wide'); conflictArmed = false; setPresence({editing:null}); });
 form.addEventListener('submit', e => { e.preventDefault(); saveEditor(); });
 
 /* ── Markdown для репозитория ────────────────── */
@@ -1031,7 +1209,17 @@ function toMarkdown(){
   const L = [];
   const cell = s => String(s ?? '').replace(/\|/g,'\\|').replace(/\n+/g,' ');
   L.push('# План экономики Kentucky RolePlay','',`Выгружено со страницы «Экономика Kentucky» ${fullf.format(new Date())}. Якорь: ${nf.format(Number(S.meta.anchor)||3e6)} $ за час работы новичка.`,'');
-  for (const s of [...S.data.sections].sort(byOrder)) L.push('## '+s.title,'',String(s.body||'').trim(),'');
+  for (const s of [...S.data.sections].sort(byOrder)) {
+    if (s.kind !== 'table') { L.push('## '+s.title,'',String(s.body||'').trim(),''); continue; }
+    const cols = s.columns || [];
+    L.push('## '+s.title,'');
+    if (cols.length) {
+      L.push('| '+cols.map(c=>cell(c.name)).join(' | ')+' |', '|'+cols.map(()=>'---').join('|')+'|');
+      for (const r of (s.rowOrder||[])) L.push('| '+cols.map(c=>cell(((s.cells||{})[r]||{})[c.id])).join(' | ')+' |');
+    }
+    if (s.note) L.push('', String(s.note).trim());
+    L.push('');
+  }
   L.push('## Параметры','');
   for (const [g, items] of groupsOrdered()) {
     L.push('### '+g,'','| Параметр | Где | Сейчас | Предлагаю | Статус | Ответственный |','|---|---|---|---|---|---|');
@@ -1074,6 +1262,7 @@ document.addEventListener('click', e => {
     case 'new': openEditor(b.dataset.coll, null); break;
     case 'edit': openEditor(b.dataset.coll, b.dataset.id); break;
     case 'edit-anchor': openEditor('meta', 'settings'); break;
+    case 'new-table': openTableEditor(null); break;
     case 'move': move(b.dataset.coll, b.dataset.id, Number(b.dataset.dir)); break;
     case 'vote': vote(b.dataset.id, Number(b.dataset.i)); break;
     case 'choose': choose(b.dataset.id, b.dataset.i); break;
@@ -1109,7 +1298,8 @@ var ICON = {
   up: svg('<path d="M12 19V5M6 11l6-6 6 6"/>'),
   down: svg('<path d="M12 5v14M6 13l6 6 6-6"/>'),
   plus: svg('<path d="M12 5v14M5 12h14"/>'),
-  copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>')
+  copy: svg('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  grid: svg('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 9.5v10"/>')
 };
 
 /* ── подключение ─────────────────────────────── */
