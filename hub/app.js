@@ -227,7 +227,7 @@ const SEED = {
 };
 
 /* ── состояние ──────────────────────────────── */
-const S = {me:null, people:{}, tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], econ:null, loaded:new Set(), err:null};
+const S = {me:null, people:{}, tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], econ:null, loaded:new Set(), errs:{}};
 const UI = {route:'today', tab:null, filt:{dept:'all', small:false, mine:false}, drawer:null, edit:false, pal:null};
 const PREFS_KEY = 'kyHubPrefs';
 const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[]}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
@@ -999,7 +999,12 @@ document.addEventListener('drop', e => { const c = e.target.closest && e.target.
 
 /* ── отрисовка ──────────────────────────────── */
 function view(){
-  if (S.err) return `<div class="banner err">${ic('CircleAlert')}<div><b>Нет доступа к данным.</b> ${esc(S.err)}<br><small>Если ты только что включил правила Firestore — обнови страницу.</small></div></div>`;
+  const bad = Object.keys(S.errs);
+  const banner = bad.length ? `<div class="banner err">${ic('CircleAlert')}<div><b>База не отдаёт: ${esc(bad.join(', '))}.</b> ${esc(S.errs[bad[0]])}<br><small>Проверь, что эти коллекции есть в правилах Firestore, и обнови страницу.</small></div></div>` : '';
+  if (S.errs.hub_tasks || S.errs.hub_people) return banner;
+  return banner + viewRoute();
+}
+function viewRoute(){
   if (!S.loaded.has('hub_tasks') || !S.loaded.has('hub_people')) return '<div class="loading"><span class="spin"></span>Загружаем данные команды…</div>';
   const r = UI.route;
   if (r==='tasks') return viewTasks();
@@ -1040,7 +1045,7 @@ setInterval(() => {
 
 /* ── подписки на данные ─────────────────────── */
 function listen(){
-  const onErr = c => e => { console.error(c, e); S.err = errText(e); schedule(); };
+  const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); S.loaded.add(c); schedule(); };
   const docs = sn => sn.docs.map(d=>Object.assign({id:d.id}, d.data()));
   const simple = [['hub_tasks','tasks'],['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki']];
   for (const [c,k] of simple) UNSUB.push(col(c).onSnapshot(sn => { S[k] = docs(sn); S.loaded.add(c); schedule(); }, onErr(c)));
@@ -1053,7 +1058,7 @@ function listen(){
   UNSUB.push(col('hub_log').orderBy('at','desc').limit(300).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
 }
-function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; econStarted = false; S.econ = null; S.loaded = new Set(); S.err = null; }
+function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; econStarted = false; S.econ = null; S.loaded = new Set(); S.errs = {}; }
 
 /* стартовое наполнение — один раз на всю команду */
 async function seedIfEmpty(){
