@@ -960,6 +960,18 @@ document.addEventListener('submit', async e => {
     else { const ref = col('hub_wiki').doc(); const ok = await write(()=>ref.set(Object.assign(data, {createdAt:now(), createdBy:S.me}, stamp()))); if (ok) { log('написал(а) статью', data.title); gain(5, ic('BookOpen')+' Статья добавлена'); openDrawer('wiki:'+ref.id); } } }
   if (k==='profile') { const name = clip(f.name.value,40); if (!name) return; patchMe({name, role:clip(f.role.value,60)}).then(ok => { if (ok) { toast(ic('Check')+' Профиль сохранён'); if (AUTH.currentUser) AUTH.currentUser.updateProfile({displayName:name}).catch(()=>{}); } }); }
 });
+/* в палитре выделение идёт за мышью. Сразу после листания стрелками наведение игнорируется:
+   список прокручивается под неподвижным курсором, и выделение не должно прыгать назад */
+let palKeyAt = 0, palMouse = '';
+function palHover(e, moved){
+  const it = UI.pal && e.target.closest && e.target.closest('[data-pal]'); if (!it) return;
+  if (!moved && now()-palKeyAt < 500) return;
+  const i = Number(it.dataset.pal); if (i===UI.pal.i) return;
+  UI.pal.i = i;
+  document.querySelectorAll('#pal-list [data-pal]').forEach(x => x.setAttribute('aria-selected', String(x===it)));
+}
+document.addEventListener('mouseover', e => palHover(e, false));
+document.addEventListener('mousemove', e => { const p = e.screenX+','+e.screenY; if (p===palMouse) return; palMouse = p; palHover(e, true); });
 document.addEventListener('input', e => { if (e.target.id==='pal-in') { UI.pal.q = e.target.value; UI.pal.items = palItems(e.target.value); UI.pal.i = 0; paintPal(); } });
 document.addEventListener('keydown', e => {
   if (document.body.classList.contains('locked')) return;
@@ -968,6 +980,7 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); UI.pal ? closeOverlay() : palette(); return; }
   if (e.key==='Escape') { if ($('#overlay').innerHTML) closeOverlay(); else if (UI.drawer) closeDrawer(); else document.body.classList.remove('nav-open'); return; }
   if (UI.pal) {
+    if (e.key==='ArrowDown' || e.key==='ArrowUp') palKeyAt = now();
     if (e.key==='ArrowDown') { e.preventDefault(); UI.pal.i = Math.min(UI.pal.items.length-1, UI.pal.i+1); paintPal(); }
     if (e.key==='ArrowUp') { e.preventDefault(); UI.pal.i = Math.max(0, UI.pal.i-1); paintPal(); }
     if (e.key==='Enter') { e.preventDefault(); runPal(UI.pal.i); }
