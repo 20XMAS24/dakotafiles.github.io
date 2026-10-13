@@ -1,0 +1,28 @@
+rules_version = '2';
+// Правила для проекта kentucky-economy: Firebase Console → Firestore Database → Rules.
+// Хаб (/hub/) доступен только вошедшим. Экономика (/economy/) работает без входа, как раньше.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Kentucky Hub ──
+    match /hub_people/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Входящие личные: каждый видит и удаляет только свои
+    match /hub_inbox/{id} {
+      allow read, delete: if request.auth != null && resource.data.by == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.by == request.auth.uid;
+    }
+    match /{coll}/{id} {
+      allow read, write: if request.auth != null
+        && coll in ['hub_tasks', 'hub_decisions', 'hub_reg', 'hub_wiki', 'hub_log', 'hub_meta'];
+    }
+
+    // ── Экономика (/economy/) — без входа, только её коллекции ──
+    // Если раньше здесь было условие (например, срок действия тестового режима), оставь его.
+    match /{coll}/{id} {
+      allow read, write: if coll in ['sections', 'params', 'bugs', 'stages', 'decisions', 'log', 'people', 'meta'];
+    }
+  }
+}
