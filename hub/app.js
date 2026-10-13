@@ -1311,7 +1311,7 @@ function newTask(status, dept, title, fromInbox){
       <div class="seg" role="radiogroup" aria-label="Размер">${Object.entries(SIZES).map(([k,v])=>`<button type="button" data-action="pick-size" data-v="${k}" aria-pressed="${k==='M'}" title="${v}">${k} · ${v}</button>`).join('')}</div>
       <input type="hidden" name="size" value="M">
     </div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--text-2)"><input type="checkbox" name="mine" checked style="accent-color:var(--acc)"> Я ответственный</label>
+    <label class="check-row"><input type="checkbox" name="mine" checked> Я ответственный</label>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> создать · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Создать</button></div></div></form>`);
 }
 function newDecision(dept){
@@ -1592,7 +1592,13 @@ function paint(){
   if (scrollY !== sy) scrollTo(0, sy);
 }
 let queued = false;
-function schedule(){ if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; paint(); refreshDrawer(); }); }
+function schedule(){
+  if (queued) return; queued = true;
+  let done = false;
+  const run = () => { if (done) return; done = true; queued = false; paint(); refreshDrawer(); };
+  /* requestAnimationFrame стоит на паузе в скрытом или перекрытом окне — подстраховка таймером */
+  setTimeout(run, document.hidden ? 0 : 60); requestAnimationFrame(run);
+}
 
 /* таймеры фокуса тикают без полной перерисовки */
 let focusEnded = 0;

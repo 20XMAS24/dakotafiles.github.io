@@ -238,7 +238,7 @@ details.more .body{padding:0 0 14px;color:var(--text-2);font-size:14px;white-spa
 /* ── карточки ── */
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:calc(18px*var(--pad)) 20px;display:flex;flex-direction:column;gap:14px;min-width:0}
 .panel.glow{border-color:var(--acc-line);background:radial-gradient(90% 90% at 100% 100%,var(--glow),transparent 70%),var(--panel)}
-.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .panel-h h2{margin:0;font:700 16px/1.3 var(--f-display);display:flex;gap:10px;align-items:center;letter-spacing:-.01em}
 .panel-h .sub{color:var(--muted);font-size:12.5px}
 .hi{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;background:var(--hi-bg);color:var(--hi-fg);font-size:15px;flex:none}
@@ -360,7 +360,7 @@ table.grid td.m{font-family:var(--f-mono);font-size:12.5px;color:var(--text-2)}
 .cl{display:flex;flex-direction:column;gap:2px}
 .cl label{display:flex;gap:11px;align-items:center;padding:9px 11px;border-radius:12px;cursor:pointer;font-size:14px}
 .cl label:hover{background:var(--panel-2)}
-.cl input{width:18px;height:18px;accent-color:var(--acc)}
+.cl input{width:20px;height:20px;flex:none}
 .cl label.done span{color:var(--muted);text-decoration:line-through}
 .timeline{display:flex;flex-direction:column;border-left:2px solid var(--line-2);margin-left:8px}
 .tl-i{position:relative;padding:0 0 20px 22px}
@@ -402,7 +402,7 @@ table.grid td.m{font-family:var(--f-mono);font-size:12.5px;color:var(--text-2)}
 /* ── палитра, захват, настройки ── */
 .overlay{position:fixed;inset:0;background:var(--backdrop);backdrop-filter:blur(3px);z-index:60;display:flex;justify-content:center;align-items:flex-start;padding:12vh 16px 16px}
 .pal{width:min(640px,100%);background:radial-gradient(80% 60% at 100% 100%,var(--glow),transparent 70%),var(--panel);border:1px solid var(--acc-line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:70vh}
-.pal input{border:0;border-bottom:1px solid var(--line);background:transparent;padding:18px 20px;font-size:16px;outline:none;width:100%;font-weight:600}
+#pal-in{border:0;border-bottom:1px solid var(--line);background:transparent;padding:18px 20px;font-size:16px;outline:none;width:100%;font-weight:600}
 .pal-list{overflow-y:auto;padding:8px}
 .pal-g{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 12px 4px;font-weight:700}
 .pal-i{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600}
@@ -411,7 +411,7 @@ table.grid td.m{font-family:var(--f-mono);font-size:12.5px;color:var(--text-2)}
 .pal-i .r{margin-left:auto;color:var(--muted);font-size:12px;font-weight:500}
 .pal-f{border-top:1px solid var(--line);padding:9px 16px;font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}
 .cap{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
-.cap h2{margin:0;font:700 17px var(--f-display)}
+.cap h2{margin:0;font:700 17px var(--f-display);display:flex;gap:10px;align-items:center}
 .cap textarea{min-height:76px;resize:vertical}
 .cap .hint{font-size:12.5px;color:var(--muted)}
 .dpick{display:flex;flex-wrap:wrap;gap:6px}
@@ -550,3 +550,19 @@ table.te thead th.te-corner{left:0;z-index:2}
 .te-mini[disabled]{opacity:.28;cursor:default;background:transparent}
 .te-n{display:inline-block;min-width:20px;font:700 11px var(--f-mono);color:var(--muted);text-align:right;margin-right:2px;vertical-align:middle}
 .te-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* ── строка с галочкой ── */
+.check-row{display:inline-flex;gap:10px;align-items:center;align-self:flex-start;font-size:13.5px;font-weight:600;color:var(--text-2);cursor:pointer;user-select:none;white-space:nowrap}
+.check-row input{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;border-radius:7px;border:2px solid var(--line-2);background:var(--panel-2);display:grid;place-items:center;cursor:pointer;flex:none;transition:background .12s,border-color .12s}
+.check-row input::after{content:"";width:10px;height:6px;border:2.5px solid var(--on-acc);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+.check-row input:checked{background:var(--acc);border-color:var(--acc)}
+.check-row input:checked::after{opacity:1}
+.check-row input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.check-row:hover input{border-color:var(--acc)}
+.cap .input{height:44px}
+.cap textarea.input{height:auto}
+.cl input[type=checkbox]{appearance:none;-webkit-appearance:none;margin:0;border-radius:7px;border:2px solid var(--line-2);background:var(--panel-2);display:grid;place-items:center;cursor:pointer;transition:background .12s,border-color .12s}
+.cl input[type=checkbox]::after{content:"";width:10px;height:6px;border:2.5px solid var(--on-acc);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px);opacity:0}
+.cl input[type=checkbox]:checked{background:var(--acc);border-color:var(--acc)}
+.cl input[type=checkbox]:checked::after{opacity:1}
+.cl label:hover input[type=checkbox]{border-color:var(--acc)}
