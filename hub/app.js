@@ -9,6 +9,7 @@ const ICONS = {
   ArrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
   ArrowUp:'<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
   BookOpen:'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  Bug:'<path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>',
   Car:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
   ChartColumn:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
   Check:'<path d="M20 6 9 17l-5-5"/>',
@@ -17,12 +18,14 @@ const ICONS = {
   CircleDot:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
   Code:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
   Coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+  Copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   Dice5:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/>',
   ExternalLink:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
   Eye:'<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
   EyeOff:'<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>',
   Flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
   FlaskConical:'<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>',
+  Gauge:'<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
   Gem:'<path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
   Hammer:'<path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>',
   Hand:'<path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
@@ -33,6 +36,7 @@ const ICONS = {
   Leaf:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
   Lightbulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
   ListChecks:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  ListOrdered:'<path d="M10 12h11"/><path d="M10 18h11"/><path d="M10 6h11"/><path d="M4 10h2"/><path d="M4 6h1v4"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/>',
   Lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   LogIn:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/>',
   LogOut:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
@@ -58,6 +62,7 @@ const ICONS = {
   Star:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
   Sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   SunMoon:'<path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>',
+  Table:'<path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/>',
   Target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
   Trash2:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
   TrendingUp:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
@@ -66,7 +71,6 @@ const ICONS = {
   UserPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   Users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   Vote:'<path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/>',
-  X:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
   Zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'
 };
 const ic = (n, cls) => `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -112,8 +116,8 @@ const DEPTS = [
     tabs:[['overview','Обзор'],['tasks','Задачи'],['assets','Ассеты'],['limits','Лимиты']]},
   {id:'gd', name:'Геймдизайн', icon:'Dice5', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mechanics','Механики'],['jobs','Работы'],['factions','Фракции']]},
-  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', tldr:'Отдельное рабочее место: параметры, баги, этапы и решения по экономике. Здесь живая сводка, всё остальное — по кнопке.',
-    tabs:[['overview','Обзор'],['tasks','Задачи']]},
+  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', tldr:'Полное рабочее место экономистов: план, параметры, баги, этапы, решения и журнал. Те же данные, что на старой странице /economy/ — правки видны в обеих.',
+    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['bugs','Баги'],['stages','Этапы'],['edec','Решения'],['elog','Журнал'],['tasks','Задачи']]},
   {id:'qa', name:'QA', icon:'FlaskConical', color:'#F49A9A', tldr:'Баги, тест-кейсы и чеклист перед релизом. Критичный баг блокирует релиз, пока не исправлен или не принято решение.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза']]},
   {id:'release', name:'Релизы', icon:'Rocket', color:'#7FD8C9', tldr:'Версии сервера, changelog для игроков и статус деплоя. Релиз выходит, когда чеклист QA закрыт.',
@@ -227,8 +231,8 @@ const SEED = {
 };
 
 /* ── состояние ──────────────────────────────── */
-const S = {me:null, people:{}, tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], econ:null, loaded:new Set(), errs:{}};
-const UI = {route:'today', tab:null, filt:{dept:'all', small:false, mine:false}, drawer:null, edit:false, pal:null};
+const S = {me:null, people:{}, tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], E:null, loaded:new Set(), errs:{}};
+const UI = {route:'today', tab:null, filt:{dept:'all', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
 const PREFS_KEY = 'kyHubPrefs';
 const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[]}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
@@ -305,7 +309,7 @@ function readHash(){
   else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
 }
 const go = path => { location.hash = '#/'+path; };
-addEventListener('hashchange', () => { readHash(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); scrollTo(0,0); });
+addEventListener('hashchange', () => { readHash(); if (UI.route==='d/econ') eSyncName(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); scrollTo(0,0); });
 
 /* ── боковая панель ─────────────────────────── */
 function sidebar(){
@@ -559,31 +563,6 @@ function kit(){
   return `<section class="panel"><div class="panel-h"><h2>Цвета хаба</h2><span class="sub">для примера — замените на палитру игрового UI</span></div><div class="swatches">${sw.map(s=>`<div class="sw"><div style="background:${s[1]}"></div><p>${s[0]}<span>${s[1]}</span></p></div>`).join('')}</div></section>
   <section class="panel"><div class="panel-h"><h2>Шрифты</h2></div><div style="font:800 24px var(--f-display);letter-spacing:-.02em">Manrope 800 — заголовки</div><div style="font:500 16px var(--f-body)">Manrope 500 — основной текст</div><div style="font:600 14px var(--f-mono)">JetBrains Mono — 3 000 000 $</div></section>`;
 }
-function econPanel(d){
-  if (!S.econ) { econListen(); return `<section class="panel" style="--dc:${d.color}"><div class="loading"><span class="spin"></span>Загружаем сводку экономики…</div></section>`; }
-  const e = S.econ;
-  const params = e.params||[], bugs = e.bugs||[], stages = e.stages||[];
-  const agreed = params.filter(p=>p.status==='agreed'||p.status==='done').length;
-  const openBugs = bugs.filter(b=>b.status==='open'||b.status==='progress');
-  const crit = openBugs.filter(b=>b.severity==='critical').length;
-  const stDone = stages.filter(s=>s.status==='done').length;
-  const cur = stages.slice().sort(byOrder).find(s=>s.status!=='done');
-  return `<section class="panel glow" style="--dc:${d.color}"><div class="panel-h"><h2><span class="hi">${ic('Coins')}</span>Рабочее место экономики</h2><a class="btn primary" href="../economy/">${ic('ExternalLink')} Открыть</a></div>
-    <div class="tiles">
-      <div class="tile" style="cursor:default"><span class="k">Параметры</span><span class="v">${agreed} / ${params.length}</span><span class="s">согласовано</span></div>
-      <div class="tile" style="cursor:default"><span class="k">Баги</span><span class="v">${openBugs.length}</span><span class="s">открыто${crit?`, ${plural(crit,'критичный','критичных','критичных')}`:''}</span></div>
-      <div class="tile" style="cursor:default"><span class="k">Этапы</span><span class="v">${stDone} / ${stages.length}</span><span class="s">${cur?'сейчас: '+esc(cur.title||''):'готово'}</span></div>
-      <div class="tile" style="cursor:default"><span class="k">Якорь</span><span class="v mono" style="font-size:20px">${new Intl.NumberFormat('ru-RU').format(e.anchor||3e6)} $</span><span class="s">= 1 час работы новичка</span></div>
-    </div></section>`;
-}
-let econStarted = false;
-function econListen(){
-  if (econStarted || !DB) return; econStarted = true;
-  const acc = {params:[], bugs:[], stages:[], anchor:3e6};
-  const done = () => { S.econ = Object.assign({}, acc); schedule(); };
-  for (const c of ['params','bugs','stages']) UNSUB.push(DB.collection(c).onSnapshot(sn => { acc[c] = sn.docs.map(x=>Object.assign({id:x.id}, x.data())); done(); }, () => {}));
-  UNSUB.push(DB.doc('meta/settings').onSnapshot(x => { if (x.exists) acc.anchor = x.data().anchor || 3e6; done(); }, () => {}));
-}
 function deptOverview(d){
   const tasks = S.tasks.filter(t=>t.dept===d.id);
   const open = tasks.filter(t=>t.status!=='done');
@@ -592,7 +571,7 @@ function deptOverview(d){
   const doing = open.filter(t=>t.status==='doing'||t.status==='review');
   const next = open.filter(t=>t.status==='todo'||t.status==='inbox').slice(0,4);
   return `
-  ${d.id==='econ' ? econPanel(d) : ''}
+  ${d.id==='econ' ? econOverview(d) : ''}
   <div class="tiles">
     <div class="tile" style="cursor:default"><span class="k">Открыто задач</span><span class="v">${open.length}</span><span class="s">${doing.length} в работе</span></div>
     <div class="tile" style="cursor:default"><span class="k">Закрыто</span><span class="v">${tasks.length-open.length}</span><span class="s">всего в отделе</span></div>
@@ -609,8 +588,8 @@ function deptOverview(d){
 function viewDept(){
   const d = D[UI.route.slice(2)];
   const tab = d.tabs.some(t=>t[0]===UI.tab) ? UI.tab : 'overview';
-  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? filters(false) + board(d.id) : registry(d.id+'/'+tab, d);
-  const count = id => id==='tasks' ? S.tasks.filter(t=>t.dept===d.id && t.status!=='done').length : id==='overview' ? 0 : S.reg.filter(x=>x.key===d.id+'/'+id).length;
+  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? filters(false) + board(d.id) : d.id==='econ' ? econView(tab) : registry(d.id+'/'+tab, d);
+  const count = id => id==='tasks' ? S.tasks.filter(t=>t.dept===d.id && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' ? econCount(id) : S.reg.filter(x=>x.key===d.id+'/'+id).length;
   const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).includes(d.id)).map(id=>S.people[id].name);
   return `<div style="--dc:${d.color};display:contents">
   <div class="ph"><div class="ph-l"><span class="ph-ico">${ic(d.icon)}</span><div><h1>${esc(d.name)}</h1><p>${people.length?esc(people.join(', ')):'В отделе пока никого'}</p></div></div>
@@ -619,6 +598,576 @@ function viewDept(){
   <nav class="tabs" role="tablist">${d.tabs.map(([id,name])=>`<a class="tab" role="tab" href="#/d/${d.id}/${id}" aria-selected="${tab===id}">${esc(name)}${count(id)?`<span class="c">${count(id)}</span>`:''}</a>`).join('')}</nav>
   ${body}</div>`;
 }
+
+/* ── экономика ─────────────────────────────────
+   Полное рабочее место экономистов внутри хаба. Работает на тех же коллекциях, что /economy/
+   (sections, params, bugs, stages, decisions, log, meta/settings), поэтому обе страницы
+   всегда показывают одно и то же. Журнал пишется в формате старой страницы. */
+const PARAM_STATUS = [['idea','Идея'],['proposed','Предложено'],['agreed','Согласовано'],['done','Внедрено'],['rejected','Отклонено']];
+const BUG_SEV = [['critical','Критично'],['high','Высокая'],['medium','Средняя'],['low','Низкая']];
+const BUG_STATUS = [['open','Открыт'],['progress','В работе'],['fixed','Исправлен'],['wontfix','Не будем']];
+const STAGE_STATUS = [['todo','Не начат'],['progress','В работе'],['blocked','Заблокирован'],['done','Готов']];
+const ETONE = {idea:'muted',proposed:'info',agreed:'violet',done:'ok',rejected:'red',critical:'red',high:'warn',medium:'info',low:'muted',open:'red',progress:'warn',fixed:'ok',wontfix:'muted',todo:'muted',blocked:'red'};
+const SEV_VAR = {critical:'var(--red)',high:'var(--warn)',medium:'var(--info)',low:'var(--muted)'};
+const lab = (list,v) => (list.find(x=>x[0]===v)||[,v||'—'])[1];
+const ECOLLS = ['sections','params','bugs','stages','decisions'];
+const ENOUN = {
+  sections:{n:'раздел',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'}, params:{n:'параметр',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'},
+  bugs:{n:'баг',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'}, stages:{n:'этап',a:'добавлен',c:'изменён',d:'удалён',r:'восстановлен'},
+  decisions:{n:'решение',a:'добавлено',c:'изменено',d:'удалено',r:'восстановлено'}, meta:{n:'якорь',a:'задан',c:'изменён',d:'удалён',r:'восстановлен'}
+};
+const ESCHEMA = {
+  sections:{label:'раздел', title:d=>d.title||'Без названия', fields:[
+    {k:'title',t:'text',l:'Заголовок',req:true},
+    {k:'body',t:'textarea',l:'Текст',rows:16,hint:'Разметка: **жирный**, `код`, строки «- » — список, «1. » — нумерованный, строки через | — таблица, «### » — подзаголовок.'}]},
+  params:{label:'параметр', title:d=>d.name||'Без названия', fields:[
+    {k:'name',t:'text',l:'Параметр',req:true}, {k:'group',t:'group',l:'Группа',req:true}, {k:'where',t:'text',l:'Где в коде или БД',mono:true},
+    {k:'current',t:'textarea',l:'Сейчас',rows:2,mono:true,half:true}, {k:'proposed',t:'textarea',l:'Предлагаю',rows:2,mono:true,half:true},
+    {k:'status',t:'select',l:'Статус',o:PARAM_STATUS,half:true}, {k:'assignee',t:'person',l:'Ответственный',half:true}, {k:'note',t:'textarea',l:'Заметка',rows:3}]},
+  bugs:{label:'баг', title:d=>d.title||'Без названия', fields:[
+    {k:'title',t:'text',l:'Проблема',req:true}, {k:'where',t:'text',l:'Где',mono:true}, {k:'impact',t:'textarea',l:'Что происходит',rows:3},
+    {k:'severity',t:'select',l:'Важность',o:BUG_SEV,half:true}, {k:'status',t:'select',l:'Статус',o:BUG_STATUS,half:true},
+    {k:'assignee',t:'person',l:'Ответственный'}, {k:'note',t:'textarea',l:'Заметка',rows:2}]},
+  stages:{label:'этап', title:d=>d.title||'Без названия', fields:[
+    {k:'title',t:'text',l:'Этап',req:true}, {k:'details',t:'textarea',l:'Что делаем',rows:4},
+    {k:'depends',t:'text',l:'Зависит от',half:true}, {k:'status',t:'select',l:'Статус',o:STAGE_STATUS,half:true},
+    {k:'assignee',t:'person',l:'Ответственный'}, {k:'note',t:'textarea',l:'Заметка',rows:2}]},
+  decisions:{label:'вопрос', title:d=>d.question||'Без названия', fields:[
+    {k:'question',t:'text',l:'Вопрос',req:true}, {k:'options',t:'options',l:'Варианты',rows:6,req:true,hint:'Один вариант на строку: «Название — пояснение».'},
+    {k:'recommended',t:'number',l:'Рекомендуемый вариант (номер строки, 0 — нет)'}, {k:'note',t:'textarea',l:'Заметка',rows:3}]}
+};
+const EDEFAULTS = {params:{status:'proposed'}, bugs:{severity:'medium', status:'open'}, stages:{status:'todo'}, decisions:{recommended:0}, sections:{}};
+const efind = (c,id) => S.E && (S.E[c]||[]).find(x=>x.id===id);
+const nfmt = new Intl.NumberFormat('ru-RU');
+const dtf = new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit'});
+const dayf = new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',weekday:'short'});
+
+function epname(id){
+  if (!id) return 'Не назначен';
+  if (id==='claude') return 'Claude';
+  if (S.people[id]) return S.people[id].name || 'Участник';
+  const p = S.E && S.E.people[id]; return (p && p.name) || 'Участник';
+}
+function eav(id, size){
+  if (!id || S.people[id]) return av(id, size);
+  const s = size ? `width:${size}px;height:${size}px;` : '';
+  let h = 7; for (const c of String(id)) h = (h*31 + c.charCodeAt(0)) >>> 0;
+  const bg = id==='claude' ? 'linear-gradient(135deg,var(--acc-2),var(--acc-deep))' : `hsl(${h%360} 45% 42%)`;
+  return `<span class="av" style="${s}background:${bg}" title="${esc(epname(id))}">${esc(id==='claude'?'C':initials(epname(id)))}</span>`;
+}
+const ewho = id => id ? `<span class="who-pick">${eav(id,22)} <span>${esc(epname(id))}</span></span>` : '<span style="color:var(--muted);font-size:13px">не назначен</span>';
+function ePeopleOpts(cur){
+  const ids = new Set(Object.keys(S.people));
+  if (S.E) for (const [id,p] of Object.entries(S.E.people)) if (p && p.name) ids.add(id);
+  if (cur) ids.add(cur);
+  return [['','Не назначен'], ...[...ids].sort((a,b)=>epname(a).localeCompare(epname(b))).map(id=>[id, epname(id)+(id===S.me?' (вы)':'')])];
+}
+const eStamp = () => ({updatedAt:now(), updatedBy:S.me});
+function elog(entry, hubAct){
+  DB.collection('log').add(Object.assign({at:now(), by:S.me}, entry)).catch(()=>{});
+  if (hubAct) log(hubAct, entry.title||'', 'econ');
+}
+async function ewrite(fn){
+  try { await fn(); return true; }
+  catch (e) {
+    if (e && e.code==='unavailable') { await new Promise(r=>setTimeout(r, 500+Math.random()*700)); try { await fn(); return true; } catch (e2) { e = e2; } }
+    console.error(e); toast(ic('CircleAlert')+' Не сохранилось: '+esc(errText(e))); return false;
+  }
+}
+/* имя из хаба видно и на старой странице /economy/ */
+function eSyncName(){ if (S.me && me().name && DB) DB.collection('people').doc(S.me).set({name:me().name, lastSeen:now(), tab:'hub', editing:null}, {merge:true}).catch(()=>{}); }
+
+function parseMoney(s){
+  s = String(s ?? '').replace(/[  ]/g,' ');
+  if (/[%×]/.test(s)) return null;
+  const m = s.match(/(\d[\d ]*(?:[.,]\d+)*)\s*(трлн|млрд|млн|тыс)?/i);
+  if (!m) return null;
+  const raw = m[1].trim().replace(/ /g,'');
+  const v = /^\d{1,3}([.,]\d{3})+$/.test(raw) ? Number(raw.replace(/[.,]/g,'')) : Number(raw.replace(',','.'));
+  if (!isFinite(v)) return null;
+  return v * ({трлн:1e12,млрд:1e9,млн:1e6,тыс:1e3}[(m[2]||'').toLowerCase()] || 1);
+}
+function workTime(v){
+  const h = v / ((S.E && S.E.anchor) || 3e6);
+  if (h < 1/60) return 'меньше минуты работы';
+  if (h < 1) return '≈ '+Math.round(h*60)+' мин работы';
+  if (h < 10) return '≈ '+nfmt.format(Math.round(h*10)/10)+' ч работы';
+  return '≈ '+nfmt.format(Math.round(h))+' ч работы';
+}
+
+/* мини-markdown, как на странице экономики */
+function inline(t){
+  return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[\s(«])\*([^*\s][^*]*?)\*(?=[\s.,;:!?)»]|$)/g,'$1<em>$2</em>');
+}
+function md(src){
+  const L = String(src||'').replace(/\r/g,'').split('\n'); const out = []; let i = 0;
+  const isTable = s => /^\s*\|/.test(s), isUl = s => /^\s*[-•]\s+/.test(s), isOl = s => /^\s*\d+[.)]\s+/.test(s), isH = s => /^\s*#{1,4}\s+/.test(s), isQ = s => /^\s*>\s?/.test(s);
+  while (i < L.length) {
+    const s = L[i];
+    if (!s.trim()) { i++; continue; }
+    if (isH(s)) { const lvl = s.match(/^\s*(#+)/)[1].length; const tg = lvl<=2?'h3':'h4'; out.push(`<${tg}>${inline(s.replace(/^\s*#+\s+/,''))}</${tg}>`); i++; continue; }
+    if (isTable(s)) {
+      const rows = []; while (i < L.length && isTable(L[i])) { rows.push(L[i]); i++; }
+      const cells = r => r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
+      const body = rows.filter(r => !/^[\s|:\-]+$/.test(r)); const head = body.shift(); if (!head) continue;
+      out.push(`<div class="md-table"><table><thead><tr>${cells(head).map(c=>`<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${body.map(r=>`<tr>${cells(r).map(c=>`<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
+      continue;
+    }
+    if (isUl(s) || isOl(s)) {
+      const ol = isOl(s); const items = [];
+      while (i < L.length && (ol ? isOl(L[i]) : isUl(L[i]))) { items.push(L[i].replace(ol ? /^\s*\d+[.)]\s+/ : /^\s*[-•]\s+/, '')); i++; }
+      out.push(`<${ol?'ol':'ul'}>${items.map(x=>`<li>${inline(x)}</li>`).join('')}</${ol?'ol':'ul'}>`); continue;
+    }
+    if (isQ(s)) { const q = []; while (i < L.length && isQ(L[i])) { q.push(L[i].replace(/^\s*>\s?/,'')); i++; } out.push(`<blockquote>${inline(q.join(' '))}</blockquote>`); continue; }
+    const p = []; while (i < L.length && L[i].trim() && !isH(L[i]) && !isTable(L[i]) && !isUl(L[i]) && !isOl(L[i]) && !isQ(L[i])) { p.push(L[i]); i++; }
+    out.push(`<p>${p.map(inline).join('<br>')}</p>`);
+  }
+  return out.join('');
+}
+const isNumCell = v => { v = String(v ?? '').trim(); return /\d/.test(v) && /^[-−+≈~]?\s?[\d\s.,]+\s?(%|\$|₽|RB|тыс|млн|млрд|трлн)?$/.test(v); };
+function tableHtml(s){
+  const cols = Array.isArray(s.columns) ? s.columns : [], rows = Array.isArray(s.rowOrder) ? s.rowOrder : [], cells = s.cells || {};
+  if (!cols.length) return '<p style="margin:0;color:var(--muted)">Таблица пустая.</p>';
+  const cell = (r,c) => (cells[r] || {})[c.id] || '';
+  const num = cols.map(c => { const vals = rows.map(r => cell(r,c)).filter(v => String(v).trim()); return vals.length > 0 && vals.every(isNumCell); });
+  const cls = i => num[i] ? ' class="num"' : '';
+  return `<div class="md-table"><table><thead><tr>${cols.map((c,i)=>`<th${cls(i)}>${inline(c.name||'')}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map((c,i)=>`<td${cls(i)}>${inline(cell(r,c))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+
+/* подписка на данные экономики */
+function econListen(){
+  if (S.E || !DB) return;
+  const E = S.E = {sections:[], params:[], bugs:[], stages:[], decisions:[], log:[], people:{}, anchor:3e6, meta:{}, loaded:new Set()};
+  const docs = sn => sn.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id}, d.data()));
+  const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); E.loaded.add(c); schedule(); };
+  for (const c of ECOLLS) UNSUB.push(DB.collection(c).onSnapshot(sn => { E[c] = docs(sn); E.loaded.add(c); schedule(); }, onErr(c)));
+  UNSUB.push(DB.collection('log').orderBy('at','desc').limit(300).onSnapshot(sn => { E.log = docs(sn); schedule(); }, onErr('log')));
+  UNSUB.push(DB.doc('meta/settings').onSnapshot(d => { if (d.exists) { E.meta = d.data(); E.anchor = Number(E.meta.anchor) || 3e6; } schedule(); }, onErr('meta')));
+  UNSUB.push(DB.collection('people').onSnapshot(sn => { const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); E.people = p; schedule(); }, () => {}));
+}
+const eReady = () => S.E && ECOLLS.every(c=>S.E.loaded.has(c));
+
+const ETAB_ICON = {plan:'BookOpen', params:'Gauge', bugs:'Bug', stages:'ListOrdered', edec:'Scale', elog:'ScrollText'};
+function econOverview(d){
+  const E = S.E;
+  if (!eReady()) return '<div class="loading"><span class="spin"></span>Загружаем экономику…</div>';
+  const P = E.params, pc = s => P.filter(p=>p.status===s).length, live = P.length - pc('rejected');
+  const openB = E.bugs.filter(b=>b.status==='open'||b.status==='progress'), crit = openB.filter(b=>b.severity==='critical').length;
+  const doneSt = E.stages.filter(s=>s.status==='done').length, curSt = [...E.stages].sort(byOrder).find(s=>s.status!=='done');
+  const decided = E.decisions.filter(x=>x.chosen!=null && x.chosen!=='').length;
+  const bar = parts => `<div class="sbar">${parts.map(([n,c])=>n?`<i style="flex:${n};background:${c}"></i>`:'').join('')}</div>`;
+  return `<section class="panel glow" style="--dc:${d.color}">
+    <div class="panel-h"><h2><span class="hi">${ic('Coins')}</span>Экономика сейчас</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown для репозитория</button><a class="btn sm ghost" href="../economy/" target="_blank" rel="noopener">${ic('ExternalLink')} Старая страница</a></div></div>
+    <div class="tiles">
+      <a class="tile" href="#/d/econ/params"><span class="k">Параметры</span><span class="v">${pc('agreed')+pc('done')} <small>/ ${live}</small></span>${bar([[pc('done'),'var(--ok)'],[pc('agreed'),'var(--violet)'],[pc('proposed'),'var(--info)'],[pc('idea'),'var(--muted)']])}<span class="s">согласовано · ${pc('done')} внедрено · ${pc('proposed')} ждут</span></a>
+      <a class="tile" href="#/d/econ/bugs"><span class="k">Баги</span><span class="v">${openB.length}</span>${bar([[crit,'var(--red)'],[openB.length-crit,'var(--warn)']])}<span class="s">открыто · ${crit ? plural(crit,'критичный','критичных','критичных') : 'критичных нет'}</span></a>
+      <a class="tile" href="#/d/econ/stages"><span class="k">Этапы</span><span class="v">${doneSt} <small>/ ${E.stages.length}</small></span>${bar([[doneSt,'var(--ok)'],[E.stages.length-doneSt,'var(--panel-3)']])}<span class="s">${curSt ? 'сейчас: '+esc(clip(curSt.title,48)) : 'все готовы'}</span></a>
+      <a class="tile" href="#/d/econ/edec"><span class="k">Решения</span><span class="v">${decided} <small>/ ${E.decisions.length}</small></span>${bar([[decided,'var(--ok)'],[E.decisions.length-decided,'var(--panel-3)']])}<span class="s">${E.decisions.length-decided ? (E.decisions.length-decided)+' ждут решения' : 'все приняты'}</span></a>
+      <div class="tile" style="cursor:default"><span class="k">Якорь</span><span class="v mono" style="font-size:20px">${nfmt.format(E.anchor)} $</span><span class="s">= 1 час работы новичка. От него считается «≈ N ч работы».</span><button class="btn sm" data-action="e-anchor" style="align-self:flex-start">${ic('Pencil')} Изменить</button></div>
+    </div></section>`;
+}
+function eActions(coll, id, movable){
+  return `<div class="eact">${movable?`<button class="icon-btn" data-action="e-move" data-dir="-1" data-coll="${coll}" data-id="${esc(id)}" aria-label="Выше" title="Выше">${ic('ArrowUp')}</button><button class="icon-btn" data-action="e-move" data-dir="1" data-coll="${coll}" data-id="${esc(id)}" aria-label="Ниже" title="Ниже">${ic('ArrowDown')}</button>`:''}<button class="icon-btn" data-open="${coll==='sections'&&efind('sections',id)?.kind==='table'?'etable:'+esc(id):'eedit:'+coll+':'+esc(id)}" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button></div>`;
+}
+const eMeta = x => x.updatedAt ? `<div class="emeta">Изменено: ${esc(epname(x.updatedBy||'claude'))}, ${ago(x.updatedAt)}</div>` : '';
+function eStatusSelect(coll, x, opts){
+  const v = x.status || opts[0][0];
+  return `<select class="chip-select t-${ETONE[v]||'muted'}" data-action="e-status" data-coll="${coll}" data-id="${esc(x.id)}" aria-label="Статус">${opts.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select>`;
+}
+const eEmpty = (title, text, coll, btn) => `<div class="empty"><b>${title}</b>${text}<button class="btn sm primary" data-open="enew:${coll}">${ic('Plus')} ${btn}</button></div>`;
+
+function ePlan(){
+  const list = [...S.E.sections].sort(byOrder);
+  const tools = `<div class="reg-tools"><small>${plural(list.length,'раздел','раздела','разделов')} плана</small><span class="sp"></span><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown</button><button class="btn sm" data-open="etable:">${ic('Table')} Таблица</button><button class="btn sm primary" data-open="enew:sections">${ic('Plus')} Раздел</button></div>`;
+  if (!list.length) return tools + '<div class="empty"><b>В плане пока нет разделов</b>Раздел — текст плана, таблица — сетка строк и столбцов.</div>';
+  return tools + list.map(s => `<section class="panel"><div class="panel-h"><h2>${esc(s.title)}</h2>${eActions('sections', s.id, true)}</div>
+    ${s.kind==='table' ? tableHtml(s) + (s.note ? `<div class="md">${md(s.note)}</div>` : '') : `<div class="md">${md(s.body)}</div>`}${eMeta(s)}</section>`).join('');
+}
+function eGroups(){
+  const g = new Map();
+  for (const p of [...S.E.params].sort(byOrder)) { const k = p.group || 'Без группы'; if (!g.has(k)) g.set(k, []); g.get(k).push(p); }
+  return g;
+}
+function eParams(){
+  const all = S.E.params, F = UI.ef;
+  if (!all.length) return eEmpty('Параметров пока нет','Параметр — одна настройка экономики: где она в коде, сколько сейчас, сколько предлагаем.','params','Добавить параметр');
+  const g = eGroups(), q = F.q.trim().toLowerCase(), cnt = s => all.filter(p=>p.status===s).length;
+  let rows = '', shown = 0;
+  for (const [name, items] of g) {
+    if (F.group!=='all' && F.group!==name) continue;
+    const vis = items.filter(p => (F.status==='all' || p.status===F.status) && (!q || [p.name,p.where,p.current,p.proposed,p.note].join(' ').toLowerCase().includes(q)));
+    if (!vis.length) continue; shown += vis.length;
+    rows += `<tr class="grp"><td colspan="6">${esc(name)}<span>${vis.length}</span></td></tr>` + vis.map(p => {
+      const pv = parseMoney(p.proposed);
+      return `<tr class="${p.status==='rejected'?'rej':''}">
+        <td><div class="pname">${esc(p.name)}</div>${p.where?`<div class="where mono">${esc(p.where)}</div>`:''}${p.note?`<div class="pnote">${esc(p.note)}</div>`:''}</td>
+        <td><div class="val cur">${esc(p.current||'—')}</div></td>
+        <td><div class="val">${esc(p.proposed||'—')}</div>${pv && pv >= 1000 ? `<span class="hours">${workTime(pv)}</span>` : ''}</td>
+        <td>${eStatusSelect('params', p, PARAM_STATUS)}</td><td>${ewho(p.assignee)}</td>
+        <td style="width:44px"><button class="icon-btn" data-open="eedit:params:${esc(p.id)}" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button></td></tr>`; }).join('');
+  }
+  return `<div class="toolbar"><div class="seg" role="group" aria-label="Фильтр по статусу">${[['all','Все',all.length], ...PARAM_STATUS.map(([k,l])=>[k,l,cnt(k)])].map(([k,l,n])=>`<button data-action="e-fstatus" data-v="${k}" aria-pressed="${F.status===k}">${l} <span class="mono" style="color:var(--muted)">${n}</span></button>`).join('')}</div></div>
+    <div class="toolbar"><select class="select" id="e-group" aria-label="Группа"><option value="all">Все группы</option>${[...g.keys()].map(k=>`<option${F.group===k?' selected':''}>${esc(k)}</option>`).join('')}</select>
+      <input class="input" id="e-q" type="search" placeholder="Поиск: название, файл, значение" value="${esc(F.q)}" aria-label="Поиск по параметрам" style="flex:1 1 220px;width:auto;border-radius:99px">
+      <button class="btn primary" data-open="enew:params">${ic('Plus')} Параметр</button></div>
+    ${shown ? `<div class="tbl-wrap"><table class="grid etable"><thead><tr><th>Параметр</th><th>Сейчас</th><th>Предлагаю</th><th>Статус</th><th>Ответственный</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="empty"><b>Ничего не нашлось</b>Под фильтр не подходит ни один параметр.<button class="btn sm" data-action="e-freset">Сбросить фильтры</button></div>`}`;
+}
+const sevRank = {critical:0,high:1,medium:2,low:3}, bStRank = {progress:0,open:1,fixed:2,wontfix:3};
+function eBugs(){
+  const all = S.E.bugs;
+  if (!all.length) return eEmpty('Багов пока нет','Ошибки и эксплойты, которые влияют на экономику.','bugs','Добавить баг');
+  const closed = all.filter(b=>b.status==='fixed'||b.status==='wontfix').length;
+  const list = [...all].sort((a,b)=>(bStRank[a.status]??1)-(bStRank[b.status]??1) || (sevRank[a.severity]??2)-(sevRank[b.severity]??2) || byOrder(a,b)).filter(b => !UI.ef.hideFixed || (b.status!=='fixed' && b.status!=='wontfix'));
+  return `<div class="reg-tools"><div class="seg"><button data-action="e-toggle" data-k="hideFixed" aria-pressed="${UI.ef.hideFixed}">Скрыть закрытые <span class="mono" style="color:var(--muted)">${closed}</span></button></div><span class="sp"></span><button class="btn primary" data-open="enew:bugs">${ic('Plus')} Баг</button></div>
+  <div class="list">${list.map(b => `<article class="erow sev ${b.status==='fixed'||b.status==='wontfix'?'done':''}" style="--sev:${SEV_VAR[b.severity]||'var(--muted)'}">
+    <div class="body"><h3>${esc(b.title)}</h3>${b.where?`<div class="where mono">${esc(b.where)}</div>`:''}${b.impact?`<div class="txt">${esc(b.impact)}</div>`:''}${b.note?`<div class="txt"><b>Заметка:</b> ${esc(b.note)}</div>`:''}${eMeta(b)}</div>
+    <div class="side">${chip(lab(BUG_SEV,b.severity), ETONE[b.severity])}${eStatusSelect('bugs', b, BUG_STATUS)}${ewho(b.assignee)}${eActions('bugs', b.id, false)}</div></article>`).join('')}</div>`;
+}
+function eStages(){
+  const all = [...S.E.stages].sort(byOrder);
+  if (!all.length) return eEmpty('Этапов пока нет','Этап — шаг плана работ: что делаем, от чего зависит, кто ведёт.','stages','Добавить этап');
+  const done = all.filter(s=>s.status==='done').length;
+  const list = all.map((s,i)=>[s,i+1]).filter(([s]) => !UI.ef.hideDone || s.status!=='done');
+  return `<div class="reg-tools"><div class="seg"><button data-action="e-toggle" data-k="hideDone" aria-pressed="${UI.ef.hideDone}">Скрыть готовые <span class="mono" style="color:var(--muted)">${done}</span></button></div><span class="sp"></span><button class="btn primary" data-open="enew:stages">${ic('Plus')} Этап</button></div>
+  <div class="list">${list.map(([s,n]) => `<article class="erow ${s.status==='done'?'done':''}">
+    <div class="body"><h3><span class="stage-n">${n}</span>${esc(s.title)}</h3>${s.details?`<div class="txt">${esc(s.details)}</div>`:''}${s.depends?`<div class="txt"><b>Зависит от:</b> ${esc(s.depends)}</div>`:''}${s.note?`<div class="txt"><b>Заметка:</b> ${esc(s.note)}</div>`:''}${eMeta(s)}</div>
+    <div class="side">${eStatusSelect('stages', s, STAGE_STATUS)}${ewho(s.assignee)}${eActions('stages', s.id, true)}</div></article>`).join('')}</div>`;
+}
+function eDecisions(){
+  const all = [...S.E.decisions].sort(byOrder);
+  if (!all.length) return eEmpty('Вопросов пока нет','Вопрос с вариантами: каждый голосует, потом фиксируете итог.','decisions','Добавить вопрос');
+  return `<div class="reg-tools"><small>Голосуйте за вариант, затем зафиксируйте итог кнопкой «Принять».</small><span class="sp"></span><button class="btn primary" data-open="enew:decisions">${ic('Plus')} Вопрос</button></div>
+  ${all.map(x => {
+    const opts = Array.isArray(x.options) ? x.options : [], votes = x.votes || {};
+    const chosen = (x.chosen===null||x.chosen===undefined||x.chosen==='') ? null : Number(x.chosen), rec = Number(x.recommended)||0;
+    return `<article class="decision"><div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start"><h3>${esc(x.question)}</h3>${eActions('decisions', x.id, true)}</div>
+      <div>${chosen!=null && opts[chosen] ? chip('Принято: '+opts[chosen].label,'ok') : chip('Ждёт решения','warn')}</div>
+      <div class="list">${opts.map((o,i) => { const voters = Object.keys(votes).filter(k => votes[k]===i), mine = votes[S.me]===i;
+        return `<div class="opt ${chosen===i?'chosen':''} ${mine?'mine':''}"><div><div class="l">${i+1}. ${esc(o.label)} ${rec===i+1?'<span class="chip t-violet">рекомендовано</span>':''}</div>${o.desc?`<div class="d">${esc(o.desc)}</div>`:''}</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes" title="${esc(voters.map(epname).join(', '))}">${voters.map(v=>eav(v,24)).join('')}</span>
+          <button class="btn sm${mine?' primary':''}" data-action="e-vote" data-id="${esc(x.id)}" data-i="${i}">${mine?ic('Check')+' Мой голос':'Голосую'}</button>
+          <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="${chosen===i?'':i}">${chosen===i?'Отменить итог':'Принять'}</button></div></div>`; }).join('')}</div>
+      ${x.note?`<div style="color:var(--text-2);font-size:13.5px;white-space:pre-wrap"><b style="color:var(--text)">Заметка:</b> ${esc(x.note)}</div>`:''}${eMeta(x)}</article>`; }).join('')}`;
+}
+function eLogText(l){
+  const N = ENOUN[l.coll] || {n:'запись',a:'добавлена',c:'изменена',d:'удалена',r:'восстановлена'};
+  const t = l.title ? ` <q>${esc(clip(l.title,90))}</q>` : '';
+  switch (l.action) {
+    case 'create': return `${N.a} ${N.n}${t}`; case 'update': return `${N.c} ${N.n}${t}`; case 'delete': return `${N.d} ${N.n}${t}`;
+    case 'restore': return `${N.r} ${N.n}${t}`; case 'status': return `статус: ${N.n}${t}`; case 'vote': return `голос в решении${t}`;
+    case 'choose': return `итог решения${t}`; case 'note': return 'заметка'; default: return esc(l.action||'');
+  }
+}
+function eLog(){
+  const comp = `<section class="panel"><form class="form" data-form="e-note"><label class="fld"><span>Заметка для команды</span><textarea class="input" name="t" rows="3" placeholder="Что обсудили, что проверили в игре, какие цифры получили" maxlength="4000">${esc(UI.eDraft||'')}</textarea></label><div style="display:flex;justify-content:flex-end"><button class="btn primary">${ic('Plus')} Добавить заметку</button></div></form></section>`;
+  const list = S.E.log; if (!list.length) return comp + '<div class="empty"><b>Журнал пуст</b>Здесь появится каждое изменение и заметки команды.</div>';
+  let out = '', lastDay = '';
+  for (const l of list) {
+    const dt = new Date(l.at||0), day = dayf.format(dt);
+    if (day !== lastDay) { out += `<div class="day">${esc(day)}</div>`; lastDay = day; }
+    const diff = Array.isArray(l.diff) && l.diff.length ? `<ul class="diff">${l.diff.map(x=>`<li><span class="f">${esc(x.f)}:</span> <del>${esc(x.from||'—')}</del> → <ins>${esc(x.to||'—')}</ins></li>`).join('')}</ul>` : '';
+    const canRestore = l.action==='delete' && l.snapshot && ECOLLS.includes(l.coll) && !efind(l.coll, l.docId);
+    out += `<div class="entry">${eav(l.by||'claude',24)}<div><b>${esc(epname(l.by||'claude'))}</b> — ${eLogText(l)}${l.text?`<div class="note-text">${esc(l.text)}</div>`:''}${diff}${canRestore?`<div style="margin-top:6px"><button class="btn sm" data-action="e-restore" data-id="${esc(l.id)}">${ic('RotateCcw')} Восстановить</button></div>`:''}</div><span class="when">${esc(dtf.format(dt))}</span></div>`;
+  }
+  return comp + `<section class="panel"><div class="log">${out}</div></section>`;
+}
+function econView(tab){
+  if (!eReady()) return '<div class="loading"><span class="spin"></span>Загружаем экономику…</div>';
+  if (tab==='plan') return ePlan();
+  if (tab==='params') return eParams();
+  if (tab==='bugs') return eBugs();
+  if (tab==='stages') return eStages();
+  if (tab==='edec') return eDecisions();
+  if (tab==='elog') return eLog();
+  return '';
+}
+function econCount(tab){
+  if (!S.E) return 0; const E = S.E;
+  return {plan:E.sections.length, params:E.params.length, bugs:E.bugs.filter(b=>b.status==='open'||b.status==='progress').length, stages:E.stages.length, edec:E.decisions.filter(x=>x.chosen==null||x.chosen==='').length}[tab] || 0;
+}
+
+/* формы записей экономики (в шторке) */
+const optionsToText = o => (Array.isArray(o)?o:[]).map(x => x.desc ? `${x.label} — ${x.desc}` : x.label).join('\n');
+const textToOptions = t => String(t||'').split('\n').map(s=>s.trim()).filter(Boolean).map(s => { const m = s.split(/\s+[—–-]\s+/); return {label:clip(m[0],160), desc:clip(m.slice(1).join(' — '),400)}; });
+function eFieldHtml(f, v){
+  const hint = f.hint ? `<small style="color:var(--muted);font-size:12px">${esc(f.hint)}</small>` : '';
+  const mono = f.mono ? ' style="font-family:var(--f-mono);font-size:13px"' : '';
+  let ctl;
+  switch (f.t) {
+    case 'textarea': ctl = `<textarea class="input" name="${f.k}" rows="${f.rows||3}"${mono}>${esc(v ?? '')}</textarea>`; break;
+    case 'options': ctl = `<textarea class="input" name="${f.k}" rows="${f.rows||5}">${esc(optionsToText(v))}</textarea>`; break;
+    case 'number': ctl = `<input class="input" name="${f.k}" type="number" inputmode="numeric" value="${esc(v ?? '')}">`; break;
+    case 'select': ctl = `<select class="input" name="${f.k}">${f.o.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select>`; break;
+    case 'person': ctl = `<select class="input" name="${f.k}">${ePeopleOpts(v).map(([k,l])=>`<option value="${esc(k)}"${k===(v||'')?' selected':''}>${esc(l)}</option>`).join('')}</select>`; break;
+    case 'group': { const gs = [...new Set(S.E.params.map(p=>p.group).filter(Boolean))]; ctl = `<input class="input" name="${f.k}" list="e-groups" value="${esc(v ?? '')}" autocomplete="off"><datalist id="e-groups">${gs.map(g=>`<option value="${esc(g)}">`).join('')}</datalist>`; break; }
+    default: ctl = `<input class="input" name="${f.k}" value="${esc(v ?? '')}" autocomplete="off"${mono}>`;
+  }
+  return `<label class="fld"><span>${esc(f.l)}${f.req?' *':''}</span>${ctl}${hint}</label>`;
+}
+function eForm(coll, id){
+  const sch = ESCHEMA[coll], cur = id ? efind(coll, id) : null;
+  if (id && !cur) return null;
+  const v = cur || Object.assign({}, EDEFAULTS[coll], coll==='params' && UI.ef.group!=='all' ? {group:UI.ef.group} : {});
+  let body = '', buf = [];
+  const flush = () => { if (buf.length) { body += buf.length===2 ? `<div class="fld-row">${buf.join('')}</div>` : buf.join(''); buf = []; } };
+  for (const f of sch.fields) { const h = eFieldHtml(f, v[f.k]); if (f.half) { buf.push(h); if (buf.length===2) flush(); } else { flush(); body += h; } }
+  flush();
+  return drawerHead(D.econ, cur ? sch.title(cur) : 'Новый '+sch.label) + `<form class="dr-b form" data-form="e-save" data-coll="${coll}" data-id="${cur?esc(cur.id):''}">
+    ${body}<div class="gate-err" role="alert"></div>
+    <div class="form-foot"><button class="btn primary">${ic('Save')} ${cur?'Сохранить':'Добавить'}</button><button type="button" class="btn ghost" data-action="close-drawer">Отмена</button><span class="sp"></span>${cur?`<button type="button" class="btn danger" data-action="e-del" data-coll="${coll}" data-id="${esc(cur.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
+    ${cur?eMeta(cur):''}</form>`;
+}
+function eReadForm(f, sch){
+  const v = {};
+  for (const fl of sch.fields) {
+    const el = f.elements[fl.k]; if (!el) continue;
+    if (fl.t==='options') v[fl.k] = textToOptions(el.value);
+    else if (fl.t==='number') v[fl.k] = el.value==='' ? null : Number(el.value);
+    else if (fl.t==='person') v[fl.k] = el.value || null;
+    else v[fl.k] = (fl.t==='text'||fl.t==='group') ? clip(el.value, 400) : String(el.value).replace(/\s+$/,'').slice(0, 20000);
+  }
+  return v;
+}
+const eShow = (f,x) => f.t==='options' ? optionsToText(x).replace(/\n/g,' · ') : f.t==='select' ? lab(f.o,x) : f.t==='person' ? (x?epname(x):'') : String(x ?? '');
+function eDiff(sch, cur, v){
+  const out = [];
+  for (const f of sch.fields) {
+    const a = cur[f.k] ?? (f.t==='options'?[]:f.t==='number'||f.t==='person'?null:''), b = v[f.k];
+    if (JSON.stringify(a) !== JSON.stringify(b)) out.push({k:f.k, f:f.l, from:clip(eShow(f,a),160), to:clip(eShow(f,b),160)});
+  }
+  return out;
+}
+async function eSave(f){
+  const coll = f.dataset.coll, id = f.dataset.id, sch = ESCHEMA[coll], err = f.querySelector('.gate-err'); err.textContent = '';
+  const v = eReadForm(f, sch);
+  for (const fl of sch.fields) { const x = v[fl.k]; if (fl.req && (x==null || (Array.isArray(x)?!x.length:String(x).trim()===''))) { err.textContent = `Заполни поле «${fl.l}».`; return; } }
+  if (coll==='decisions') { const n = v.recommended||0; if (n<0 || n>v.options.length) { err.textContent = `Номер рекомендуемого варианта — от 0 до ${v.options.length}.`; return; } }
+  if (!id) {
+    const order = S.E[coll].reduce((m,x)=>Math.max(m, typeof x.order==='number'?x.order:0), 0) + 1;
+    const body = Object.assign({}, v, {order, createdAt:now(), createdBy:S.me}, eStamp());
+    if (coll==='decisions') { body.votes = {}; body.chosen = null; }
+    const ref = DB.collection(coll).doc();
+    if (await ewrite(()=>ref.set(body))) { elog({action:'create', coll, docId:ref.id, title:sch.title(body)}, 'добавил(а) в экономику'); closeDrawer(); toast(ic('Check')+' Добавлено'); }
+    return;
+  }
+  const cur = efind(coll, id); if (!cur) { err.textContent = 'Эту запись уже удалили.'; return; }
+  const diff = eDiff(sch, cur, v); if (!diff.length) { closeDrawer(); return; }
+  const patch = eStamp(); diff.forEach(x => patch[x.k] = v[x.k]);
+  if (coll==='decisions' && patch.options && cur.chosen!=null && cur.chosen>=patch.options.length) patch.chosen = null;
+  if (await ewrite(()=>DB.collection(coll).doc(id).update(patch))) { elog({action:'update', coll, docId:id, title:sch.title(Object.assign({},cur,v)), diff:diff.map(({f,from,to})=>({f,from,to})).slice(0,8)}, 'изменил(а) в экономике'); closeDrawer(); toast(ic('Check')+' Сохранено'); }
+}
+
+/* редактор таблиц плана: строки, столбцы, вставка из Excel / Google Таблиц */
+let TE = null;
+const teId = p => p + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2,7);
+function eTableForm(id){
+  const cur = id ? efind('sections', id) : null;
+  if (id && !cur) return null;
+  if (!TE || TE.id !== (id||'')) TE = cur ? {id, columns:(cur.columns||[]).map(c=>({id:c.id, name:c.name||''})), rowOrder:[...(cur.rowOrder||[])], cells:JSON.parse(JSON.stringify(cur.cells||{}))}
+                                         : {id:'', columns:[teId('c'),teId('c'),teId('c')].map(c=>({id:c, name:''})), rowOrder:[teId('r'),teId('r'),teId('r')], cells:{}};
+  return drawerHead(D.econ, cur ? cur.title : 'Новая таблица') + `<form class="dr-b form" data-form="e-table" data-id="${cur?esc(cur.id):''}">
+    <label class="fld"><span>Заголовок</span><input class="input" name="title" value="${esc(cur?cur.title:'')}" placeholder="Например: Выплаты работ в час" autocomplete="off"></label>
+    <div class="fld"><span style="font-size:12.5px;font-weight:700;color:var(--text-2)">Таблица</span><div id="te-grid"></div></div>
+    <div class="te-actions"><button class="btn sm" type="button" data-te="row-add">${ic('Plus')} Строка</button><button class="btn sm" type="button" data-te="col-add">${ic('Plus')} Столбец</button><small style="color:var(--muted)">Enter — на строку ниже. Можно вставить диапазон из Excel: встань в ячейку и нажми Ctrl+V.</small></div>
+    <label class="fld"><span>Пояснение под таблицей</span><textarea class="input" name="note" rows="2">${esc(cur?cur.note||'':'')}</textarea></label>
+    <div class="gate-err" role="alert"></div>
+    <div class="form-foot"><button class="btn primary">${ic('Save')} ${cur?'Сохранить':'Добавить'}</button><button type="button" class="btn ghost" data-action="close-drawer">Отмена</button><span class="sp"></span>${cur?`<button type="button" class="btn danger" data-action="e-del" data-coll="sections" data-id="${esc(cur.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
+    ${cur?eMeta(cur):''}</form>`;
+}
+function renderTE(focus){
+  const g = $('#te-grid'); if (!g || !TE) return;
+  const {columns:cols, rowOrder:rows, cells} = TE, nc = cols.length, nr = rows.length;
+  g.innerHTML = `<div class="te-wrap"><table class="te"><thead><tr><th class="te-rowctl te-corner"></th>${cols.map((c,ci) => `<th>
+      <div class="te-colctl"><button type="button" class="te-mini" data-te="col-left" data-i="${ci}" ${ci===0?'disabled':''} aria-label="Столбец левее">‹</button><button type="button" class="te-mini" data-te="col-right" data-i="${ci}" ${ci===nc-1?'disabled':''} aria-label="Столбец правее">›</button><button type="button" class="te-mini del" data-te="col-del" data-i="${ci}" ${nc<=1?'disabled':''} aria-label="Удалить столбец">×</button></div>
+      <input class="te-in te-head" data-tc="${ci}" value="${esc(c.name)}" placeholder="Столбец ${ci+1}" aria-label="Название столбца ${ci+1}" autocomplete="off"></th>`).join('')}</tr></thead>
+    <tbody>${rows.map((r,ri) => `<tr><th class="te-rowctl"><span class="te-n">${ri+1}</span><button type="button" class="te-mini" data-te="row-up" data-i="${ri}" ${ri===0?'disabled':''} aria-label="Строку выше">↑</button><button type="button" class="te-mini" data-te="row-down" data-i="${ri}" ${ri===nr-1?'disabled':''} aria-label="Строку ниже">↓</button><button type="button" class="te-mini del" data-te="row-del" data-i="${ri}" aria-label="Удалить строку">×</button></th>${cols.map((c,ci) => `<td><input class="te-in" data-r="${ri}" data-c="${ci}" value="${esc((cells[r]||{})[c.id] ?? '')}" aria-label="Строка ${ri+1}, столбец ${ci+1}" autocomplete="off"></td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  if (focus) { const el = g.querySelector(focus); if (el) { el.focus(); if (el.select) el.select(); } }
+}
+function teSet(ri, ci, v){ const r = TE.rowOrder[ri], c = TE.columns[ci]; if (r && c) (TE.cells[r] = TE.cells[r] || {})[c.id] = v; }
+function teOp(op, i){
+  const T = TE; i = Number(i); const swap = (a,x,y) => { const t = a[x]; a[x] = a[y]; a[y] = t; };
+  switch (op) {
+    case 'row-add': T.rowOrder.push(teId('r')); return renderTE(`[data-r="${T.rowOrder.length-1}"][data-c="0"]`);
+    case 'col-add': T.columns.push({id:teId('c'), name:''}); return renderTE(`[data-tc="${T.columns.length-1}"]`);
+    case 'row-del': { const r = T.rowOrder.splice(i,1)[0]; delete T.cells[r]; break; }
+    case 'col-del': if (T.columns.length > 1) T.columns.splice(i,1); break;
+    case 'row-up': if (i > 0) swap(T.rowOrder, i, i-1); break;
+    case 'row-down': if (i < T.rowOrder.length-1) swap(T.rowOrder, i, i+1); break;
+    case 'col-left': if (i > 0) swap(T.columns, i, i-1); break;
+    case 'col-right': if (i < T.columns.length-1) swap(T.columns, i, i+1); break;
+  }
+  renderTE();
+}
+function tableBody(f){
+  const columns = TE.columns.map((c,i) => ({id:c.id, name:(c.name||'').trim() || `Столбец ${i+1}`}));
+  const cells = {};
+  for (const r of TE.rowOrder) { const row = TE.cells[r] || {}, out = {}; for (const c of columns) { const v = String(row[c.id] ?? '').trim(); if (v) out[c.id] = clip(v, 2000); } if (Object.keys(out).length) cells[r] = out; }
+  const rowOrder = [...TE.rowOrder]; while (rowOrder.length > 1 && !cells[rowOrder[rowOrder.length-1]]) rowOrder.pop();
+  return {kind:'table', title:clip(f.title.value,200) || 'Таблица', note:String(f.note.value||'').replace(/\s+$/,''), columns, rowOrder, cells};
+}
+function tableDiff(a, b){
+  const out = [], ac = a.columns||[], ar = a.rowOrder||[];
+  if ((a.title||'') !== b.title) out.push({f:'Заголовок', from:clip(a.title,160), to:clip(b.title,160)});
+  const addR = b.rowOrder.filter(r => !ar.includes(r)).length, remR = ar.filter(r => !b.rowOrder.includes(r)).length;
+  if (addR || remR) out.push({f:'Строки', from:String(ar.length), to:`${b.rowOrder.length}${addR?` (+${addR})`:''}${remR?` (−${remR})`:''}`});
+  else if (JSON.stringify(ar) !== JSON.stringify(b.rowOrder)) out.push({f:'Порядок строк', from:'', to:'изменён'});
+  const an = ac.map(c=>c.name).join(' · '), bn = b.columns.map(c=>c.name).join(' · ');
+  if (an !== bn) out.push({f:'Столбцы', from:clip(an,160), to:clip(bn,160)});
+  let changed = 0; const bc = new Set(b.columns.map(c=>c.id));
+  for (const r of ar) if (b.rowOrder.includes(r)) for (const c of ac) if (bc.has(c.id) && (((a.cells||{})[r]||{})[c.id]||'') !== ((b.cells[r]||{})[c.id]||'')) changed++;
+  if (changed) out.push({f:'Ячейки', from:'', to:`изменено: ${changed}`});
+  if ((a.note||'') !== b.note) out.push({f:'Пояснение', from:clip(a.note,160), to:clip(b.note,160)});
+  return out;
+}
+async function eSaveTable(f){
+  const body = tableBody(f), id = f.dataset.id, err = f.querySelector('.gate-err');
+  if (!body.columns.length) { err.textContent = 'Добавь хотя бы один столбец.'; return; }
+  if (!id) {
+    const order = S.E.sections.reduce((m,x)=>Math.max(m, typeof x.order==='number'?x.order:0), 0) + 1, ref = DB.collection('sections').doc();
+    if (await ewrite(()=>ref.set(Object.assign({}, body, {order, createdAt:now(), createdBy:S.me}, eStamp())))) { elog({action:'create', coll:'sections', docId:ref.id, title:body.title}, 'добавил(а) таблицу в план'); TE = null; closeDrawer(); toast(ic('Check')+' Таблица добавлена'); }
+    return;
+  }
+  const cur = efind('sections', id); if (!cur) { err.textContent = 'Эту таблицу уже удалили.'; return; }
+  const diff = tableDiff(cur, body); if (!diff.length) { TE = null; closeDrawer(); return; }
+  if (await ewrite(()=>DB.collection('sections').doc(id).update(Object.assign({}, body, eStamp())))) { elog({action:'update', coll:'sections', docId:id, title:body.title, diff:diff.slice(0,8)}, 'изменил(а) таблицу плана'); TE = null; closeDrawer(); toast(ic('Check')+' Сохранено'); }
+}
+
+/* Markdown для docs/ECONOMY_PLAN.md */
+function econMarkdown(){
+  const E = S.E, L = [], cell = s => String(s ?? '').replace(/\|/g,'\\|').replace(/\n+/g,' ');
+  L.push('# План экономики Kentucky RolePlay','',`Выгружено из Kentucky Hub ${new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date())}. Якорь: ${nfmt.format(E.anchor)} $ за час работы новичка.`,'');
+  for (const s of [...E.sections].sort(byOrder)) {
+    if (s.kind !== 'table') { L.push('## '+s.title,'',String(s.body||'').trim(),''); continue; }
+    const cols = s.columns || []; L.push('## '+s.title,'');
+    if (cols.length) { L.push('| '+cols.map(c=>cell(c.name)).join(' | ')+' |', '|'+cols.map(()=>'---').join('|')+'|'); for (const r of (s.rowOrder||[])) L.push('| '+cols.map(c=>cell(((s.cells||{})[r]||{})[c.id])).join(' | ')+' |'); }
+    if (s.note) L.push('', String(s.note).trim()); L.push('');
+  }
+  L.push('## Параметры','');
+  for (const [g, items] of eGroups()) {
+    L.push('### '+g,'','| Параметр | Где | Сейчас | Предлагаю | Статус | Ответственный |','|---|---|---|---|---|---|');
+    for (const p of items) L.push(`| ${cell(p.name)}${p.note?' — '+cell(p.note):''} | ${p.where?'`'+cell(p.where)+'`':''} | ${cell(p.current)} | ${cell(p.proposed)} | ${lab(PARAM_STATUS,p.status)} | ${p.assignee?cell(epname(p.assignee)):''} |`);
+    L.push('');
+  }
+  L.push('## Баги','','| Проблема | Где | Что происходит | Важность | Статус |','|---|---|---|---|---|');
+  for (const b of [...E.bugs].sort((a,b)=>(sevRank[a.severity]??2)-(sevRank[b.severity]??2)||byOrder(a,b))) L.push(`| ${cell(b.title)} | ${b.where?'`'+cell(b.where)+'`':''} | ${cell(b.impact)} | ${lab(BUG_SEV,b.severity)} | ${lab(BUG_STATUS,b.status)} |`);
+  L.push('','## Этапы','','| # | Этап | Что делаем | Зависит от | Статус |','|---|---|---|---|---|');
+  [...E.stages].sort(byOrder).forEach((s,i)=>L.push(`| ${i+1} | ${cell(s.title)} | ${cell(s.details)} | ${cell(s.depends)} | ${lab(STAGE_STATUS,s.status)} |`));
+  L.push('','## Решения','');
+  [...E.decisions].sort(byOrder).forEach((x,i) => {
+    const o = x.options||[], ch = x.chosen;
+    L.push(`${i+1}. **${x.question}** — ${ch!=null&&ch!==''&&o[ch] ? 'принято: '+o[ch].label : 'ждёт решения'}`);
+    o.forEach((y,k) => { const v = Object.keys(x.votes||{}).filter(u=>x.votes[u]===k).length; L.push(`   - ${y.label}${y.desc?' — '+y.desc:''}${Number(x.recommended)===k+1?' (рекомендовано)':''}${v?` — голосов: ${v}`:''}`); });
+    if (x.note) L.push('   - Заметка: '+String(x.note).replace(/\n+/g,' '));
+  });
+  L.push(''); return L.join('\n');
+}
+function eCopy(){
+  if (!eReady()) return;
+  const text = econMarkdown();
+  const fallback = () => { overlay(`<div class="pal" role="dialog" aria-label="Markdown" style="width:min(820px,100%)"><div class="cap"><h2>${ic('Copy')} Скопируй текст</h2><small style="color:var(--muted)">Браузер не дал скопировать автоматически. Текст выделен — нажми Ctrl+C.</small><textarea class="input" rows="18" readonly style="font-family:var(--f-mono);font-size:12.5px">${esc(text)}</textarea><div style="display:flex;justify-content:flex-end"><button class="btn" data-action="close-overlay">Готово</button></div></div></div>`); const ta = $('#overlay textarea'); ta.focus(); ta.select(); };
+  try { navigator.clipboard.writeText(text).then(()=>toast(ic('Check')+' Скопировано. Можно вставить в docs/ECONOMY_PLAN.md.'), fallback); } catch (e) { fallback(); }
+}
+
+/* действия экономики */
+async function eMove(coll, id, dir){
+  const list = [...S.E[coll]].sort(byOrder), i = list.findIndex(x=>x.id===id), j = i+dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  const needRenum = list.some(x=>typeof x.order !== 'number') || new Set(list.map(x=>x.order)).size !== list.length;
+  await ewrite(async () => {
+    const b = DB.batch();
+    if (needRenum) list.forEach((x,k) => { const want = k===i?j:k===j?i:k; if (x.order !== want) b.update(DB.collection(coll).doc(x.id), {order:want}); });
+    else { b.update(DB.collection(coll).doc(list[i].id), {order:list[j].order}); b.update(DB.collection(coll).doc(list[j].id), {order:list[i].order}); }
+    await b.commit();
+  });
+}
+document.addEventListener('click', async e => {
+  const a = e.target.closest('[data-action^="e-"]');
+  const te = e.target.closest('[data-te]');
+  if (te && TE && !te.disabled && te.closest('#drawer')) { teOp(te.dataset.te, te.dataset.i); return; }
+  if (!a || a.tagName==='SELECT' || document.body.classList.contains('locked')) return;
+  const k = a.dataset.action, id = a.dataset.id, coll = a.dataset.coll;
+  if (k==='e-copy') eCopy();
+  if (k==='e-move') eMove(coll, id, Number(a.dataset.dir));
+  if (k==='e-fstatus') { UI.ef.status = a.dataset.v; paint(); }
+  if (k==='e-freset') { UI.ef = Object.assign(UI.ef, {status:'all', group:'all', q:''}); paint(); }
+  if (k==='e-toggle') { UI.ef[a.dataset.k] = !UI.ef[a.dataset.k]; paint(); }
+  if (k==='e-vote') {
+    const x = efind('decisions', id); if (!x) return; const i = Number(a.dataset.i), cur = (x.votes||{})[S.me], nv = cur===i ? null : i, o = x.options||[];
+    if (await ewrite(()=>DB.collection('decisions').doc(id).update(Object.assign({['votes.'+S.me]:nv}, eStamp())))) { elog({action:'vote', coll:'decisions', docId:id, title:x.question, diff:[{f:'Голос', from:cur!=null&&o[cur]?o[cur].label:'', to:nv!=null&&o[nv]?o[nv].label:'снят'}]}, cur==null?'проголосовал(а) в экономике':null); if (cur==null && nv!=null) gain(5, ic('Vote')+' Голос учтён'); }
+  }
+  if (k==='e-choose') {
+    const x = efind('decisions', id); if (!x) return; const v = a.dataset.i==='' ? null : Number(a.dataset.i), o = x.options||[];
+    if (v!=null && !confirm('Зафиксировать «'+(o[v]&&o[v].label)+'» как итог?')) return;
+    if (await ewrite(()=>DB.collection('decisions').doc(id).update(Object.assign({chosen:v}, eStamp())))) { elog({action:'choose', coll:'decisions', docId:id, title:x.question, diff:[{f:'Итог', from:x.chosen!=null&&o[x.chosen]?o[x.chosen].label:'', to:v!=null&&o[v]?o[v].label:'отменён'}]}, 'зафиксировал(а) итог в экономике'); if (v!=null) { const r = a.getBoundingClientRect(); confetti(r.left, r.top); gain(10, ic('Scale')+' Решение принято'); } else toast('Итог отменён'); }
+  }
+  if (k==='e-del') {
+    const cur = efind(coll, id); if (!cur || !confirm('Удалить «'+ESCHEMA[coll].title(cur)+'»? Вернуть можно из журнала экономики.')) return;
+    if (await ewrite(()=>DB.collection(coll).doc(id).delete())) { const snapshot = Object.assign({}, cur); delete snapshot.id; elog({action:'delete', coll, docId:id, title:ESCHEMA[coll].title(cur), snapshot}, 'удалил(а) из экономики'); TE = null; closeDrawer(); toast(ic('Trash2')+' Удалено. Вернуть можно из журнала.'); }
+  }
+  if (k==='e-restore') {
+    const l = S.E.log.find(x=>x.id===id); if (!l || !l.snapshot || !ECOLLS.includes(l.coll) || efind(l.coll, l.docId)) return;
+    const body = Object.assign({}, l.snapshot, eStamp()); delete body.id;
+    if (await ewrite(()=>DB.collection(l.coll).doc(l.docId).set(body))) { elog({action:'restore', coll:l.coll, docId:l.docId, title:l.title||''}, 'восстановил(а) в экономике'); toast(ic('RotateCcw')+' Восстановлено'); }
+  }
+  if (k==='e-anchor') overlay(`<form class="pal" data-form="e-anchor"><div class="cap"><h2>${ic('Coins')} Якорь</h2><label class="fld"><span>Доход за час работы новичка, $</span><input class="input" name="a" type="number" inputmode="numeric" min="1" value="${esc(S.E.anchor)}" required></label><small style="color:var(--muted)">Все пометки «≈ N ч работы» считаются от этого числа — здесь и на старой странице.</small><div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" data-action="close-overlay">Отмена</button><button class="btn primary">Сохранить</button></div></div></form>`);
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.dataset.action==='e-status') {
+    const coll = t.dataset.coll, x = efind(coll, t.dataset.id); if (!x || x.status===t.value) return;
+    const opts = coll==='params'?PARAM_STATUS:coll==='bugs'?BUG_STATUS:STAGE_STATUS;
+    if (await ewrite(()=>DB.collection(coll).doc(x.id).update(Object.assign({status:t.value}, eStamp())))) {
+      elog({action:'status', coll, docId:x.id, title:ESCHEMA[coll].title(x), diff:[{f:'Статус', from:lab(opts,x.status), to:lab(opts,t.value)}]}, 'сменил(а) статус в экономике');
+      if (['agreed','done','fixed'].includes(t.value)) gain(5, ic('CircleCheck')+' '+esc(lab(opts,t.value)));
+    }
+  }
+  if (t.id==='e-group') { UI.ef.group = t.value; paint(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id==='e-q') { UI.ef.q = t.value; paint(); }
+  if (t.form && t.form.dataset.form==='e-note') UI.eDraft = t.value;
+  if (TE && t.closest && t.closest('#te-grid')) { if (t.dataset.tc !== undefined) TE.columns[Number(t.dataset.tc)].name = t.value; else if (t.dataset.r !== undefined) teSet(Number(t.dataset.r), Number(t.dataset.c), t.value); }
+});
+document.addEventListener('paste', e => {
+  const t = e.target; if (!TE || !t.classList || !t.classList.contains('te-in') || t.dataset.r === undefined) return;
+  const text = (e.clipboardData || window.clipboardData).getData('text'); if (!/[\t\n]/.test(text)) return;
+  e.preventDefault();
+  const lines = text.replace(/\r/g,'').replace(/\n+$/,'').split('\n').map(l => l.split('\t'));
+  const r0 = Number(t.dataset.r), c0 = Number(t.dataset.c), width = Math.max(...lines.map(l => l.length));
+  while (TE.columns.length < c0 + width) TE.columns.push({id:teId('c'), name:''});
+  while (TE.rowOrder.length < r0 + lines.length) TE.rowOrder.push(teId('r'));
+  lines.forEach((l, dr) => l.forEach((v, dc) => teSet(r0+dr, c0+dc, v.trim())));
+  renderTE(`[data-r="${r0}"][data-c="${c0}"]`); toast(`Вставлено: ${lines.length} × ${width}`);
+});
+document.addEventListener('keydown', e => {
+  const t = e.target; if (!TE || e.key !== 'Enter' || !t.closest || !t.closest('#drawer')) return;
+  if (t.name === 'title' && t.form && t.form.dataset.form==='e-table') { e.preventDefault(); const h = $('#te-grid [data-tc="0"]'); if (h) h.focus(); return; }
+  if (!t.classList.contains('te-in')) return;
+  e.preventDefault();
+  if (t.dataset.tc !== undefined) { if (!TE.rowOrder.length) TE.rowOrder.push(teId('r')); renderTE(`[data-r="0"][data-c="${t.dataset.tc}"]`); return; }
+  const r = Number(t.dataset.r) + (e.shiftKey ? -1 : 1), c = Number(t.dataset.c); if (r < 0) return;
+  if (r >= TE.rowOrder.length) TE.rowOrder.push(teId('r'));
+  renderTE(`[data-r="${r}"][data-c="${c}"]`);
+});
+document.addEventListener('submit', async e => {
+  const f = e.target, k = f.dataset.form; if (!k || !k.startsWith('e-')) return;
+  e.preventDefault();
+  if (k==='e-save') eSave(f);
+  if (k==='e-table') eSaveTable(f);
+  if (k==='e-note') {
+    const text = clip(f.t.value, 4000); if (!text) { toast('Напиши текст заметки.'); return; }
+    if (await ewrite(()=>DB.collection('log').add({at:now(), by:S.me, action:'note', text}))) { UI.eDraft = ''; log('оставил(а) заметку в экономике', clip(text,80), 'econ'); gain(3, ic('MessageSquare')+' Заметка добавлена'); paint(); }
+  }
+  if (k==='e-anchor') {
+    const v = Number(f.a.value); if (!(v > 0)) { toast(ic('CircleAlert')+' Якорь — положительное число'); return; }
+    const from = S.E.anchor;
+    if (await ewrite(()=>DB.doc('meta/settings').set(Object.assign({}, S.E.meta, {anchor:v}, eStamp())))) { elog({action:'update', coll:'meta', title:'Якорь', diff:[{f:'$ за час', from:nfmt.format(from||0), to:nfmt.format(v)}]}, 'изменил(а) якорь экономики'); closeOverlay(); toast(ic('Check')+' Якорь обновлён'); }
+  }
+});
 
 /* ── формы ──────────────────────────────────── */
 const inText = (name, label, val, extra='') => `<label class="fld"><span>${label}</span><input class="input" name="${name}" value="${esc(val??'')}" autocomplete="off" ${extra}></label>`;
@@ -635,7 +1184,7 @@ function openDrawer(ref, edit){
   paintDrawer();
   const el = $('#drawer'); el.classList.add('open'); el.setAttribute('aria-hidden','false');
 }
-function closeDrawer(){ UI.drawer = null; UI.edit = false; const el = $('#drawer'); el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+function closeDrawer(){ UI.drawer = null; UI.edit = false; TE = null; const el = $('#drawer'); el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 const drawerHead = (d, title, extra='') => `<div class="dr-h" style="--dc:${d?d.color:'var(--acc)'}"><span class="ph-ico" style="width:40px;height:40px">${ic(d?d.icon:'BookOpen')}</span><h2>${esc(title)}</h2>${extra}<button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">${ic('X')}</button></div>`;
 function linkChip(id, removable){
   const t = task(id), d = dec(id);
@@ -718,14 +1267,19 @@ function paintDrawer(){
   else if (kind==='regnew') html = regForm(id, null);
   else if (kind==='wiki') { const w = wikiItem(id); if (!w) return missing(); html = wikiDrawer(w); }
   else if (kind==='wikinew') html = wikiDrawer(null);
+  else if (kind==='eedit') { const [c, x] = [id.slice(0, id.indexOf(':')), id.slice(id.indexOf(':')+1)]; html = S.E && eForm(c, x); if (!html) return missing(); }
+  else if (kind==='enew') html = S.E ? eForm(id, null) : '';
+  else if (kind==='etable') { html = S.E && eTableForm(id); if (!html) return missing(); }
+  el.classList.toggle('wide', kind==='etable');
   el.innerHTML = html;
+  if (kind==='etable') renderTE();
 }
 /* обновить шторку при изменениях: недописанный текст и курсор сохраняются; формы правки не трогаем */
 function refreshDrawer(){
   if (!UI.drawer) return;
   if ($('#drawer .loading')) return paintDrawer();
   const force = UI.forceDrawer; UI.forceDrawer = false;
-  if (!force && (UI.edit || /^(reg|regnew|wikinew):/.test(UI.drawer))) return;
+  if (!force && (UI.edit || /^(reg|regnew|wikinew|eedit|enew|etable):/.test(UI.drawer))) return;
   const a = document.activeElement, inside = a && $('#drawer').contains(a);
   const form = inside && a.form && a.form.dataset.form, name = inside && a.name, act = inside && a.dataset && a.dataset.action;
   const keep = {}; document.querySelectorAll('#drawer form[data-form] input[name], #drawer form[data-form] textarea[name]').forEach(i => { if (i.value) keep[i.form.dataset.form+'/'+i.name] = i.value; });
@@ -789,8 +1343,14 @@ function palItems(q){
   const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>{ go('d/'+r.key); setTimeout(()=>openDrawer('reg:'+r.id), 120); }}));
   const wiki = S.wiki.map(w=>({g:'Вики', ico:'BookOpen', t:w.title, extra:w.tldr, run:()=>openDrawer('wiki:'+w.id)}));
   const people = Object.entries(S.people).map(([id,p])=>({g:'Люди', ico:'User', t:p.name, extra:p.role, run:()=>go('people')}));
+  const eco = !S.E ? [] : [
+    ...S.E.params.map(p=>({g:'Экономика', ico:'Gauge', t:p.name, r:lab(PARAM_STATUS,p.status), extra:[p.where,p.current,p.proposed,p.group].join(' '), run:()=>{ go('d/econ/params'); setTimeout(()=>openDrawer('eedit:params:'+p.id), 120); }})),
+    ...S.E.bugs.map(b=>({g:'Экономика', ico:'Bug', t:b.title, r:lab(BUG_STATUS,b.status), extra:b.where, run:()=>{ go('d/econ/bugs'); setTimeout(()=>openDrawer('eedit:bugs:'+b.id), 120); }})),
+    ...S.E.stages.map(x=>({g:'Экономика', ico:'ListOrdered', t:x.title, r:lab(STAGE_STATUS,x.status), run:()=>go('d/econ/stages')})),
+    ...S.E.sections.map(x=>({g:'Экономика', ico:'BookOpen', t:x.title, extra:x.body, run:()=>go('d/econ/plan')})),
+    ...S.E.decisions.map(x=>({g:'Экономика', ico:'Scale', t:x.question, run:()=>go('d/econ/edec')}))];
   if (!q) return [...cmds, ...pages.slice(0,7), ...tasks.filter(t=>true).slice(0,4)];
-  return [...cmds, ...pages, ...tasks, ...decs, ...regs, ...wiki, ...people].filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q)).slice(0,40);
+  return [...cmds, ...pages, ...tasks, ...decs, ...regs, ...wiki, ...people, ...eco].filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q)).slice(0,40);
 }
 function palette(){
   UI.pal = {q:'', i:0, items:palItems('')};
@@ -1018,16 +1578,17 @@ function viewRoute(){
 }
 function focusKey(el){
   if (!el || el===document.body) return null;
+  if (el.id && /INPUT|TEXTAREA/.test(el.tagName)) return '#'+CSS.escape(el.id);
   for (const a of ['data-open','data-go','data-action']) if (el.hasAttribute && el.hasAttribute(a)) return `[${a}="${CSS.escape(el.getAttribute(a))}"]` + (el.dataset.id?`[data-id="${CSS.escape(el.dataset.id)}"]`:'') + (el.dataset.s?`[data-s="${CSS.escape(el.dataset.s)}"]`:'');
   return null;
 }
 function paint(){
   if (document.body.classList.contains('locked')) return;
-  const fk = focusKey(document.activeElement); const sy = scrollY;
+  const ae = document.activeElement, fk = focusKey(ae), sy = scrollY, sel = ae && ae.id && 'selectionStart' in ae ? [ae.selectionStart, ae.selectionEnd] : null;
   $('#side').innerHTML = sidebar();
   $('#topbar').innerHTML = topbar();
   $('#view').innerHTML = view();
-  if (fk) { const el = document.querySelector('#side '+fk+',#topbar '+fk+',#view '+fk); if (el) el.focus({preventScroll:true}); }
+  if (fk) { const el = document.querySelector('#side '+fk+',#topbar '+fk+',#view '+fk); if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
   if (scrollY !== sy) scrollTo(0, sy);
 }
 let queued = false;
@@ -1058,7 +1619,7 @@ function listen(){
   UNSUB.push(col('hub_log').orderBy('at','desc').limit(300).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
 }
-function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; econStarted = false; S.econ = null; S.loaded = new Set(); S.errs = {}; }
+function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
 
 /* стартовое наполнение — один раз на всю команду */
 async function seedIfEmpty(){
@@ -1082,7 +1643,7 @@ async function ensureMe(user, nameHint){
   } else await ref.update({seen:now(), login});
 }
 let presenceTimer = null;
-function presence(){ if (S.me && !document.hidden) col('hub_people').doc(S.me).update({seen:now()}).catch(()=>{}); }
+function presence(){ if (S.me && !document.hidden) { col('hub_people').doc(S.me).update({seen:now()}).catch(()=>{}); if (UI.route==='d/econ') eSyncName(); } }
 document.addEventListener('visibilitychange', presence);
 
 /* ── вход ───────────────────────────────────
@@ -1171,7 +1732,7 @@ async function enter(user){
   }
   gateBusy = false;
   document.body.classList.remove('locked');
-  readHash(); listen(); paint();
+  readHash(); listen(); econListen(); paint();
   clearInterval(presenceTimer); presenceTimer = setInterval(presence, 60e3);
 }
 function lock(){ S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }

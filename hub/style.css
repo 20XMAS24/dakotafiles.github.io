@@ -470,3 +470,83 @@ table.grid td.m{font-family:var(--f-mono);font-size:12.5px;color:var(--text-2)}
 .cl .row label:hover{background:transparent}
 .cl .row .mini-x{opacity:0}
 .cl .row:hover .mini-x,.cl .row .mini-x:focus-visible{opacity:1}
+
+/* ── экономика ── */
+a.tile{text-decoration:none}
+.tile .v small{font:600 14px var(--f-body);color:var(--text-2);letter-spacing:0}
+.sbar{display:flex;height:6px;border-radius:4px;overflow:hidden;background:var(--panel-3);gap:2px}
+.sbar i{display:block;height:100%}
+.eact{display:flex;gap:4px;flex:none}
+.eact .icon-btn{width:32px;height:32px}
+.emeta{font-size:12px;color:var(--muted)}
+.md{max-width:80ch;min-width:0;font-size:14.5px;line-height:1.6}
+.md p{margin:0 0 .7em}
+.md h3,.md h4{margin:1em 0 .45em;font-weight:700;font-size:15px}
+.md ul,.md ol{margin:0 0 .8em;padding-left:1.3em}
+.md li{margin:.2em 0}
+.md li::marker{color:var(--acc)}
+.md code{font-family:var(--f-mono);font-size:.85em;background:var(--panel-3);padding:1px 6px;border-radius:6px;word-break:break-word}
+.md strong{font-weight:700}
+.md blockquote{margin:0 0 .8em;padding:8px 14px;border-left:3px solid var(--acc-line);color:var(--text-2);border-radius:0 10px 10px 0;background:var(--panel-2)}
+.md>*:last-child{margin-bottom:0}
+.md-table{overflow-x:auto;margin:0 0 .9em;border:1px solid var(--line);border-radius:14px;max-width:100%}
+.md-table table{border-collapse:collapse;width:100%;font-size:13.5px}
+.md-table th,.md-table td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.md-table th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--panel-2)}
+.md-table tr:last-child td{border-bottom:0}
+.md-table td{font-variant-numeric:tabular-nums}
+.md-table td.num,.md-table th.num{text-align:right;white-space:nowrap}
+.chip-select{appearance:none;-webkit-appearance:none;border:0;border-radius:99px;padding:4px 26px 4px 12px;font-size:12px;font-weight:700;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 13px) 52%,calc(100% - 9px) 52%;background-size:4px 4px;background-repeat:no-repeat}
+.chip-select option{color:var(--text);background:var(--panel)}
+.chip-select.t-ok{background-color:var(--ok-bg)} .chip-select.t-warn{background-color:var(--warn-bg)} .chip-select.t-info{background-color:var(--info-bg)}
+.chip-select.t-red{background-color:var(--red-bg)} .chip-select.t-muted{background-color:var(--muted-bg)} .chip-select.t-violet{background-color:var(--violet-bg)}
+table.etable{min-width:880px}
+table.etable tbody tr{cursor:default}
+table.grid tr.grp td{background:var(--panel-2);font-weight:700;font-size:12.5px;padding:8px 14px}
+table.grid tr.grp td span{color:var(--muted);font-weight:600;margin-left:8px}
+.pname{font-weight:700}
+.where{color:var(--muted);margin-top:2px;word-break:break-word;font-size:12px}
+.pnote{color:var(--text-2);font-size:12.5px;margin-top:5px;white-space:pre-wrap}
+.val{font-family:var(--f-mono);font-size:12.5px;font-variant-numeric:tabular-nums;white-space:pre-wrap;word-break:break-word}
+.val.cur{color:var(--text-2)}
+.hours{display:block;font-size:11.5px;color:var(--acc);margin-top:3px}
+tr.rej td{opacity:.5}
+.erow{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 16px;position:relative;overflow:hidden}
+.erow.sev::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--sev,var(--muted))}
+.erow h3{margin:0;font:700 15px/1.35 var(--f-body)}
+.erow .body{display:flex;flex-direction:column;gap:6px;min-width:0}
+.erow .side{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.erow .txt{color:var(--text-2);font-size:13.5px;white-space:pre-wrap;word-break:break-word}
+.erow .txt b{color:var(--text)}
+.erow.done{opacity:.6}
+@media (max-width:640px){.erow{grid-template-columns:minmax(0,1fr)}.erow .side{flex-direction:row;flex-wrap:wrap;align-items:center}}
+.stage-n{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:50%;background:var(--acc-bg);color:var(--acc);font:800 12px var(--f-display);margin-right:9px;vertical-align:1px}
+.day{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 4px;font-weight:700}
+.day:first-child{margin-top:0}
+.diff{margin:5px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:3px}
+.diff li{font-size:12.5px;color:var(--text-2);word-break:break-word}
+.diff .f{color:var(--muted)}
+.diff del{color:var(--muted);text-decoration-color:color-mix(in srgb,var(--red) 60%,transparent)}
+.diff ins{text-decoration:none;color:var(--text)}
+.note-text{white-space:pre-wrap;margin-top:4px;padding:8px 12px;background:var(--panel-2);border-radius:12px;color:var(--text)}
+
+/* ── редактор таблиц плана ── */
+.drawer.wide{width:min(1100px,calc(100vw - 20px))}
+.te-wrap{overflow:auto;border:1px solid var(--line-2);border-radius:14px;max-height:52vh;background:var(--panel)}
+table.te{border-collapse:separate;border-spacing:0;min-width:100%}
+table.te th,table.te td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;vertical-align:top;background:var(--panel)}
+table.te thead th{position:sticky;top:0;background:var(--panel-2);z-index:1}
+table.te th.te-rowctl{position:sticky;left:0;z-index:1;background:var(--panel-2);white-space:nowrap;padding:3px 4px;vertical-align:middle}
+table.te thead th.te-corner{left:0;z-index:2}
+.te-in{display:block;width:100%;min-width:150px;border:0;border-radius:0;background:transparent;padding:8px 10px;font-size:13.5px;color:var(--text)}
+.te-in:focus{outline:2px solid var(--acc-line);outline-offset:-2px;background:var(--panel-3)}
+.te-head{font-weight:700}
+.te-colctl{display:flex;justify-content:flex-end;gap:1px;padding:3px 4px 0}
+.te-mini{border:0;background:transparent;color:var(--muted);width:24px;height:22px;border-radius:6px;cursor:pointer;font-size:14px;line-height:1;display:inline-grid;place-items:center}
+.te-mini:hover{background:var(--panel-3);color:var(--text)}
+.te-mini.del:hover{color:var(--red)}
+.te-mini[disabled]{opacity:.28;cursor:default;background:transparent}
+.te-n{display:inline-block;min-width:20px;font:700 11px var(--f-mono);color:var(--muted);text-align:right;margin-right:2px;vertical-align:middle}
+.te-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
