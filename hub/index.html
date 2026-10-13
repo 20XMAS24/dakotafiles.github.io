@@ -87,6 +87,51 @@ kbd{font:600 11px var(--f-mono);padding:2px 7px;border-radius:7px;border:1px sol
 ::-webkit-scrollbar-thumb:hover{background:color-mix(in srgb,var(--acc) 70%,transparent);background-clip:padding-box;border-width:2px}
 ::-webkit-scrollbar-corner{background:transparent}
 
+/* ── иконки ── */
+.ic{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em;stroke-width:2}
+.ic.filled{fill:currentColor}
+.hi .ic{width:16px;height:16px}
+.nav .ico .ic{width:15px;height:15px;color:color-mix(in srgb,var(--dc,var(--acc)) 85%,var(--text))}
+.nav a[aria-current="page"] .ico .ic{color:inherit}
+.ph-ico .ic{width:22px;height:22px;color:color-mix(in srgb,var(--dc,var(--acc)) 85%,var(--text))}
+.dchip .ic{width:13px;height:13px}
+.icon-btn .ic{width:17px;height:17px}
+.fab .ic{width:26px;height:26px}
+.check .ic{width:13px;height:13px;stroke-width:3}
+.pal-i .ico .ic{width:17px;height:17px;color:var(--acc)}
+.streak .ic,.hs .ic{color:var(--warn)}
+.hero h1 .ic{color:var(--acc-2)}
+.resume>.ic{width:24px;height:24px;color:var(--acc)}
+
+/* ── окно входа ── */
+body.locked .shell,body.locked .fab,body.locked .drawer{display:none}
+.gate{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:20px;overflow-y:auto;
+  background:radial-gradient(60% 50% at 80% 90%,var(--glow),transparent 70%),radial-gradient(50% 40% at 10% 10%,color-mix(in srgb,var(--acc) 10%,transparent),transparent 70%),var(--bg)}
+body:not(.locked) .gate{display:none}
+.gate-card{width:min(420px,100%);border:1px solid var(--acc-line);border-radius:28px;padding:28px 26px 24px;display:flex;flex-direction:column;gap:16px;
+  background:radial-gradient(90% 60% at 100% 100%,var(--glow),transparent 70%),var(--panel);box-shadow:var(--shadow)}
+.gate-brand{display:flex;gap:13px;align-items:center}
+.gate-brand .mark{width:48px;height:48px;border-radius:15px;font-size:15px}
+.gate-brand b{display:block;font:800 20px/1.2 var(--f-display);letter-spacing:-.02em}
+.gate-brand small{color:var(--muted);font-size:13px}
+.gate .seg{align-self:stretch}
+.gate .seg button{flex:1;justify-content:center}
+.gate form{display:flex;flex-direction:column;gap:12px}
+.fld{display:flex;flex-direction:column;gap:6px}
+.fld label{font-size:12.5px;font-weight:700;color:var(--text-2)}
+.fld small{font-size:12px;color:var(--muted)}
+.inp{position:relative;display:flex;align-items:center}
+.inp>.ic{position:absolute;left:13px;color:var(--muted);width:17px;height:17px;pointer-events:none}
+.inp .input{padding-left:40px;height:44px;border-radius:14px}
+.inp .eye{position:absolute;right:6px;width:32px;height:32px;background:transparent}
+.gate .btn.primary{justify-content:center;height:46px;font-size:14.5px;margin-top:4px}
+.gate-err{color:var(--red);font-size:13px;font-weight:600;min-height:1.2em}
+.fld-hint{color:var(--muted);font-size:12px;margin-top:-6px}
+.gate-foot{font-size:12px;color:var(--muted);text-align:center}
+.gate-load{display:flex;gap:10px;align-items:center;justify-content:center;color:var(--text-2);padding:20px 0}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--acc-line);border-top-color:var(--acc);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 /* ── каркас ── */
 .shell{display:grid;grid-template-columns:264px minmax(0,1fr);min-height:100dvh;gap:0}
 .side{position:sticky;top:0;height:100dvh;padding:14px 0 14px 14px}
@@ -401,7 +446,8 @@ table.grid td.m{font-family:var(--f-mono);font-size:12.5px;color:var(--text-2)}
 :root[data-calm="1"] .confetti{display:none}
 </style>
 </head>
-<body>
+<body class="locked">
+<div class="gate" id="gate"><div class="gate-card" id="gate-card"><div class="gate-load"><span class="spin"></span>Проверяем вход…</div></div></div>
 <div class="shell">
   <aside class="side" aria-label="Разделы"><div class="side-in" id="side"></div></aside>
   <div class="main">
@@ -412,12 +458,86 @@ table.grid td.m{font-family:var(--f-mono);font-size:12.5px;color:var(--text-2)}
 <div class="scrim" data-action="close-nav"></div>
 <aside class="drawer" id="drawer" aria-label="Карточка" aria-hidden="true"></aside>
 <div id="overlay"></div>
-<button class="fab" data-action="capture" title="Записать мысль (Q)" aria-label="Записать мысль">＋</button>
+<button class="fab" data-action="capture" title="Записать мысль (Q)" aria-label="Записать мысль"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* Тот же проект Firebase, что у страницы экономики. Конфиг веб-приложения не секретный. */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBkbA5B_Tb9lxYhuahRYT4wnwAqPx8nzdc",
+  authDomain: "kentucky-economy.firebaseapp.com",
+  projectId: "kentucky-economy",
+  storageBucket: "kentucky-economy.firebasestorage.app",
+  messagingSenderId: "238727156509",
+  appId: "1:238727156509:web:ae68581d3bc6277cf507f4"
+};
+</script>
 <script>
 (() => {
 'use strict';
+
+/* ── иконки Lucide (ISC), встроены только нужные ── */
+const ICONS = {
+  Code:'<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
+  Monitor:'<rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/>',
+  Palette:'<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+  Car:'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+  Dice5:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M16 8h.01"/><path d="M8 8h.01"/><path d="M8 16h.01"/><path d="M16 16h.01"/><path d="M12 12h.01"/>',
+  Coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+  FlaskConical:'<path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2"/><path d="M6.453 15h11.094"/><path d="M8.5 2h7"/>',
+  Rocket:'<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>',
+  Shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+  Megaphone:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  Gem:'<path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/>',
+  ChartColumn:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  PartyPopper:'<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01"/><path d="M22 8h.01"/><path d="M15 2h.01"/><path d="M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z"/>',
+  Sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  Inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  LayoutGrid:'<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+  Scale:'<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  ScrollText:'<path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>',
+  Users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  BookOpen:'<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  Flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  Menu:'<line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>',
+  Search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  Headphones:'<path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>',
+  X:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  Settings:'<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  Check:'<path d="M20 6 9 17l-5-5"/>',
+  ListChecks:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  Hand:'<path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+  MapPin:'<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+  Target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  Zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  TrendingUp:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  MessageSquare:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  Plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  Trash2:'<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+  Sparkles:'<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+  CircleDot:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="1"/>',
+  Pin:'<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  Hammer:'<path d="m15 12-8.373 8.373a1 1 0 1 1-3-3L12 9"/><path d="m18 15 4-4"/><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172V7l-2.26-2.26a6 6 0 0 0-4.202-1.756L9 2.96l.92.82A6.18 6.18 0 0 1 12 8.4V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>',
+  SkipForward:'<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+  Star:'<path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"/>',
+  Lightbulb:'<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/>',
+  SunMoon:'<path d="M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>',
+  Leaf:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  CircleCheck:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  Vote:'<path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/>',
+  Lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  User:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  KeyRound:'<path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/>',
+  Eye:'<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+  EyeOff:'<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>',
+  LogOut:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/>',
+  UserPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
+  LogIn:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/>',
+  ChevronRight:'<path d="m9 18 6-6-6-6"/>'
+};
+const ic = (n, cls) => `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
 
 /* ── люди ───────────────────────────────────── */
 const NOW = Date.now();
@@ -433,29 +553,29 @@ const PEOPLE = {
 
 /* ── отделы ─────────────────────────────────── */
 const DEPTS = [
-  {id:'dev', name:'Разработка', icon:'💻', color:'#8DB6F8', tldr:'Серверная часть на C# (RAGE MP). Задачи по коду и реестры: remote-события, конфиги, таблицы БД. Фронт и геймдизайн смотрят сюда, чтобы знать, что уже есть.',
+  {id:'dev', name:'Разработка', icon:''+ic('Code')+'', color:'#8DB6F8', tldr:'Серверная часть на C# (RAGE MP). Задачи по коду и реестры: remote-события, конфиги, таблицы БД. Фронт и геймдизайн смотрят сюда, чтобы знать, что уже есть.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['events','Remote-события'],['configs','Конфиги'],['db','База данных'],['adr','Архитектура']]},
-  {id:'cef', name:'Фронт CEF', icon:'🖥️', color:'#7DD3E8', tldr:'Интерфейсы в игре (CEF). Каждый экран связан с макетом и с событиями сервера. Перед вёрсткой экрана проверь, что макет утверждён.',
+  {id:'cef', name:'Фронт CEF', icon:''+ic('Monitor')+'', color:'#7DD3E8', tldr:'Интерфейсы в игре (CEF). Каждый экран связан с макетом и с событиями сервера. Перед вёрсткой экрана проверь, что макет утверждён.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['screens','Экраны'],['components','Компоненты']]},
-  {id:'design', name:'UI/UX-дизайн', icon:'🎨', color:'#F0A6CA', tldr:'Макеты, UI-кит и передача в разработку. Макет считается готовым после статуса «Утверждён» и пройденного чеклиста передачи.',
+  {id:'design', name:'UI/UX-дизайн', icon:''+ic('Palette')+'', color:'#F0A6CA', tldr:'Макеты, UI-кит и передача в разработку. Макет считается готовым после статуса «Утверждён» и пройденного чеклиста передачи.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mockups','Макеты'],['kit','UI-кит'],['handoff','Передача']]},
-  {id:'art3d', name:'3D и маппинг', icon:'🚗', color:'#F5B98A', tldr:'Машины, одежда, интерьеры (MLO) и маппинг. В реестре видны размер стрима и лицензия каждого ассета, чтобы не превысить лимиты.',
+  {id:'art3d', name:'3D и маппинг', icon:''+ic('Car')+'', color:'#F5B98A', tldr:'Машины, одежда, интерьеры (MLO) и маппинг. В реестре видны размер стрима и лицензия каждого ассета, чтобы не превысить лимиты.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['assets','Ассеты'],['limits','Лимиты']]},
-  {id:'gd', name:'Геймдизайн', icon:'🎲', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
+  {id:'gd', name:'Геймдизайн', icon:''+ic('Dice5')+'', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mechanics','Механики'],['jobs','Работы'],['factions','Фракции']]},
-  {id:'econ', name:'Экономика', icon:'💰', color:'#86D9B0', tldr:'Отдельное рабочее место: параметры, баги, этапы и решения по экономике. Здесь сводка, всё остальное по кнопке.',
+  {id:'econ', name:'Экономика', icon:''+ic('Coins')+'', color:'#86D9B0', tldr:'Отдельное рабочее место: параметры, баги, этапы и решения по экономике. Здесь сводка, всё остальное по кнопке.',
     tabs:[['overview','Обзор'],['tasks','Задачи']]},
-  {id:'qa', name:'QA', icon:'🧪', color:'#F49A9A', tldr:'Баги, тест-кейсы и чеклист перед релизом. Критичный баг блокирует релиз, пока не исправлен или не принято решение.',
+  {id:'qa', name:'QA', icon:''+ic('FlaskConical')+'', color:'#F49A9A', tldr:'Баги, тест-кейсы и чеклист перед релизом. Критичный баг блокирует релиз, пока не исправлен или не принято решение.',
     tabs:[['overview','Обзор'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза']]},
-  {id:'release', name:'Релизы', icon:'🚀', color:'#7FD8C9', tldr:'Версии сервера, changelog для игроков и статус деплоя. Релиз выходит, когда чеклист QA закрыт.',
+  {id:'release', name:'Релизы', icon:''+ic('Rocket')+'', color:'#7FD8C9', tldr:'Версии сервера, changelog для игроков и статус деплоя. Релиз выходит, когда чеклист QA закрыт.',
     tabs:[['overview','Обзор'],['versions','Версии'],['changelog','Changelog'],['deploy','Деплой']]},
-  {id:'admin', name:'Администрация', icon:'🛡️', color:'#B8DD8A', tldr:'Правила сервера и фидбек игроков. Предложения игроков голосуются и при поддержке становятся задачами.',
+  {id:'admin', name:'Администрация', icon:''+ic('Shield')+'', color:'#B8DD8A', tldr:'Правила сервера и фидбек игроков. Предложения игроков голосуются и при поддержке становятся задачами.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['rules','Правила'],['feedback','Фидбек игроков']]},
-  {id:'smm', name:'SMM', icon:'📣', color:'#E3A6F0', tldr:'Контент-план и анонсы. Каждый анонс привязан к релизу, чтобы не анонсировать то, что ещё не готово.',
+  {id:'smm', name:'SMM', icon:''+ic('Megaphone')+'', color:'#E3A6F0', tldr:'Контент-план и анонсы. Каждый анонс привязан к релизу, чтобы не анонсировать то, что ещё не готово.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Контент-план'],['posts','Анонсы']]},
-  {id:'donate', name:'Донат', icon:'💎', color:'#F2CF7E', tldr:'Позиции доната, цены и акции. Курс и лимиты конвертации согласуются с экономикой: одна валюта, один курс.',
+  {id:'donate', name:'Донат', icon:''+ic('Gem')+'', color:'#F2CF7E', tldr:'Позиции доната, цены и акции. Курс и лимиты конвертации согласуются с экономикой: одна валюта, один курс.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['items','Позиции'],['promos','Акции']]},
-  {id:'analytics', name:'Аналитика', icon:'📊', color:'#A5B0F7', tldr:'Метрики сервера раз в неделю: онлайн, удержание, денежная масса. Цели по метрикам задаются здесь.',
+  {id:'analytics', name:'Аналитика', icon:''+ic('ChartColumn')+'', color:'#A5B0F7', tldr:'Метрики сервера раз в неделю: онлайн, удержание, денежная масса. Цели по метрикам задаются здесь.',
     tabs:[['overview','Обзор'],['metrics','Метрики'],['reports','Отчёты']]}
 ];
 const D = Object.fromEntries(DEPTS.map(d=>[d.id,d]));
@@ -587,7 +707,7 @@ const REG = {
     {t:'Передача денег между своими персонажами', tl:'Запрещена. Нужна для борьбы с твинками.', s:st('Обсуждается','info')},
     {t:'Выдача денег админами', tl:'Только с причиной и суточным лимитом.', s:st('Принято','ok')}]},
   'admin/feedback': {type:'table', cols:['Предложение','От кого','Голоса','Статус'], rows:[
-    ['Вернуть дальнобой с прицепами','Discord','👍 214',st('Взяли в работу','ok')],['Снизить цену гаража','Форум','👍 87',st('Обсуждается','info')],['Казино по выходным','Discord','👍 41',st('Отклонено','muted')]]},
+    ['Вернуть дальнобой с прицепами','Discord','214 голосов',st('Взяли в работу','ok')],['Снизить цену гаража','Форум','87 голосов',st('Обсуждается','info')],['Казино по выходным','Discord','41 голос',st('Отклонено','muted')]]},
   'smm/plan': {type:'table', cols:['Дата','Канал','Тема','Релиз','Статус'], rows:[
     ['18 окт.','Discord','Тизер реформы','2.0',st('Готово','ok')],['22 окт.','TikTok','Новый худ','1.9.3',st('Снимается','warn')],['25 окт.','Discord + VK','Анонс 2.0','2.0',st('Ждёт релиз','muted')]]},
   'smm/posts': {type:'cards', items:[
@@ -659,7 +779,7 @@ function gain(xp, text){
   const k = dayKey(Date.now()); if (!S.days.includes(k)) S.days.push(k);
   save();
   toast(text, S.prefs.calm ? '' : '+'+xp+' XP');
-  if (level() > before && !S.prefs.calm) { setTimeout(()=>toast('Новый уровень: '+level()+' 🎉',''), 500); confetti(innerWidth/2, innerHeight/2, 60); }
+  if (level() > before && !S.prefs.calm) { setTimeout(()=>toast('Новый уровень: '+level()+' '+ic('PartyPopper')+'',''), 500); confetti(innerWidth/2, innerHeight/2, 60); }
 }
 function confetti(x, y, n=28){
   if (S.prefs.calm || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -700,20 +820,20 @@ function sidebar(){
   return `
   <div class="brand"><span class="mark">KS</span><div><b>Kentucky Hub</b><small>рабочее место команды</small></div></div>
   <nav class="nav">
-    ${link('today','☀️','Мой день', myOpen, '#FFB020')}
-    ${link('inbox','📥','Входящие', S.inbox.length, '#A7AEBB')}
-    ${link('tasks','🗂️','Задачи', S.tasks.filter(t=>t.status!=='done').length, '#4FAAF9')}
-    ${link('decisions','⚖️','Решения', openDec, '#B69CFF', openDec>0)}
-    ${link('log','📜','Журнал', 0, '#A7AEBB')}
-    ${link('people','👥','Люди', 0, '#35D399')}
-    ${link('wiki','📚','Вики', 0, '#FB923C')}
+    ${link('today',''+ic('Sun')+'','Мой день', myOpen, '#FFB020')}
+    ${link('inbox',''+ic('Inbox')+'','Входящие', S.inbox.length, '#A7AEBB')}
+    ${link('tasks',''+ic('LayoutGrid')+'','Задачи', S.tasks.filter(t=>t.status!=='done').length, '#4FAAF9')}
+    ${link('decisions',''+ic('Scale')+'','Решения', openDec, '#B69CFF', openDec>0)}
+    ${link('log',''+ic('ScrollText')+'','Журнал', 0, '#A7AEBB')}
+    ${link('people',''+ic('Users')+'','Люди', 0, '#35D399')}
+    ${link('wiki',''+ic('BookOpen')+'','Вики', 0, '#FB923C')}
   </nav>
   <div class="nav-h">Отделы <button data-action="settings" title="Показать или скрыть отделы">настроить</button></div>
   <nav class="nav">
     ${shown.map(d => link('d/'+d.id, d.icon, d.name, S.tasks.filter(t=>t.dept===d.id && t.status!=='done').length || '', d.color)).join('')}
   </nav>
   <div class="me-card">
-    <div class="me-row">${av('me',30)}<div style="min-width:0"><b style="font-size:14px">${esc(PEOPLE.me.name)}</b><br><small>${esc(PEOPLE.me.role)}</small></div><span class="streak" title="Дней подряд с действием">🔥 ${streak()}</span></div>
+    <div class="me-row">${av('me',30)}<div style="min-width:0"><b style="font-size:14px">${esc(PEOPLE.me.name)}</b><br><small>${esc(PEOPLE.me.role)}</small></div><span class="streak" title="Дней подряд с действием">${ic('Flame')} ${streak()}</span><button class="icon-btn" data-action="logout" title="Выйти" aria-label="Выйти" style="width:30px;height:30px">${ic('LogOut')}</button></div>
     <div class="me-row"><span class="lvl">Ур. ${level()}</span><div class="xpbar" style="flex:1"><i style="width:${xpIn}%"></i></div><small class="mono">${xpIn}/100</small></div>
     <small>Неделя: ${weekDone()} из ${WEEK_GOAL} задач закрыто</small>
   </div>`;
@@ -724,13 +844,13 @@ function topbar(){
   const online = Object.keys(PEOPLE).filter(id=>id!=='me' && isOnline(id));
   const f = S.focus;
   return `
-  <button class="icon-btn burger" data-action="open-nav" aria-label="Меню">☰</button>
-  <button class="search" data-action="palette"><span>🔍 Найти или сделать что угодно…</span><kbd>Ctrl K</kbd></button>
+  <button class="icon-btn burger" data-action="open-nav" aria-label="Меню">${ic('Menu')}</button>
+  <button class="search" data-action="palette"><span>${ic('Search')} Найти или сделать что угодно…</span><kbd>Ctrl K</kbd></button>
   <span class="tb-sp"></span>
-  ${f ? `<button class="focus-pill" data-action="focus-stop" title="Остановить фокус">🎧 <span class="mono" id="focus-left">${mmss(f.until-Date.now())}</span><span class="lbl">${esc(task(f.task)?.title.slice(0,28)||'Фокус')}</span> ✕</button>`
-      : `<button class="btn sm hide-sm" data-action="focus-start" data-id="${S.last||''}" title="25 минут фокуса — коллеги увидят, что вы работаете">🎧 Фокус 25 мин</button>`}
+  ${f ? `<button class="focus-pill" data-action="focus-stop" title="Остановить фокус">${ic('Headphones')} <span class="mono" id="focus-left">${mmss(f.until-Date.now())}</span><span class="lbl">${esc(task(f.task)?.title.slice(0,28)||'Фокус')}</span> ${ic('X')}</button>`
+      : `<button class="btn sm hide-sm" data-action="focus-start" data-id="${S.last||''}" title="25 минут фокуса — коллеги увидят, что вы работаете">${ic('Headphones')} Фокус 25 мин</button>`}
   <a class="faces" href="#/people" title="Сейчас онлайн: ${online.length}">${online.map(id=>av(id)).join('')}</a>
-  <button class="icon-btn" data-action="settings" aria-label="Настройки" title="Настройки">⚙️</button>`;
+  <button class="icon-btn" data-action="settings" aria-label="Настройки" title="Настройки">${ic('Settings')}</button>`;
 }
 
 /* ── «Мой день» ─────────────────────────────── */
@@ -740,11 +860,11 @@ function taskItem(t, opts={}){
   const done = t.status==='done';
   const subDone = t.sub.filter(s=>s[1]).length;
   return `<div class="item" tabindex="0" data-open="task:${t.id}" style="--dc:${d.color}">
-    <button class="check${done?' on':''}" data-action="toggle-done" data-id="${t.id}" aria-label="${done?'Вернуть в работу':'Готово'}">✓</button>
+    <button class="check${done?' on':''}" data-action="toggle-done" data-id="${t.id}" aria-label="${done?'Вернуть в работу':'Готово'}">${ic('Check')}</button>
     <div class="bd">
       <div class="tt" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.title)}</div>
       ${opts.tldr!==false && t.tldr ? `<div class="ds">${esc(t.tldr)}</div>`:''}
-      <div class="mt">${dchip(t.dept)}<span class="size" title="${SIZES[t.size]}">${t.size}</span>${opts.status?`<span class="chip dot t-${colTone[t.status]}">${colName(t.status)}</span>`:''}${t.sub.length?`<small style="color:var(--muted)">☑ ${subDone}/${t.sub.length}</small>`:''}</div>
+      <div class="mt">${dchip(t.dept)}<span class="size" title="${SIZES[t.size]}">${t.size}</span>${opts.status?`<span class="chip dot t-${colTone[t.status]}">${colName(t.status)}</span>`:''}${t.sub.length?`<small style="color:var(--muted)">${ic('ListChecks')} ${subDone}/${t.sub.length}</small>`:''}</div>
     </div>
     ${opts.who!==false ? av(t.who) : ''}
   </div>`;
@@ -760,44 +880,44 @@ function viewToday(){
   return `
   <div class="proto"><b>Демо</b> Данные тестовые и пока хранятся только в вашем браузере. Общая синхронизация — следующий шаг. <button class="btn sm ghost" data-action="reset">Сбросить</button></div>
   <section class="hero">
-    <div><h1>${hello()}! 👋</h1><p>${top.length-doneTop ? `На сегодня ${top.length-doneTop} из ${top.length} главных задач. Начни с самой маленькой.` : 'Три главные задачи закрыты. Можно выдохнуть 🎉'}</p></div>
+    <div><h1>${hello()}! ${ic('Hand')}</h1><p>${top.length-doneTop ? `На сегодня ${top.length-doneTop} из ${top.length} главных задач. Начни с самой маленькой.` : 'Три главные задачи закрыты. Можно выдохнуть '+ic('PartyPopper')+''}</p></div>
     <div class="hero-stats">
       <div class="ring" style="--p:${pct}" title="Цель недели"><span>${pct}%</span></div>
       <div class="hs"><b>${wd}/${WEEK_GOAL}</b><small>задач за неделю</small></div>
-      <div class="hs"><b>🔥 ${streak()}</b><small>дней подряд</small></div>
+      <div class="hs"><b>${ic('Flame')} ${streak()}</b><small>дней подряд</small></div>
       <div class="hs"><b>Ур. ${level()}</b><small>${S.xp} XP</small></div>
     </div>
   </section>
-  ${last && last.status!=='done' ? `<div class="resume"><span style="font-size:22px">📍</span><div class="bd"><small>Ты остановился здесь</small><b>${esc(last.title)}</b></div><button class="btn sm" data-open="task:${last.id}">Открыть</button><button class="btn sm primary" data-action="focus-start" data-id="${last.id}">🎧 Продолжить 25 мин</button></div>`:''}
+  ${last && last.status!=='done' ? `<div class="resume"><span style="font-size:22px">${ic('MapPin')}</span><div class="bd"><small>Ты остановился здесь</small><b>${esc(last.title)}</b></div><button class="btn sm" data-open="task:${last.id}">Открыть</button><button class="btn sm primary" data-action="focus-start" data-id="${last.id}">${ic('Headphones')} Продолжить 25 мин</button></div>`:''}
   <div class="today-grid">
     <div class="col">
       <section class="panel">
-        <div class="panel-h"><h2><span class="hi">🎯</span>Три главные на сегодня</h2><span class="sub">не больше трёх — так проще начать</span></div>
-        <div class="list">${top.map(t=>taskItem(t,{status:true})).join('') || '<div class="empty"><b>Пусто</b>Добавь задачу кнопкой «☆ В день» в любой карточке.</div>'}</div>
+        <div class="panel-h"><h2><span class="hi">${ic('Target')}</span>Три главные на сегодня</h2><span class="sub">не больше трёх — так проще начать</span></div>
+        <div class="list">${top.map(t=>taskItem(t,{status:true})).join('') || '<div class="empty"><b>Пусто</b>Добавь задачу кнопкой «'+ic('Star')+' В день» в любой карточке.</div>'}</div>
       </section>
       ${pendingVotes.length ? `<section class="panel">
-        <div class="panel-h"><h2><span class="hi">⚖️</span>Ждут твоего голоса</h2><a class="btn sm ghost" href="#/decisions">Все решения</a></div>
+        <div class="panel-h"><h2><span class="hi">${ic('Scale')}</span>Ждут твоего голоса</h2><a class="btn sm ghost" href="#/decisions">Все решения</a></div>
         <div class="list">${pendingVotes.map(d=>`<button class="item" data-go="decisions"><div class="bd"><div class="tt">${esc(d.q)}</div><div class="ds">${esc(d.tldr)}</div><div class="mt">${dchip(d.dept)}<small style="color:var(--muted)">${Object.keys(d.votes).length} голоса</small></div></div></button>`).join('')}</div>
       </section>`:''}
       <section class="panel">
-        <div class="panel-h"><h2><span class="hi">⚡</span>Если сил мало: задачи на 15 минут</h2></div>
+        <div class="panel-h"><h2><span class="hi">${ic('Zap')}</span>Если сил мало: задачи на 15 минут</h2></div>
         <div class="list">${quick.map(t=>taskItem(t)).join('') || '<div class="empty">Быстрых задач нет.</div>'}</div>
       </section>
       ${heatmap()}
     </div>
     <div class="col">
       <section class="panel glow">
-        <div class="panel-h"><h2><span class="hi">🎧</span>Работают рядом</h2><span class="sub">${online.length} онлайн</span></div>
+        <div class="panel-h"><h2><span class="hi">${ic('Headphones')}</span>Работают рядом</h2><span class="sub">${online.length} онлайн</span></div>
         ${online.map(id => { const f = focusOf(id); const p = PEOPLE[id];
           return `<div class="person">${av(id,32)}<div class="bd"><div class="nm">${esc(p.name)}</div><div class="st${f?' f':''}">${f ? `в фокусе ещё <span class="mono" data-until="${f.until}">${mmss(f.until-Date.now())}</span> · ${esc(task(f.task)?.title||'')}` : esc(p.role)}</div></div></div>`; }).join('')}
-        ${S.focus ? '' : `<button class="btn" data-action="focus-start" data-id="${S.last||''}">🎧 Присоединиться: 25 минут фокуса</button>`}
+        ${S.focus ? '' : `<button class="btn" data-action="focus-start" data-id="${S.last||''}">${ic('Headphones')} Присоединиться: 25 минут фокуса</button>`}
       </section>
       <section class="panel">
-        <div class="panel-h"><h2><span class="hi">📥</span>Входящие</h2><a class="btn sm ghost" href="#/inbox">Разобрать</a></div>
+        <div class="panel-h"><h2><span class="hi">${ic('Inbox')}</span>Входящие</h2><a class="btn sm ghost" href="#/inbox">Разобрать</a></div>
         <div style="color:var(--text-2);font-size:13.5px">${S.inbox.length ? `${S.inbox.length} неразобранных мыслей. Разбери за пару минут: в задачу или в корзину.` : 'Пусто. Мысль пришла — жми <kbd>Q</kbd>.'}</div>
       </section>
       <section class="panel">
-        <div class="panel-h"><h2><span class="hi">📜</span>Только что</h2><a class="btn sm ghost" href="#/log">Журнал</a></div>
+        <div class="panel-h"><h2><span class="hi">${ic('ScrollText')}</span>Только что</h2><a class="btn sm ghost" href="#/log">Журнал</a></div>
         <div class="log">${S.log.slice(0,4).map(logEntry).join('')}</div>
       </section>
     </div>
@@ -808,7 +928,7 @@ function heatmap(){
   const rows = DEPTS.filter(d=>!S.prefs.hidden.includes(d.id)).slice(0,6);
   let seed = 11; const rnd = () => (seed = (seed*9301+49297)%233280)/233280;
   const days = Array.from({length:14},(_,i)=>new Date(Date.now()-(13-i)*86400e3).getDate());
-  return `<section class="panel"><div class="panel-h"><h2><span class="hi">📈</span>Активность команды</h2><a class="btn sm ghost" href="#/log">Журнал</a></div>
+  return `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('TrendingUp')}</span>Активность команды</h2><a class="btn sm ghost" href="#/log">Журнал</a></div>
   <div class="legend"><span><i style="opacity:.3"></i>Мало</span><span><i style="opacity:.55"></i>Средне</span><span><i style="opacity:.8"></i>Много</span><span><i></i>Пик</span></div>
   <div class="heat">${rows.map(d=>`<span class="rl" title="${esc(d.name)}">${d.icon} ${esc(d.name)}</span>`+days.map(()=>{ const v = rnd(); return `<span class="cell l${v>.86?3:v>.62?2:v>.3?1:0}"></span>`; }).join('')).join('')}<span></span>${days.map(n=>`<span class="cl">${n}</span>`).join('')}</div></section>`;
 }
@@ -823,25 +943,25 @@ function card(t){
     <div class="tt">${esc(t.title)}</div>
     ${t.tldr?`<div class="tl">${esc(t.tldr)}</div>`:''}
     ${t.sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/t.sub.length*100)}%"></i></div>`:''}
-    <div class="mt"><span class="dchip" style="--dc:${d.color}">${d.icon}</span><span class="size">${t.size}</span>${S.top3.includes(t.id)?'<span title="В «Мой день»">☀️</span>':''}<span class="sp"></span>${t.comments.length?`<small style="color:var(--muted)">💬 ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
+    <div class="mt"><span class="dchip" style="--dc:${d.color}">${d.icon}</span><span class="size">${t.size}</span>${S.top3.includes(t.id)?'<span title="В «Мой день»">'+ic('Sun')+'</span>':''}<span class="sp"></span>${t.comments.length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
   </div>`;
 }
 function board(dept){
   const list = filteredTasks(dept);
   return `<div class="board">${COLS.map(([id,name,color]) => { const items = list.filter(t=>t.status===id);
     return `<div class="colm" data-col="${id}"><div class="colm-h"><span class="dot" style="background:${color}"></span>${name}<span class="n">${items.length}</span></div>${items.map(card).join('')}
-    ${id==='inbox'||id==='todo' ? `<button class="btn sm ghost" data-action="new-task" data-status="${id}" data-dept="${dept||''}">＋ Задача</button>`:''}</div>`; }).join('')}</div>`;
+    ${id==='inbox'||id==='todo' ? `<button class="btn sm ghost" data-action="new-task" data-status="${id}" data-dept="${dept||''}">${ic('Plus')} Задача</button>`:''}</div>`; }).join('')}</div>`;
 }
 function filters(withDept){
   const f = UI.filt;
   return `<div class="toolbar">
-    ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел"><option value="all">Все отделы</option>${DEPTS.map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${d.icon} ${esc(d.name)}</option>`).join('')}</select>`:''}
-    <div class="seg"><button data-action="filt-small" aria-pressed="${f.small}">⚡ Только ≤ 15 мин</button><button data-action="filt-mine" aria-pressed="${f.mine}">☀️ Только мои</button></div>
+    ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел"><option value="all">Все отделы</option>${DEPTS.map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`:''}
+    <div class="seg"><button data-action="filt-small" aria-pressed="${f.small}">${ic('Zap')} Только ≤ 15 мин</button><button data-action="filt-mine" aria-pressed="${f.mine}">${ic('Sun')} Только мои</button></div>
     <small style="color:var(--muted)">Перетаскивайте карточки между колонками</small>
   </div>`;
 }
 function viewTasks(){
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#4FAAF9">🗂️</span><div><h1>Задачи</h1><p>Одна доска на всю команду. Фильтр по отделу — сверху.</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">＋ Задача</button></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#4FAAF9">${ic('LayoutGrid')}</span><div><h1>Задачи</h1><p>Одна доска на всю команду. Фильтр по отделу — сверху.</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">${ic('Plus')} Задача</button></div>
   ${filters(true)}${board(null)}`;
 }
 
@@ -855,14 +975,14 @@ function decisionCard(d){
     <div class="list">${d.options.map((o,i)=>`<div class="opt${d.chosen===i?' chosen':''}${mine===i?' mine':''}">
       <div><div class="l">${esc(o[0])} ${d.rec===i?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div><div class="d">${esc(o[1])}</div></div>
       <div style="display:flex;gap:8px;align-items:center"><span class="votes">${Object.entries(d.votes).filter(([,v])=>v===i).map(([u])=>av(u,22)).join('')}</span>
-      ${d.chosen==null ? `<button class="btn sm${mine===i?' primary':''}" data-action="vote" data-id="${d.id}" data-i="${i}">${mine===i?'✓ Мой голос':'Голосовать'}</button>
+      ${d.chosen==null ? `<button class="btn sm${mine===i?' primary':''}" data-action="vote" data-id="${d.id}" data-i="${i}">${mine===i?''+ic('Check')+' Мой голос':'Голосовать'}</button>
       <button class="btn sm ghost" data-action="accept" data-id="${d.id}" data-i="${i}" title="Зафиксировать итог">Принять</button>`:''}</div></div>`).join('')}</div>
   </article>`;
 }
 function viewDecisions(dept){
   const list = S.decisions.filter(d=>!dept||d.dept===dept);
   const open = list.filter(d=>d.chosen==null), closed = list.filter(d=>d.chosen!=null);
-  return `${dept?'':`<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#B69CFF">⚖️</span><div><h1>Решения</h1><p>Спорные вопросы: варианты, голоса, итог. Принятое решение не теряется в чатах.</p></div></div></div>`}
+  return `${dept?'':`<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#B69CFF">${ic('Scale')}</span><div><h1>Решения</h1><p>Спорные вопросы: варианты, голоса, итог. Принятое решение не теряется в чатах.</p></div></div></div>`}
   ${open.length?`<h2 class="sub-h">Голосуем · ${open.length}</h2>${open.map(decisionCard).join('')}`:''}
   ${closed.length?`<h2 class="sub-h">Принято · ${closed.length}</h2>${closed.map(decisionCard).join('')}`:''}
   ${!list.length?'<div class="empty"><b>Решений пока нет</b>Спорный вопрос? Создайте решение через Ctrl+K → «Новое решение».</div>':''}`;
@@ -870,31 +990,31 @@ function viewDecisions(dept){
 
 /* ── входящие ───────────────────────────────── */
 function viewInbox(){
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A7AEBB">📥</span><div><h1>Входящие</h1><p>Сюда падает всё, что записано через <kbd>Q</kbd>. Разбирай раз в день: в задачу, в отдел или удалить.</p></div></div><button class="btn primary" data-action="capture">＋ Записать мысль</button></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A7AEBB">${ic('Inbox')}</span><div><h1>Входящие</h1><p>Сюда падает всё, что записано через <kbd>Q</kbd>. Разбирай раз в день: в задачу, в отдел или удалить.</p></div></div><button class="btn primary" data-action="capture">${ic('Plus')} Записать мысль</button></div>
   <div class="list">${S.inbox.map(i=>`<div class="item" style="cursor:default">${av(i.by)}<div class="bd"><div class="tt">${esc(i.text)}</div><div class="mt"><small style="color:var(--muted)">${ago(i.at)}</small>${i.dept?dchip(i.dept):''}</div></div>
-    <button class="btn sm" data-action="inbox-task" data-id="${i.id}">→ В задачу</button><button class="icon-btn" data-action="inbox-del" data-id="${i.id}" aria-label="Удалить" title="Удалить">🗑</button></div>`).join('') || '<div class="empty"><b>Всё разобрано ✨</b>Голова свободна. Новая мысль — <kbd>Q</kbd>.</div>'}</div>`;
+    <button class="btn sm" data-action="inbox-task" data-id="${i.id}">→ В задачу</button><button class="icon-btn" data-action="inbox-del" data-id="${i.id}" aria-label="Удалить" title="Удалить">${ic('Trash2')}</button></div>`).join('') || '<div class="empty"><b>Всё разобрано '+ic('Sparkles')+'</b>Голова свободна. Новая мысль — <kbd>Q</kbd>.</div>'}</div>`;
 }
 
 /* ── журнал ─────────────────────────────────── */
 function logEntry(l){ return `<div class="entry">${av(l.by,24)}<div><b>${esc(PEOPLE[l.by]?.name||'')}</b> ${l.text} ${l.dept?dchip(l.dept):''}</div><span class="when">${ago(l.at)}</span></div>`; }
 function viewLog(){
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A7AEBB">📜</span><div><h1>Журнал</h1><p>Все изменения команды. Ничего не теряется.</p></div></div></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A7AEBB">${ic('ScrollText')}</span><div><h1>Журнал</h1><p>Все изменения команды. Ничего не теряется.</p></div></div></div>
   <section class="panel"><div class="log">${S.log.map(logEntry).join('')}</div></section>`;
 }
 
 /* ── люди ───────────────────────────────────── */
 function viewPeople(){
   const ids = Object.keys(PEOPLE).sort((a,b)=>(isOnline(b)-isOnline(a)));
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#35D399">👥</span><div><h1>Люди</h1><p>Кто за что отвечает и кто сейчас онлайн. Фиолетовая точка — человек в фокусе, лучше не отвлекать.</p></div></div></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#35D399">${ic('Users')}</span><div><h1>Люди</h1><p>Кто за что отвечает и кто сейчас онлайн. Фиолетовая точка — человек в фокусе, лучше не отвлекать.</p></div></div></div>
   <div class="g3">${ids.map(id => { const p = PEOPLE[id]; const f = focusOf(id); const open = S.tasks.filter(t=>t.who===id && t.status!=='done').length;
     return `<section class="panel"><div class="person">${av(id,40)}<div class="bd"><div class="nm">${esc(p.name)}</div><div class="st">${esc(p.role)}</div></div></div>
-    <div class="st" style="font-size:13px;color:${f?'var(--violet)':'var(--text-2)'}">${f?`🎧 В фокусе ещё <span class="mono" data-until="${f.until}">${mmss(f.until-Date.now())}</span>`: isOnline(id)?'🟢 Онлайн':'Был(а) '+ago(p.seen||0)}</div>
+    <div class="st" style="font-size:13px;color:${f?'var(--violet)':'var(--text-2)'}">${f?`${ic('Headphones')} В фокусе ещё <span class="mono" data-until="${f.until}">${mmss(f.until-Date.now())}</span>`: isOnline(id)?''+ic('CircleDot')+' Онлайн':'Был(а) '+ago(p.seen||0)}</div>
     <div class="links">${p.depts.map(dchip).join('')}</div><small style="color:var(--muted)">Открытых задач: ${open}</small></section>`; }).join('')}</div>`;
 }
 
 /* ── вики ───────────────────────────────────── */
 function viewWiki(){
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#FB923C">📚</span><div><h1>Вики</h1><p>Как всё устроено. У каждой статьи суть сверху — подробности по клику.</p></div></div></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#FB923C">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено. У каждой статьи суть сверху — подробности по клику.</p></div></div></div>
   <div class="g2">${WIKI.map(w=>`<section class="panel"><h2 style="margin:0;font:600 15px var(--f-display)">${esc(w.title)}</h2><div class="tldr"><b>Суть</b>${esc(w.tldr)}</div><details class="more"><summary>Подробнее</summary><div class="body">${esc(w.body)}</div></details></section>`).join('')}</div>`;
 }
 
@@ -908,7 +1028,7 @@ function registry(key, d){
   const r = REG[key]; if (!r) return '<div class="empty">Скоро.</div>';
   if (r.type==='table') return `<div class="tbl-wrap"><table class="grid"><thead><tr>${r.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${r.rows.map((row,i)=>`<tr tabindex="0" data-open="row:${key}:${i}">${row.map((c,j)=>typeof c==='object'?`<td>${chip(c)}</td>`:`<td class="${j===0?'b':/[\/._:]/.test(c)&&j>0?'m':''}">${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   if (r.type==='cards') return `<div class="tiles">${r.items.map((c,i)=>`<button class="tile" data-open="card:${key}:${i}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(c.t)}</h3>${chip(c.s)}</div><div class="s">${esc(c.tl)}</div></button>`).join('')}</div>`;
-  if (r.type==='mockups') return `<div class="tiles">${r.items.map((c,i)=>`<button class="tile" data-open="card:${key}:${i}" style="--dc:${d.color}"><div class="thumb"><div class="ui"></div>${Array.from({length:c.pins},(_,k)=>`<i style="left:${18+k*17%70}%;top:${20+(k*29)%55}%">${k+1}</i>`).join('')}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(c.t)}</h3>${chip(c.s)}</div><div class="s">${esc(c.tl)}</div><div style="display:flex;gap:8px;align-items:center">${av(c.who,22)}<small style="color:var(--muted)">📌 ${c.pins} комментариев на макете</small></div></button>`).join('')}</div>`;
+  if (r.type==='mockups') return `<div class="tiles">${r.items.map((c,i)=>`<button class="tile" data-open="card:${key}:${i}" style="--dc:${d.color}"><div class="thumb"><div class="ui"></div>${Array.from({length:c.pins},(_,k)=>`<i style="left:${18+k*17%70}%;top:${20+(k*29)%55}%">${k+1}</i>`).join('')}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(c.t)}</h3>${chip(c.s)}</div><div class="s">${esc(c.tl)}</div><div style="display:flex;gap:8px;align-items:center">${av(c.who,22)}<small style="color:var(--muted)">${ic('Pin')} ${c.pins} комментариев на макете</small></div></button>`).join('')}</div>`;
   if (r.type==='tiles') return `<div class="tiles">${r.items.map(t=>`<div class="tile"><span class="k">${esc(t.k)}</span><span class="v">${esc(t.v)}</span><span class="s">${esc(t.s)}</span></div>`).join('')}</div>`;
   if (r.type==='metrics') return `<div class="tiles">${r.items.map(t=>`<div class="tile"><span class="k">${esc(t.k)}</span><span class="v">${esc(t.v)}</span>${spark(t.d, d.color)}<span class="s">${esc(t.s)}</span></div>`).join('')}</div>`;
   if (r.type==='checklist') { const c = S.checks[key] || []; const n = c.filter(Boolean).length;
@@ -929,7 +1049,7 @@ function deptOverview(d){
   const next = open.filter(t=>t.status==='todo'||t.status==='inbox').slice(0,3);
   const done = tasks.filter(t=>t.status==='done').length;
   return `
-  ${d.id==='econ' ? `<section class="panel" style="--dc:${d.color}"><div class="panel-h"><h2><span class="hi">💰</span>Рабочее место экономики</h2><a class="btn primary" href="../economy/">Открыть →</a></div>
+  ${d.id==='econ' ? `<section class="panel" style="--dc:${d.color}"><div class="panel-h"><h2><span class="hi">${ic('Coins')}</span>Рабочее место экономики</h2><a class="btn primary" href="../economy/">Открыть →</a></div>
     <div class="tiles"><div class="tile"><span class="k">Параметры</span><span class="v">0 / 55</span><span class="s">согласовано</span></div><div class="tile"><span class="k">Баги</span><span class="v">14</span><span class="s">открыто, 3 критичных</span></div><div class="tile"><span class="k">Этапы</span><span class="v">0 / 9</span><span class="s">готово</span></div><div class="tile"><span class="k">Якорь</span><span class="v mono" style="font-size:18px">3 000 000 $</span><span class="s">= 1 час работы</span></div></div></section>`:''}
   <div class="tiles">
     <div class="tile"><span class="k">Открыто задач</span><span class="v">${open.length}</span><span class="s">${doing.length} в работе</span></div>
@@ -938,11 +1058,11 @@ function deptOverview(d){
     <div class="tile"><span class="k">Люди</span><span class="v">${people.length}</span><span class="s">${people.filter(isOnline).length} онлайн</span></div>
   </div>
   <div class="g2">
-    <section class="panel"><div class="panel-h"><h2><span class="hi">🔨</span>Сейчас в работе</h2></div><div class="list">${doing.map(t=>taskItem(t,{status:true})).join('')||'<div class="empty">Ничего не в работе.</div>'}</div></section>
-    <section class="panel"><div class="panel-h"><h2><span class="hi">⏭️</span>Следующие</h2></div><div class="list">${next.map(t=>taskItem(t)).join('')||'<div class="empty">Очередь пуста.</div>'}</div></section>
+    <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Hammer')}</span>Сейчас в работе</h2></div><div class="list">${doing.map(t=>taskItem(t,{status:true})).join('')||'<div class="empty">Ничего не в работе.</div>'}</div></section>
+    <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('SkipForward')}</span>Следующие</h2></div><div class="list">${next.map(t=>taskItem(t)).join('')||'<div class="empty">Очередь пуста.</div>'}</div></section>
   </div>
   ${decs.length?`<h2 class="sub-h">Решения отдела</h2>${decs.map(decisionCard).join('')}`:''}
-  <section class="panel"><div class="panel-h"><h2><span class="hi">👥</span>Кто в отделе</h2></div><div class="g3">${people.map(id=>`<div class="person">${av(id,32)}<div class="bd"><div class="nm">${esc(PEOPLE[id].name)}</div><div class="st">${esc(PEOPLE[id].role)}</div></div></div>`).join('')}</div></section>`;
+  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Кто в отделе</h2></div><div class="g3">${people.map(id=>`<div class="person">${av(id,32)}<div class="bd"><div class="nm">${esc(PEOPLE[id].name)}</div><div class="st">${esc(PEOPLE[id].role)}</div></div></div>`).join('')}</div></section>`;
 }
 function viewDept(){
   const d = D[UI.route.slice(2)];
@@ -954,7 +1074,7 @@ function viewDept(){
   const counts = {tasks:S.tasks.filter(t=>t.dept===d.id && t.status!=='done').length};
   return `<div style="--dc:${d.color};display:contents">
   <div class="ph"><div class="ph-l"><span class="ph-ico">${d.icon}</span><div><h1>${esc(d.name)}</h1><p>${Object.keys(PEOPLE).filter(id=>PEOPLE[id].depts.includes(d.id)).map(id=>esc(PEOPLE[id].name)).join(', ')}</p></div></div>
-  <button class="btn primary" data-action="new-task" data-status="todo" data-dept="${d.id}">＋ Задача</button></div>
+  <button class="btn primary" data-action="new-task" data-status="todo" data-dept="${d.id}">${ic('Plus')} Задача</button></div>
   <div class="tldr"><b>Суть раздела</b>${esc(d.tldr)}</div>
   <nav class="tabs" role="tablist">${d.tabs.map(([id,name])=>`<a class="tab" role="tab" href="#/d/${d.id}/${id}" aria-selected="${tab===id}">${esc(name)}${counts[id]?`<span class="c">${counts[id]}</span>`:''}</a>`).join('')}</nav>
   ${body}</div>`;
@@ -971,8 +1091,8 @@ function closeDrawer(){ UI.drawer = null; const el = $('#drawer'); el.classList.
 function linkChip(id){
   const t = task(id), d = dec(id);
   if (t) return `<button class="link" data-open="task:${t.id}" style="--dc:${D[t.dept].color}">${D[t.dept].icon} ${esc(t.title)}</button>`;
-  if (d) return `<button class="link" data-go="decisions">⚖️ ${esc(d.q)}</button>`;
-  const names = {b1:['🧪','Баг: склад не уменьшается','d/qa/bugs'], m1:['🎨','Макет: Банкомат v2','d/design/mockups'], m2:['🎨','Макет: Меню бизнеса','d/design/mockups'], a2:['🚗','Ассет: Гараж MLO','d/art3d/assets'], r1:['🚀','Версия 2.0','d/release/versions']};
+  if (d) return `<button class="link" data-go="decisions">${ic('Scale')} ${esc(d.q)}</button>`;
+  const names = {b1:[''+ic('FlaskConical')+'','Баг: склад не уменьшается','d/qa/bugs'], m1:[''+ic('Palette')+'','Макет: Банкомат v2','d/design/mockups'], m2:[''+ic('Palette')+'','Макет: Меню бизнеса','d/design/mockups'], a2:[''+ic('Car')+'','Ассет: Гараж MLO','d/art3d/assets'], r1:[''+ic('Rocket')+'','Версия 2.0','d/release/versions']};
   const n = names[id]; return n ? `<button class="link" data-go="${n[2]}">${n[0]} ${esc(n[1])}</button>` : '';
 }
 function paintDrawer(){
@@ -983,14 +1103,14 @@ function paintDrawer(){
     const d = D[t.dept]; const sd = t.sub.filter(s=>s[1]).length;
     const back = S.tasks.filter(x=>x.links.includes(t.id)).map(x=>x.id);
     const links = [...new Set([...t.links, ...back])];
-    el.innerHTML = `<div class="dr-h" style="--dc:${d.color}"><span class="ph-ico" style="width:38px;height:38px;font-size:18px;border-radius:11px">${d.icon}</span><h2>${esc(t.title)}</h2><button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">✕</button></div>
+    el.innerHTML = `<div class="dr-h" style="--dc:${d.color}"><span class="ph-ico" style="width:38px;height:38px;font-size:18px;border-radius:11px">${d.icon}</span><h2>${esc(t.title)}</h2><button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">${ic('X')}</button></div>
     <div class="dr-b">
       ${t.tldr?`<div class="tldr"><b>Суть</b>${esc(t.tldr)}</div>`:''}
       <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${t.id}" data-s="${id}" aria-pressed="${t.status===id}">${n}</button>`).join('')}</div>
       <dl class="kv"><dt>Отдел</dt><dd>${dchip(t.dept)}</dd><dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center">${av(t.who)} ${esc(PEOPLE[t.who]?.name||'—')}</dd><dt>Размер</dt><dd><span class="size">${t.size}</span> <small style="color:var(--muted)">${SIZES[t.size]}</small></dd></dl>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn sm primary" data-action="focus-start" data-id="${t.id}">🎧 Фокус 25 мин</button>
-        <button class="btn sm" data-action="toggle-top" data-id="${t.id}">${S.top3.includes(t.id)?'★ В «Моём дне»':'☆ В день'}</button>
+        <button class="btn sm primary" data-action="focus-start" data-id="${t.id}">${ic('Headphones')} Фокус 25 мин</button>
+        <button class="btn sm" data-action="toggle-top" data-id="${t.id}">${S.top3.includes(t.id)?''+ic('Star','filled')+' В «Моём дне»':''+ic('Star')+' В день'}</button>
       </div>
       ${t.sub.length?`<div><p class="sub-h">Шаги · ${sd}/${t.sub.length}</p><div class="mini-bar" style="margin:8px 0"><i style="width:${Math.round(sd/t.sub.length*100)}%"></i></div><div class="cl">${t.sub.map((s,i)=>`<label class="${s[1]?'done':''}"><input type="checkbox" data-action="sub" data-id="${t.id}" data-i="${i}" ${s[1]?'checked':''}><span>${esc(s[0])}</span></label>`).join('')}</div></div>`:''}
       ${t.details?`<details class="more"><summary>Подробности</summary><div class="body">${esc(t.details)}</div></details>`:''}
@@ -1004,8 +1124,8 @@ function paintDrawer(){
     if (kind==='row') { const row = r.rows[i]; title = row[0];
       inner = `<dl class="kv">${r.cols.map((c,j)=>`<dt>${esc(c)}</dt><dd>${typeof row[j]==='object'?chip(row[j]):`<span class="${/[\/._:]/.test(row[j])?'mono':''}">${esc(row[j])}</span>`}</dd>`).join('')}</dl>`; }
     else { const c = r.items[i]; title = c.t; inner = `<div class="tldr"><b>Суть</b>${esc(c.tl)}</div><dl class="kv"><dt>Статус</dt><dd>${chip(c.s)}</dd></dl>`; }
-    el.innerHTML = `<div class="dr-h" style="--dc:${d.color}"><span class="ph-ico" style="width:38px;height:38px;font-size:18px;border-radius:11px">${d.icon}</span><h2>${esc(title)}</h2><button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">✕</button></div>
-    <div class="dr-b">${inner}<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="new-task" data-status="todo" data-dept="${k1}" data-title="${esc(title)}">＋ Задача по этой записи</button></div>
+    el.innerHTML = `<div class="dr-h" style="--dc:${d.color}"><span class="ph-ico" style="width:38px;height:38px;font-size:18px;border-radius:11px">${d.icon}</span><h2>${esc(title)}</h2><button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">${ic('X')}</button></div>
+    <div class="dr-b">${inner}<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="new-task" data-status="todo" data-dept="${k1}" data-title="${esc(title)}">${ic('Plus')} Задача по этой записи</button></div>
     <div class="empty" style="font-size:13px">В рабочей версии тут будут поля для редактирования, история изменений и обсуждение.</div></div>`;
   }
 }
@@ -1016,7 +1136,7 @@ function capture(){
   UI.pal = null;
   const cur = UI.route.startsWith('d/') ? UI.route.slice(2) : '';
   $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg"><form class="pal" data-form="capture">
-    <div class="cap"><h2><span class="hi">💭</span>Записать мысль</h2>
+    <div class="cap"><h2><span class="hi">${ic('Lightbulb')}</span>Записать мысль</h2>
     <textarea class="input" name="t" placeholder="Что пришло в голову? Разберёшь потом." required></textarea>
     <div class="dpick" role="group" aria-label="Отдел (необязательно)">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="pick-dept" data-d="${d.id}" aria-pressed="${d.id===cur}">${d.icon} ${esc(d.name)}</button>`).join('')}</div>
     <input type="hidden" name="d" value="${cur}">
@@ -1027,19 +1147,19 @@ function capture(){
 function palItems(q){
   q = q.trim().toLowerCase();
   const cmds = [
-    ['💭','Записать мысль','Q',()=>capture()],
-    ['＋','Новая задача','',()=>newTask('todo', UI.route.startsWith('d/')?UI.route.slice(2):'')],
-    ['🎧','Фокус 25 минут','',()=>startFocus(S.last)],
-    ['🌗','Сменить тему','',()=>{ S.prefs.theme = {auto:'dark',dark:'light',light:'auto'}[S.prefs.theme]; applyPrefs(); save(); toast('Тема: '+{auto:'как в системе',dark:'тёмная',light:'светлая'}[S.prefs.theme]); }],
-    ['🧘','Спокойный режим вкл/выкл','',()=>{ S.prefs.calm = !S.prefs.calm; applyPrefs(); save(); toast(S.prefs.calm?'Спокойный режим: без конфетти и XP-всплывашек':'Спокойный режим выключен'); }],
-    ['⚙️','Настройки','',()=>settings()]
+    [''+ic('Lightbulb')+'','Записать мысль','Q',()=>capture()],
+    [''+ic('Plus')+'','Новая задача','',()=>newTask('todo', UI.route.startsWith('d/')?UI.route.slice(2):'')],
+    [''+ic('Headphones')+'','Фокус 25 минут','',()=>startFocus(S.last)],
+    [''+ic('SunMoon')+'','Сменить тему','',()=>{ S.prefs.theme = {auto:'dark',dark:'light',light:'auto'}[S.prefs.theme]; applyPrefs(); save(); toast('Тема: '+{auto:'как в системе',dark:'тёмная',light:'светлая'}[S.prefs.theme]); }],
+    [''+ic('Leaf')+'','Спокойный режим вкл/выкл','',()=>{ S.prefs.calm = !S.prefs.calm; applyPrefs(); save(); toast(S.prefs.calm?'Спокойный режим: без конфетти и XP-всплывашек':'Спокойный режим выключен'); }],
+    [''+ic('Settings')+'','Настройки','',()=>settings()]
   ].map(c=>({g:'Команды', ico:c[0], t:c[1], r:c[2], run:c[3]}));
-  const pages = [['today','☀️','Мой день'],['inbox','📥','Входящие'],['tasks','🗂️','Задачи'],['decisions','⚖️','Решения'],['log','📜','Журнал'],['people','👥','Люди'],['wiki','📚','Вики']]
+  const pages = [['today',''+ic('Sun')+'','Мой день'],['inbox',''+ic('Inbox')+'','Входящие'],['tasks',''+ic('LayoutGrid')+'','Задачи'],['decisions',''+ic('Scale')+'','Решения'],['log',''+ic('ScrollText')+'','Журнал'],['people',''+ic('Users')+'','Люди'],['wiki',''+ic('BookOpen')+'','Вики']]
     .map(p=>({g:'Разделы', ico:p[1], t:p[2], run:()=>go(p[0])}))
     .concat(DEPTS.flatMap(d=>[{g:'Разделы', ico:d.icon, t:d.name, run:()=>go('d/'+d.id)}].concat(d.tabs.slice(1).map(([id,n])=>({g:'Разделы', ico:d.icon, t:d.name+' → '+n, run:()=>go('d/'+d.id+'/'+id)})))));
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:D[t.dept].icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
-  const decs = S.decisions.map(d=>({g:'Решения', ico:'⚖️', t:d.q, extra:d.tldr, run:()=>go('decisions')}));
-  const wiki = WIKI.map(w=>({g:'Вики', ico:'📚', t:w.title, extra:w.tldr, run:()=>go('wiki')}));
+  const decs = S.decisions.map(d=>({g:'Решения', ico:''+ic('Scale')+'', t:d.q, extra:d.tldr, run:()=>go('decisions')}));
+  const wiki = WIKI.map(w=>({g:'Вики', ico:''+ic('BookOpen')+'', t:w.title, extra:w.tldr, run:()=>go('wiki')}));
   let all = [...cmds, ...pages, ...tasks, ...decs, ...wiki];
   if (q) all = all.filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q));
   else all = [...cmds, ...pages.slice(0,7), ...tasks.filter(t=>true).slice(0,4)];
@@ -1058,13 +1178,13 @@ function paintPal(){
 }
 function runPal(i){
   const P = UI.pal; const x = P.items[i];
-  if (!x) { if (P.q.trim()) { S.inbox.unshift({id:'i'+Date.now(), text:P.q.trim(), at:Date.now(), by:'me'}); closeOverlay(); gain(2,'💭 Записано во «Входящие»'); paint(); } return; }
+  if (!x) { if (P.q.trim()) { S.inbox.unshift({id:'i'+Date.now(), text:P.q.trim(), at:Date.now(), by:'me'}); closeOverlay(); gain(2,''+ic('Lightbulb')+' Записано во «Входящие»'); paint(); } return; }
   closeOverlay(); x.run();
 }
 function settings(){
   const p = S.prefs;
   const seg = (k, opts) => `<div class="seg">${opts.map(([v,n])=>`<button data-action="pref" data-k="${k}" data-v="${v}" aria-pressed="${p[k]===v}">${n}</button>`).join('')}</div>`;
-  $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg"><div class="pal settings" role="dialog" aria-label="Настройки"><div class="cap"><h2><span class="hi">⚙️</span>Настройки</h2>
+  $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg"><div class="pal settings" role="dialog" aria-label="Настройки"><div class="cap"><h2><span class="hi">${ic('Settings')}</span>Настройки</h2>
     <div class="set-row"><div>Тема</div>${seg('theme',[['auto','Авто'],['dark','Тёмная'],['light','Светлая']])}</div>
     <div class="set-row"><div>Размер текста</div>${seg('fs',[['s','S'],['m','M'],['l','L']])}</div>
     <div class="set-row"><div>Плотность</div>${seg('density',[['normal','Свободно'],['compact','Плотно']])}</div>
@@ -1082,7 +1202,7 @@ function applyPrefs(){
 function setStatus(id, s, x, y){
   const t = task(id); if (!t || t.status===s) return;
   const was = t.status; t.status = s;
-  if (s==='done') { t.doneAt = Date.now(); addLog(`закрыл(а) задачу <q>${esc(t.title)}</q>`, t.dept); confetti(x ?? innerWidth/2, y ?? innerHeight/2); gain(XP_BY_SIZE[t.size]||10, '✅ Готово: '+esc(t.title)); }
+  if (s==='done') { t.doneAt = Date.now(); addLog(`закрыл(а) задачу <q>${esc(t.title)}</q>`, t.dept); confetti(x ?? innerWidth/2, y ?? innerHeight/2); gain(XP_BY_SIZE[t.size]||10, ''+ic('CircleCheck')+' Готово: '+esc(t.title)); }
   else { if (was==='done') delete t.doneAt; addLog(`перевёл(а) <q>${esc(t.title)}</q> в «${colName(s)}»`, t.dept); save(); }
   paint(); paintDrawer();
 }
@@ -1090,11 +1210,11 @@ function newTask(status, dept, title){
   UI.pal = null;
   dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : 'dev');
   $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg"><form class="pal" data-form="task" data-status="${status||'todo'}">
-    <div class="cap"><h2>＋ Новая задача</h2>
+    <div class="cap"><h2>${ic('Plus')} Новая задача</h2>
     <input class="input" name="title" placeholder="Что сделать? Начни с глагола: «Починить…», «Добавить…»" value="${esc(title||'')}" required autocomplete="off">
     <input class="input" name="tldr" placeholder="Суть в одном предложении — зачем это нужно" autocomplete="off">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <select class="select" name="dept" aria-label="Отдел">${DEPTS.map(d=>`<option value="${d.id}" ${d.id===dept?'selected':''}>${d.icon} ${esc(d.name)}</option>`).join('')}</select>
+      <select class="select" name="dept" aria-label="Отдел">${DEPTS.map(d=>`<option value="${d.id}" ${d.id===dept?'selected':''}>${esc(d.name)}</option>`).join('')}</select>
       <div class="seg" role="radiogroup" aria-label="Размер">${Object.entries(SIZES).map(([k,v])=>`<button type="button" data-action="pick-size" data-v="${k}" aria-pressed="${k==='M'}" title="${v}">${k} · ${v}</button>`).join('')}</div>
       <input type="hidden" name="size" value="M">
     </div>
@@ -1107,12 +1227,12 @@ function createTask(f){
   const id = 't'+Date.now(), dept = f.dept.value;
   S.tasks.push({id, title:t, tldr:f.tldr.value.trim(), details:'', dept, status:f.dataset.status||'todo', size:f.size.value, who:'me', links:[], sub:[], comments:[]});
   closeOverlay();
-  addLog(`создал(а) задачу <q>${esc(t)}</q>`, dept); gain(3, '＋ Задача создана'); paint(); openDrawer('task:'+id);
+  addLog(`создал(а) задачу <q>${esc(t)}</q>`, dept); gain(3, ''+ic('Plus')+' Задача создана'); paint(); openDrawer('task:'+id);
 }
 function startFocus(id){
   if (!id || !task(id)) { id = S.top3.find(x=>task(x) && task(x).status!=='done') || S.tasks.find(t=>t.status!=='done').id; }
   S.focus = {task:id, until:Date.now()+25*60e3}; S.last = id; save();
-  toast('🎧 Фокус 25 минут. Коллеги видят, что вы работаете.', ''); paint();
+  toast(''+ic('Headphones')+' Фокус 25 минут. Коллеги видят, что вы работаете.', ''); paint();
 }
 
 document.addEventListener('click', e => {
@@ -1136,15 +1256,15 @@ document.addEventListener('click', e => {
       case 'toggle-done': { const t = task(id); const r = a.getBoundingClientRect(); setStatus(id, t.status==='done'?'todo':'done', r.left+11, r.top+11); break; }
       case 'set-status': { const r = a.getBoundingClientRect(); setStatus(id, a.dataset.s, r.left+r.width/2, r.top); break; }
       case 'toggle-top': { const i = S.top3.indexOf(id); if (i>=0) S.top3.splice(i,1); else { if (S.top3.length>=3) { toast('В «Моём дне» максимум 3 задачи. Сначала закрой или убери одну.'); break; } S.top3.push(id); } save(); paint(); paintDrawer(); break; }
-      case 'sub': { const t = task(id); const s = t.sub[a.dataset.i]; s[1] = a.checked; save(); if (s[1]) gain(2, '☑ Шаг выполнен'); paint(); paintDrawer(); return; }
-      case 'check': { const c = S.checks[a.dataset.key] = S.checks[a.dataset.key] || []; c[a.dataset.i] = a.checked; save(); if (a.checked) gain(2,'☑ Отмечено'); paint(); return; }
-      case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const first = d.votes.me==null; if (d.votes.me===i) delete d.votes.me; else d.votes.me = i; addLog(`проголосовал(а) в решении <q>${esc(d.q)}</q>`, d.dept); if (first && d.votes.me!=null) gain(5,'🗳 Голос учтён'); else save(); paint(); break; }
-      case 'accept': { const d = dec(id); if (!confirm('Зафиксировать «'+d.options[a.dataset.i][0]+'» как итог?')) break; d.chosen = Number(a.dataset.i); addLog(`принял(а) решение <q>${esc(d.q)}</q>`, d.dept); const r = a.getBoundingClientRect(); confetti(r.left, r.top); gain(10,'⚖️ Решение принято'); paint(); break; }
+      case 'sub': { const t = task(id); const s = t.sub[a.dataset.i]; s[1] = a.checked; save(); if (s[1]) gain(2, ''+ic('ListChecks')+' Шаг выполнен'); paint(); paintDrawer(); return; }
+      case 'check': { const c = S.checks[a.dataset.key] = S.checks[a.dataset.key] || []; c[a.dataset.i] = a.checked; save(); if (a.checked) gain(2,''+ic('ListChecks')+' Отмечено'); paint(); return; }
+      case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const first = d.votes.me==null; if (d.votes.me===i) delete d.votes.me; else d.votes.me = i; addLog(`проголосовал(а) в решении <q>${esc(d.q)}</q>`, d.dept); if (first && d.votes.me!=null) gain(5,''+ic('Vote')+' Голос учтён'); else save(); paint(); break; }
+      case 'accept': { const d = dec(id); if (!confirm('Зафиксировать «'+d.options[a.dataset.i][0]+'» как итог?')) break; d.chosen = Number(a.dataset.i); addLog(`принял(а) решение <q>${esc(d.q)}</q>`, d.dept); const r = a.getBoundingClientRect(); confetti(r.left, r.top); gain(10,''+ic('Scale')+' Решение принято'); paint(); break; }
       case 'new-task': newTask(a.dataset.status, a.dataset.dept, a.dataset.title); break;
       case 'filt-dept': return;
       case 'filt-small': UI.filt.small = !UI.filt.small; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
-      case 'inbox-del': S.inbox = S.inbox.filter(i=>i.id!==id); save(); toast('🗑 Удалено'); paint(); break;
+      case 'inbox-del': S.inbox = S.inbox.filter(i=>i.id!==id); save(); toast(''+ic('Trash2')+' Удалено'); paint(); break;
       case 'inbox-task': { const it = S.inbox.find(i=>i.id===id); S.inbox = S.inbox.filter(i=>i.id!==id); const tid = 't'+Date.now();
         S.tasks.push({id:tid, title:it.text, tldr:'', details:'', dept:it.dept||'dev', status:'inbox', size:'M', who:'me', links:[], sub:[], comments:[]}); gain(3,'→ Превращено в задачу'); paint(); openDrawer('task:'+tid); break; }
       case 'pick-dept': { const f = a.closest('form'); const was = a.getAttribute('aria-pressed')==='true'; f.querySelectorAll('[data-action="pick-dept"]').forEach(b=>b.setAttribute('aria-pressed','false')); if (!was) a.setAttribute('aria-pressed','true'); f.d.value = was?'':a.dataset.d; f.t.focus(); break; }
@@ -1153,6 +1273,7 @@ document.addEventListener('click', e => {
       case 'toggle-dept': { const h = S.prefs.hidden; const i = h.indexOf(a.dataset.d); if (i>=0) h.splice(i,1); else h.push(a.dataset.d); save(); settings(); paint(); break; }
       case 'focus-start': startFocus(id); break;
       case 'focus-stop': S.focus = null; save(); toast('Фокус остановлен'); paint(); break;
+      case 'logout': if (confirm('Выйти из аккаунта?') && AUTH) AUTH.signOut(); break;
       case 'reset': if (confirm('Вернуть тестовые данные?')) { S = fresh(); save(); applyPrefs(); paint(); } break;
     }
     return;
@@ -1163,12 +1284,13 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => { if (e.target.dataset.action==='filt-dept') { UI.filt.dept = e.target.value; paint(); } });
 document.addEventListener('submit', e => {
   const f = e.target; e.preventDefault();
-  if (f.dataset.form==='capture') { const t = f.t.value.trim(); if (!t) return; S.inbox.unshift({id:'i'+Date.now(), text:t, at:Date.now(), by:'me', dept:f.d.value||null}); closeOverlay(); gain(2,'💭 Записано во «Входящие»'); paint(); }
+  if (f.dataset.form==='capture') { const t = f.t.value.trim(); if (!t) return; S.inbox.unshift({id:'i'+Date.now(), text:t, at:Date.now(), by:'me', dept:f.d.value||null}); closeOverlay(); gain(2,''+ic('Lightbulb')+' Записано во «Входящие»'); paint(); }
   if (f.dataset.form==='task') createTask(f);
-  if (f.dataset.form==='comment') { const t = f.c.value.trim(); if (!t) return; const tk = task(f.dataset.id); tk.comments.push(['me', t, Date.now()]); addLog(`прокомментировал(а) <q>${esc(tk.title)}</q>`, tk.dept); gain(3,'💬 Комментарий добавлен'); paintDrawer(); paint(); }
+  if (f.dataset.form==='comment') { const t = f.c.value.trim(); if (!t) return; const tk = task(f.dataset.id); tk.comments.push(['me', t, Date.now()]); addLog(`прокомментировал(а) <q>${esc(tk.title)}</q>`, tk.dept); gain(3,''+ic('MessageSquare')+' Комментарий добавлен'); paintDrawer(); paint(); }
 });
 document.addEventListener('input', e => { if (e.target.id==='pal-in') { UI.pal.q = e.target.value; UI.pal.items = palItems(e.target.value); UI.pal.i = 0; paintPal(); } });
 document.addEventListener('keydown', e => {
+  if (document.body.classList.contains('locked')) return;
   if (e.key==='Enter' && e.target.matches('[data-go]:not(button),[data-open]:not(button)')) { e.preventDefault(); e.target.click(); return; }
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); UI.pal ? closeOverlay() : palette(); return; }
@@ -1210,12 +1332,101 @@ function paint(){
 }
 /* таймеры фокуса тикают без полной перерисовки */
 setInterval(() => {
-  if (S.focus && S.focus.until <= Date.now()) { const t = task(S.focus.task); S.focus = null; gain(15, '🎧 25 минут фокуса позади! Сделай перерыв.' ); confetti(innerWidth-120, 40); paint(); return; }
+  if (S.focus && S.focus.until <= Date.now()) { const t = task(S.focus.task); S.focus = null; gain(15, ''+ic('Headphones')+' 25 минут фокуса позади! Сделай перерыв.' ); confetti(innerWidth-120, 40); paint(); return; }
   const fl = $('#focus-left'); if (fl && S.focus) fl.textContent = mmss(S.focus.until-Date.now());
   document.querySelectorAll('[data-until]').forEach(el => el.textContent = mmss(Number(el.dataset.until)-Date.now()));
 }, 1000);
 
-readHash(); applyPrefs(); paint();
+/* ── вход ───────────────────────────────────
+   У каждого свой логин и пароль (Firebase Auth). Почта не нужна: логин превращается
+   во внутренний адрес login@kentucky.hub. Регистрация — только с кодом команды. */
+const TEAM_CODE_SHA256 = '331d85f0258782c704e39e8877605b87f57166600b5b7e27a6847b1e745b9d19';
+const LOGIN_DOMAIN = '@kentucky.hub';
+const LOGIN_RE = /^[a-z0-9._-]{3,24}$/;
+let AUTH = null, gateMode = 'login', gateBusy = false;
+async function sha256(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+const BAD_LOGIN = 'Неверный логин или пароль.';
+const AUTH_ERR = {
+  'auth/invalid-credential':BAD_LOGIN, 'auth/wrong-password':BAD_LOGIN, 'auth/user-not-found':BAD_LOGIN, 'auth/invalid-login-credentials':BAD_LOGIN,
+  'auth/email-already-in-use':'Такой логин уже занят. Придумай другой.',
+  'auth/weak-password':'Пароль слишком простой: минимум 6 символов.',
+  'auth/invalid-email':'Логин: только латиница, цифры, точка, дефис и _, от 3 до 24 символов.',
+  'auth/too-many-requests':'Слишком много попыток. Подожди пару минут.',
+  'auth/network-request-failed':'Нет связи с сервером. Проверь интернет.',
+  'auth/operation-not-allowed':'Вход по паролю ещё не включён в Firebase (Authentication → Sign-in method → Email/Password).',
+  'auth/configuration-not-found':'Firebase Authentication ещё не настроен (Authentication → Get started → Email/Password).'
+};
+const field = (name, label, icon, type, extra='') => `<div class="fld"><label for="g-${name}">${label}</label><div class="inp">${ic(icon)}<input class="input" id="g-${name}" name="${name}" type="${type}" ${extra}>${type==='password'?`<button type="button" class="icon-btn eye" data-auth="eye" aria-label="Показать пароль">${ic('Eye')}</button>`:''}</div></div>`;
+const BRAND = `<div class="gate-brand"><span class="mark">KS</span><div><b>Kentucky Hub</b><small>рабочее место команды</small></div></div>`;
+function paintGate(msg){
+  const login = gateMode==='login';
+  $('#gate-card').innerHTML = `${BRAND}
+    <div class="seg" role="group" aria-label="Режим"><button type="button" data-auth="mode" data-m="login" aria-pressed="${login}">${ic('LogIn')} Вход</button><button type="button" data-auth="mode" data-m="register" aria-pressed="${!login}">${ic('UserPlus')} Регистрация</button></div>
+    <form data-gate="${gateMode}" novalidate>
+      ${field('login','Логин','User','text','autocomplete="username" autocapitalize="none" spellcheck="false" required')}
+      ${login ? '' : field('name','Как тебя называть','Sparkles','text','autocomplete="nickname" maxlength="32" required')}
+      ${field('pass','Пароль','Lock','password', login?'autocomplete="current-password" required':'autocomplete="new-password" minlength="6" required')}
+      ${login ? '' : field('pass2','Повтори пароль','Lock','password','autocomplete="new-password" required')}
+      ${login ? '' : field('code','Код команды','KeyRound','password','autocomplete="off" required') + '<small class="fld-hint">Спроси у руководителя проекта.</small>'}
+      <div class="gate-err" role="alert">${esc(msg||'')}</div>
+      <button class="btn primary">${login?'Войти':'Создать аккаунт'}</button>
+    </form>
+    <div class="gate-foot">${login?'Нет аккаунта? Нажми «Регистрация».':'Логин: латиница, цифры, точка, дефис и _, от 3 до 24 символов.'}</div>`;
+  const f = $('#gate-card input'); if (f) f.focus();
+}
+function gateError(msg){
+  gateBusy = false;
+  const f = $('#gate-card form'); const vals = f ? Object.fromEntries(new FormData(f)) : {};
+  paintGate(msg);
+  const g = $('#gate-card form');
+  for (const [k,v] of Object.entries(vals)) if (g[k] && !/pass|code/.test(k)) g[k].value = v;
+  const firstEmpty = [...g.querySelectorAll('input')].find(i=>!i.value); if (firstEmpty) firstEmpty.focus();
+}
+$('#gate').addEventListener('click', e => {
+  const b = e.target.closest('[data-auth]'); if (!b) return;
+  if (b.dataset.auth==='mode') { gateMode = b.dataset.m; paintGate(); }
+  if (b.dataset.auth==='eye') {
+    const i = b.parentElement.querySelector('input'); const show = i.type==='password';
+    i.type = show ? 'text' : 'password'; b.innerHTML = ic(show?'EyeOff':'Eye'); b.setAttribute('aria-label', show?'Скрыть пароль':'Показать пароль');
+  }
+});
+$('#gate').addEventListener('submit', async e => {
+  e.preventDefault(); if (gateBusy || !AUTH) return;
+  const f = e.target, login = f.login.value.trim().toLowerCase(), mode = f.dataset.gate;
+  if (!LOGIN_RE.test(login)) return gateError(AUTH_ERR['auth/invalid-email']);
+  if (!f.pass.value) return gateError('Введи пароль.');
+  if (mode==='register') {
+    if (!f.name.value.trim()) return gateError('Напиши, как тебя называть.');
+    if (f.pass.value.length < 6) return gateError(AUTH_ERR['auth/weak-password']);
+    if (f.pass.value !== f.pass2.value) return gateError('Пароли не совпадают.');
+    if (await sha256(f.code.value.trim().toLowerCase()) !== TEAM_CODE_SHA256) return gateError('Неверный код команды.');
+  }
+  gateBusy = true;
+  const btn = f.querySelector('.btn.primary'); btn.disabled = true; btn.innerHTML = '<span class="spin"></span>' + btn.textContent;
+  const name = f.name ? f.name.value.trim() : '', pass = f.pass.value;
+  try {
+    if (mode==='login') await AUTH.signInWithEmailAndPassword(login+LOGIN_DOMAIN, pass);
+    else { const cred = await AUTH.createUserWithEmailAndPassword(login+LOGIN_DOMAIN, pass); await cred.user.updateProfile({displayName:name}); enter(cred.user); }
+    gateBusy = false;
+  } catch (err) { gateError(AUTH_ERR[err && err.code] || ('Не получилось: ' + (err && (err.code || err.message)))); }
+});
+function enter(user){
+  const login = (user.email||'').replace(LOGIN_DOMAIN,'');
+  PEOPLE.me.name = user.displayName || login || 'Вы';
+  PEOPLE.me.role = '@'+login;
+  document.body.classList.remove('locked');
+  readHash(); paint();
+}
+function lock(){ document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
+applyPrefs();
+try {
+  if (!window.firebase || !firebase.auth) throw new Error('sdk');
+  firebase.initializeApp(FIREBASE_CONFIG);
+  AUTH = firebase.auth();
+  AUTH.onAuthStateChanged(u => u ? enter(u) : lock());
+} catch (e) {
+  $('#gate-card').innerHTML = BRAND + '<div class="gate-err">Не загрузился модуль входа. Обнови страницу или проверь, не блокирует ли что-то gstatic.com.</div>';
+}
 })();
 </script>
 </body>
