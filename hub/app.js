@@ -71,6 +71,14 @@ const ICONS = {
   UserPlus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/>',
   Users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   Vote:'<path d="m9 12 2 2 4-4"/><path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"/><path d="M22 19H2"/>',
+  X:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  Paperclip:'<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+  Bot:'<path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/>',
+  Calendar:'<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+  Clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  Download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+  Send:'<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+  MessagesSquare:'<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
   Zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'
 };
 const ic = (n, cls) => `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -231,8 +239,9 @@ const SEED = {
 };
 
 /* ── состояние ──────────────────────────────── */
-const S = {me:null, people:{}, tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], E:null, loaded:new Set(), errs:{}};
-const UI = {route:'today', tab:null, filt:{dept:'all', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
+/* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
+const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], up:{}, E:null, loaded:new Set(), errs:{}};
+const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'all', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
 const PREFS_KEY = 'kyHubPrefs';
 const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[]}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
@@ -242,6 +251,13 @@ const dec = id => S.decisions.find(d=>d.id===id);
 const regItem = id => S.reg.find(r=>r.id===id);
 const wikiItem = id => S.wiki.find(w=>w.id===id);
 const me = () => S.people[S.me] || {};
+const myDepts = () => (me().depts||[]).filter(id=>D[id]);
+const canSee = dept => myDepts().includes(dept);
+const seesAll = () => DEPTS.every(d=>canSee(d.id));
+/* отделы назначает руководитель (поле admin в hub_people); сами участники их не меняют */
+const isAdmin = () => me().admin === true;
+const adminNames = () => Object.values(S.people).filter(p=>p.admin===true).map(p=>p.name).join(', ');
+function applyVis(){ S.tasks = S.allTasks.filter(t=>canSee(t.dept)); }
 const pname = id => !id ? 'Не назначен' : (S.people[id] && S.people[id].name) || 'Участник';
 const isOnline = id => id===S.me || !!(S.people[id] && S.people[id].seen > now()-ONLINE_MS);
 const focusOf = id => { const f = S.people[id] && S.people[id].focus; return f && f.until > now() ? f : null; };
@@ -306,7 +322,8 @@ function toast(html, xp){
 function readHash(){
   const p = (location.hash||'').replace(/^#\/?/,'').split('/');
   if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+p[1]; UI.tab = p[2] || 'overview'; }
-  else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
+  else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
+  UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
 }
 const go = path => { location.hash = '#/'+path; };
 addEventListener('hashchange', () => { readHash(); if (UI.route==='d/econ') eSyncName(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); scrollTo(0,0); });
@@ -328,7 +345,9 @@ function sidebar(){
     ${link('decisions','Scale','Решения', openDec, '#B9A3FF', openDec>0)}
     ${link('log','ScrollText','Журнал', 0, '#A9A8B6')}
     ${link('people','Users','Люди', Object.keys(S.people).filter(isOnline).length, '#86D9B0')}
+    ${link('chats','MessagesSquare','Чаты', unreadChats(), '#7DD3E8', unreadChats()>0)}
     ${link('wiki','BookOpen','Вики', 0, '#F5B98A')}
+    ${(b => link('claude','Bot','Claude', b ? (b.by===S.me ? 'ты' : 'занят') : '', '#E8B07D', !!b && b.by!==S.me))(claudeAt(now()))}
   </nav>
   <div class="nav-h">Отделы <button data-action="settings" title="Показать или скрыть отделы">настроить</button></div>
   <nav class="nav">
@@ -344,12 +363,14 @@ function sidebar(){
 /* ── верхняя полоса ─────────────────────────── */
 function topbar(){
   const online = Object.keys(S.people).filter(id=>id!==S.me && isOnline(id));
-  const f = focusOf(S.me);
+  const f = focusOf(S.me), cb = claudeAt(now());
   return `
   <button class="icon-btn burger" data-action="open-nav" aria-label="Меню">${ic('Menu')}</button>
   <button class="search" data-action="palette">${ic('Search')}<span>Найти или сделать что угодно…</span><kbd>Ctrl K</kbd></button>
   <span class="tb-sp"></span>
-  ${f ? `<button class="focus-pill" data-action="focus-stop" title="Остановить фокус">${ic('Headphones')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">${esc(clip(task(f.task)?.title||'Фокус',28))}</span> ${ic('X')}</button>`
+  ${cb && cb.by!==S.me ? `<a class="claude-pill hide-sm" href="#/claude" title="${esc(cb.note||'')}">${ic('Bot')} Claude: ${esc(pname(cb.by).split(' ')[0])} до ${hhmm(cb.end)}</a>` : ''}
+  ${f && f.claude ? `<button class="focus-pill" data-action="claude-focus" title="Открыть фокус-режим Claude">${ic('Bot')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">Claude</span></button>`
+  : f ? `<button class="focus-pill" data-action="focus-stop" title="Остановить фокус">${ic('Headphones')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">${esc(clip(task(f.task)?.title||'Фокус',28))}</span> ${ic('X')}</button>`
       : `<button class="btn sm hide-sm" data-action="focus-start" data-id="${esc(me().last||'')}" title="25 минут фокуса — коллеги увидят, что вы работаете">${ic('Headphones')} Фокус 25 мин</button>`}
   <a class="faces" href="#/people" title="Сейчас онлайн: ${online.length}">${online.slice(0,5).map(id=>av(id)).join('')}</a>
   <button class="icon-btn" data-action="settings" aria-label="Настройки и профиль" title="Настройки и профиль">${ic('Settings')}</button>`;
@@ -448,7 +469,7 @@ function card(t){
     <div class="tt">${esc(t.title)}</div>
     ${t.tldr?`<div class="tl">${esc(t.tldr)}</div>`:''}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
-    <div class="mt"><span class="dchip" style="--dc:${d.color}" title="${esc(d.name)}">${ic(d.icon)}</span><span class="size">${esc(t.size||'M')}</span>${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
+    <div class="mt"><span class="dchip" style="--dc:${d.color}" title="${esc(d.name)}">${ic(d.icon)}</span><span class="size">${esc(t.size||'M')}</span>${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
   </div>`;
 }
 function board(dept){
@@ -460,14 +481,20 @@ function board(dept){
 function filters(withDept){
   const f = UI.filt;
   return `<div class="toolbar">
-    ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел"><option value="all">Все отделы</option>${DEPTS.map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`:''}
+    ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел"><option value="all">${seesAll()?'Все отделы':'Все мои отделы'}</option>${DEPTS.filter(d=>canSee(d.id)).map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`:''}
     <div class="seg"><button data-action="filt-small" aria-pressed="${f.small}">${ic('Zap')} Только ≤ 15 мин</button><button data-action="filt-mine" aria-pressed="${f.mine}">${ic('Sun')} Только мои</button></div>
     <small style="color:var(--muted)">Перетаскивайте карточки между колонками</small>
   </div>`;
 }
+/* задачи отдела видят только те, у кого этот отдел отмечен в профиле */
+const askAdmin = () => isAdmin() ? `<a class="btn sm" href="#/people">${ic('Users')} Назначить отделы</a>`
+  : `<small style="color:var(--muted)">Отделы назначает руководитель${adminNames() ? ': '+esc(adminNames()) : ''}.</small>`;
+const noRoleHint = d => `<div class="empty"><b>${ic('Lock')} ${d ? 'Задачи отдела «'+esc(d.name)+'» видят только его участники' : 'У тебя пока нет ролей'}</b>${d ? 'Если ты работаешь в этом отделе, попроси руководителя добавить тебя в него — задачи появятся сразу.' : 'Руководитель назначает каждому отделы: разработчик видит задачи разработки, дизайнер — дизайна, у кого все отделы — видит всё.'}${askAdmin()}</div>`;
 function viewTasks(){
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#8DB6F8">${ic('LayoutGrid')}</span><div><h1>Задачи</h1><p>Одна доска на всю команду. Фильтр по отделу — сверху.</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">${ic('Plus')} Задача</button></div>
-  ${filters(true)}${board(null)}`;
+  const mine = myDepts();
+  if (UI.filt.dept!=='all' && !canSee(UI.filt.dept)) UI.filt.dept = 'all';
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#8DB6F8">${ic('LayoutGrid')}</span><div><h1>Задачи</h1><p>${!mine.length ? 'Задачи видны по ролям — выбери свои отделы.' : seesAll() ? 'У тебя все роли — видны задачи всех отделов.' : 'Видны задачи твоих отделов: '+esc(mine.map(id=>D[id].name).join(', '))+'.'}</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">${ic('Plus')} Задача</button></div>
+  ${mine.length ? filters(mine.length>1) + board(null) : noRoleHint(null)}`;
 }
 
 /* ── решения ────────────────────────────────── */
@@ -511,11 +538,17 @@ function viewLog(){
 /* ── люди ───────────────────────────────────── */
 function viewPeople(){
   const ids = Object.keys(S.people).sort((a,b)=>(isOnline(b)-isOnline(a)) || String(S.people[a].name).localeCompare(String(S.people[b].name)));
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#86D9B0">${ic('Users')}</span><div><h1>Люди</h1><p>Кто за что отвечает и кто сейчас онлайн. Фиолетовая точка — человек в фокусе, лучше не отвлекать.</p></div></div><button class="btn" data-action="settings">${ic('Pencil')} Мой профиль</button></div>
+  const adm = isAdmin();
+  const roles = (id, p) => adm
+    ? `<div class="dpick roles" role="group" aria-label="Отделы: ${esc(p.name)}">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="set-dept" data-uid="${esc(id)}" data-d="${d.id}" aria-pressed="${(p.depts||[]).includes(d.id)}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm ghost" data-action="set-all-depts" data-uid="${esc(id)}" data-v="1">Все отделы</button><button class="btn sm ghost" data-action="set-all-depts" data-uid="${esc(id)}" data-v="0">Снять все</button>
+      <button class="btn sm${p.admin===true?' primary':''}" data-action="set-admin" data-uid="${esc(id)}" title="Руководитель назначает отделы">${ic('Shield')} ${p.admin===true?'Руководитель':'Сделать руководителем'}</button></div>`
+    : `<div class="links">${(p.depts||[]).map(dchip).join('') || '<small style="color:var(--muted)">Отделы не назначены</small>'}</div>`;
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#86D9B0">${ic('Users')}</span><div><h1>Люди</h1><p>${adm ? 'Ты руководитель: отмечай каждому его отделы — человек сразу увидит задачи этих отделов.' : 'Кто за что отвечает и кто сейчас онлайн. Отделы назначает руководитель'+(adminNames()?' ('+esc(adminNames())+')':'')+'.'}</p></div></div><button class="btn" data-action="settings">${ic('Pencil')} Мой профиль</button></div>
   <div class="g3">${ids.map(id => { const p = S.people[id]; const f = focusOf(id); const open = S.tasks.filter(t=>t.who===id && t.status!=='done').length;
-    return `<section class="panel"><div class="person">${av(id,40)}<div class="bd"><div class="nm">${esc(p.name)}${id===S.me?' <small style="color:var(--muted)">(вы)</small>':''}</div><div class="st">${esc(p.role || '@'+(p.login||''))}</div></div></div>
+    return `<section class="panel"><div class="person">${av(id,40)}<div class="bd"><div class="nm">${esc(p.name)}${id===S.me?' <small style="color:var(--muted)">(вы)</small>':''}${p.admin===true?` <span class="chip t-violet" title="Назначает отделы">${ic('Shield')} руководитель</span>`:''}</div><div class="st">${esc(p.role || '@'+(p.login||''))}</div></div></div>
     <div class="st" style="font-size:13px;color:${f?'var(--acc)':'var(--text-2)'}">${f?`${ic('Headphones')} В фокусе ещё <span class="mono" data-until="${f.until}">${mmss(f.until-now())}</span>`: isOnline(id)?`${ic('CircleDot')} Онлайн`:'Был(а) '+ago(p.seen)}</div>
-    <div class="links">${(p.depts||[]).map(dchip).join('') || '<small style="color:var(--muted)">Отделы не выбраны</small>'}</div><small style="color:var(--muted)">Открытых задач: ${open}</small></section>`; }).join('')}</div>`;
+    ${roles(id, p)}<small style="color:var(--muted)">Открытых задач: ${open}</small></section>`; }).join('')}</div>`;
 }
 
 /* ── вики ───────────────────────────────────── */
@@ -523,6 +556,232 @@ function viewWiki(){
   const list = [...S.wiki].sort(byOrder);
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено. Суть сверху — подробности по клику.</p></div></div><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div>
   <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body">${esc(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>`;
+}
+
+/* ── вложения ───────────────────────────────────
+   Файл хранится в Firestore: метаданные в hub_files, содержимое — кусками base64 по ~700 КБ
+   в hub_fileparts (документ Firestore не больше 1 МБ). Firebase Storage не нужен. */
+const FILE_MAX = 8*1024*1024, PART = 700000, THUMB_MAX = 1.5*1024*1024;
+const fsize = n => n<1024 ? n+' Б' : n<1048576 ? Math.round(n/1024)+' КБ' : (n/1048576).toFixed(1).replace('.',',')+' МБ';
+const isImg = f => /^image\/(png|jpe?g|gif|webp)$/i.test(f.type||'');
+const THUMBS = {};
+function b64(buf){ const u = new Uint8Array(buf); let s = ''; for (let i=0;i<u.length;i+=0x8000) s += String.fromCharCode.apply(null, u.subarray(i,i+0x8000)); return btoa(s); }
+async function fileBlob(f){
+  const sn = await col('hub_fileparts').where('file','==',f.id).get();
+  const data = sn.docs.map(d=>d.data()).sort((a,b)=>a.i-b.i).map(p=>p.data).join('');
+  const bin = atob(data), u = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+  return new Blob([u], {type:f.type||'application/octet-stream'});
+}
+async function uploadFiles(list, target){
+  const key = target.task ? 'task:'+target.task : 'chat:'+target.chat, ids = [];
+  for (const file of list) {
+    if (file.size > FILE_MAX) { toast(ic('CircleAlert')+' «'+esc(file.name)+'» больше '+fsize(FILE_MAX)+' — положи его в облако и прикрепи ссылку'); continue; }
+    S.up[key] = {name:file.name, pct:0}; schedule();
+    try {
+      const data = b64(await file.arrayBuffer()), ref = col('hub_files').doc(), parts = Math.max(1, Math.ceil(data.length/PART));
+      for (let i=0;i<parts;i++) { await col('hub_fileparts').doc(ref.id+'_'+i).set({file:ref.id, i, data:data.slice(i*PART, (i+1)*PART)}); S.up[key].pct = Math.round((i+1)/parts*100); schedule(); }
+      await ref.set(Object.assign({name:clip(file.name,160), type:clip(file.type,100), size:file.size, parts, by:S.me, at:now()}, target));
+      ids.push(ref.id);
+    } catch (e) { console.error(e); toast(ic('CircleAlert')+' «'+esc(file.name)+'» не загрузился: '+esc(errText(e))); }
+  }
+  delete S.up[key]; schedule();
+  return ids;
+}
+async function downloadFile(id){
+  const f = S.files.find(x=>x.id===id); if (!f) return;
+  try {
+    const url = URL.createObjectURL(await fileBlob(f));
+    const a = document.createElement('a'); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 60e3);
+  } catch (e) { console.error(e); toast(ic('CircleAlert')+' Не скачалось: '+esc(errText(e))); }
+}
+async function deleteFiles(ids){
+  for (const id of ids) {
+    const sn = await col('hub_fileparts').where('file','==',id).get();
+    const b = DB.batch(); sn.docs.forEach(d=>b.delete(d.ref)); b.delete(col('hub_files').doc(id)); await b.commit();
+  }
+}
+function thumb(f){
+  if (THUMBS[f.id]) return THUMBS[f.id]==='…' ? '' : THUMBS[f.id];
+  THUMBS[f.id] = '…';
+  fileBlob(f).then(b => { THUMBS[f.id] = URL.createObjectURL(b); schedule(); }).catch(() => { THUMBS[f.id] = ''; });
+  return '';
+}
+function fileChip(f, big){
+  if (!f) return '';
+  const del = f.by===S.me ? `<button class="mini-x" data-action="file-del" data-id="${esc(f.id)}" aria-label="Удалить файл" title="Удалить файл">${ic('X')}</button>` : '';
+  const src = big && isImg(f) && f.size <= THUMB_MAX ? thumb(f) : '';
+  if (src) return `<span class="fimg"><img src="${src}" alt="${esc(f.name)}" data-action="file-get" data-id="${esc(f.id)}" title="${esc(f.name)} · скачать">${del}</span>`;
+  return `<span class="file"><button class="file-b" data-action="file-get" data-id="${esc(f.id)}" title="Скачать">${ic(isImg(f)?'Eye':'Paperclip')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button>${del}</span>`;
+}
+const upBar = key => S.up[key] ? `<div class="upbar"><span class="spin"></span> Загружаем «${esc(clip(S.up[key].name,40))}» · ${S.up[key].pct}%</div>` : '';
+const attachBtn = (action, id, label) => `<label class="btn sm" title="До ${fsize(FILE_MAX)} на файл">${ic('Paperclip')}${label?' '+label:''}<input type="file" multiple hidden data-action="${action}" data-id="${esc(id)}"></label>`;
+
+/* ── чаты ───────────────────────────────────────
+   Общие для всей команды. Чат задачи создаётся кнопкой в карточке задачи и доступен всем. */
+const chat = id => S.chats.find(c=>c.id===id);
+const READ_AT = {};
+const chatUnread = c => !!c.lastAt && c.lastBy!==S.me && c.lastAt > Math.max((me().reads||{})[c.id]||0, READ_AT[c.id]||0);
+function markRead(id){
+  const c = chat(id); if (!c || !chatUnread(c) || document.hidden) return;
+  READ_AT[id] = c.lastAt; col('hub_people').doc(S.me).update({['reads.'+id]:c.lastAt}).catch(()=>{});
+}
+const unreadChats = () => S.chats.filter(chatUnread).length;
+function chatItem(c){
+  const t = c.task && S.allTasks.find(x=>x.id===c.task), d = D[t ? t.dept : c.dept] || null;
+  return `<a class="chat-i${UI.chat===c.id?' on':''}" href="#/chats/${esc(c.id)}" style="--dc:${d?d.color:'var(--acc)'}">
+    <span class="ph-ico">${ic(c.task ? (d?d.icon:'LayoutGrid') : 'MessagesSquare')}</span>
+    <span class="bd"><b>${esc(c.title)}</b><small>${c.lastText ? esc(pname(c.lastBy).split(' ')[0])+': '+esc(clip(c.lastText,60)) : 'Пока без сообщений'}</small></span>
+    <span class="r"><small>${c.lastAt?ago(c.lastAt).replace(' назад',''):''}</small>${chatUnread(c)?'<i class="udot" aria-label="Есть новые"></i>':''}</span></a>`;
+}
+function msgHtml(m, prev){
+  const same = prev && prev.by===m.by && m.at-prev.at < 5*60e3;
+  const files = (m.files||[]).map(id=>fileChip(S.files.find(f=>f.id===id), true)).join('');
+  return `<div class="msg${m.by===S.me?' me':''}${same?' cont':''}">${same?'<span class="av-sp"></span>':av(m.by,30)}<div class="bd">
+    ${same?'':`<div class="mh"><b>${esc(pname(m.by))}</b><small>${dtf.format(m.at)}</small></div>`}
+    ${m.text?`<div class="tx">${esc(m.text)}</div>`:''}${files?`<div class="mf">${files}</div>`:''}</div>
+    ${m.by===S.me?`<button class="mini-x" data-action="msg-del" data-id="${esc(m.id)}" aria-label="Удалить сообщение" title="Удалить">${ic('Trash2')}</button>`:''}</div>`;
+}
+function viewChats(){
+  const list = [...S.chats].sort((a,b)=>(b.lastAt||b.createdAt||0)-(a.lastAt||a.createdAt||0));
+  const c = UI.chat && chat(UI.chat);
+  listenChat(c ? c.id : null);
+  if (c) markRead(c.id);
+  const t = c && c.task && S.allTasks.find(x=>x.id===c.task);
+  let main = `<div class="empty" style="margin:auto"><b>${ic('MessagesSquare')} Выбери чат слева</b>Или создай новый — его увидит вся команда. Чат задачи создаётся кнопкой в карточке задачи.</div>`;
+  if (UI.chat && !c && S.loaded.has('hub_chats')) main = `<div class="empty" style="margin:auto"><b>Чат не найден</b>Возможно, его удалили.<a class="btn sm" href="#/chats">К списку</a></div>`;
+  if (c) {
+    const msgs = S.msgs;
+    main = `<div class="chat-h"><a class="icon-btn chat-back" href="#/chats" aria-label="К списку чатов">${ic('ArrowRight')}</a><div class="bd"><b>${esc(c.title)}</b>
+      <small>${t ? (canSee(t.dept) ? `<span class="lnk" data-open="task:${esc(t.id)}">${ic('LayoutGrid')} Открыть задачу</span> · `:'')+dchip(t.dept) : c.task ? (c.dept && !canSee(c.dept) ? 'Задача отдела '+dchip(c.dept) : 'Задача удалена') : 'Создал(а) '+esc(pname(c.by))}</small></div>
+      ${c.by===S.me?`<button class="icon-btn" data-action="chat-del" data-id="${esc(c.id)}" title="Удалить чат" aria-label="Удалить чат">${ic('Trash2')}</button>`:''}</div>
+      <div class="msgs" id="msgs">${!S.loaded.has('hub_msgs') ? '<div class="loading"><span class="spin"></span>Загружаем сообщения…</div>' : msgs.map((m,i)=>msgHtml(m, msgs[i-1])).join('') || '<div class="empty" style="margin:auto">Здесь пока тихо. Напиши первым.</div>'}</div>
+      ${upBar('chat:'+c.id)}
+      <form class="composer" data-form="msg" data-id="${esc(c.id)}">${attachBtn('chat-attach', c.id)}
+        <textarea class="input" id="chat-in" name="m" rows="1" maxlength="4000" placeholder="Сообщение… Enter — отправить, Shift+Enter — новая строка. Картинку можно вставить из буфера.">${esc(UI.chatDraft[c.id]||'')}</textarea>
+        <button class="btn primary" aria-label="Отправить">${ic('Send')}</button></form>`;
+  }
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#7DD3E8">${ic('MessagesSquare')}</span><div><h1>Чаты</h1><p>Общие для всей команды. У каждой задачи может быть свой чат.</p></div></div><button class="btn primary" data-action="chat-new">${ic('Plus')} Чат</button></div>
+  <div class="chats${c?' open':''}"><aside class="chat-list">${list.map(chatItem).join('') || '<div class="empty">Чатов пока нет.</div>'}</aside><section class="chat-main">${main}</section></div>`;
+}
+async function openTaskChat(id){
+  const t = task(id); if (!t) return;
+  const ex = S.chats.find(c=>c.task===id); if (ex) { go('chats/'+ex.id); return; }
+  const ref = col('hub_chats').doc();
+  const ok = await write(()=>ref.set({title:clip(t.title,120), task:id, dept:t.dept, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''}));
+  if (ok) { log('создал(а) чат задачи', t.title, t.dept); go('chats/'+ref.id); }
+}
+async function sendMsg(chatId, text, files){
+  text = clip(text,4000); files = files||[];
+  if (!text && !files.length) return false;
+  const c = chat(chatId); if (!c) return false;
+  const ok = await write(async () => {
+    const b = DB.batch();
+    b.set(col('hub_msgs').doc(), {chat:chatId, by:S.me, text, files, at:now()});
+    b.update(col('hub_chats').doc(chatId), {lastAt:now(), lastBy:S.me, lastText:text || ('📎 '+plural(files.length,'файл','файла','файлов'))});
+    await b.commit();
+  });
+  if (ok) READ_AT[chatId] = now();
+  return ok;
+}
+
+/* ── Claude: бронирование и фокус-режим ─────────
+   Один общий Claude на команду. Бронь — отрезок времени [start, end) в hub_claude,
+   пересечения не допускаются. Фокус-режим — полноэкранный таймер своей текущей брони. */
+const SLOT = 30*60e3, CLAUDE_MAX = 4*3600e3;
+const hhmm = t => dtf.format(t);
+const dayAt = off => { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+off); return d.getTime(); };
+const nextDay = t => { const d = new Date(t); d.setDate(d.getDate()+1); return d.getTime(); };
+const bookings = () => S.claude.filter(b=>b.end>b.start).sort((a,b)=>a.start-b.start);
+const claudeAt = t => bookings().find(b=>b.start<=t && b.end>t);
+const claudeFree = (s, e, except) => !bookings().some(b=>b.id!==except && b.start<e && b.end>s);
+const myClaude = () => { const b = claudeAt(now()); return b && b.by===S.me ? b : null; };
+const nowMin = () => now();
+const floorSlot = t => { const d = new Date(t); d.setMinutes(d.getMinutes()<30?0:30, 0, 0); return d.getTime(); };
+async function bookClaude(start, end, note){
+  start = Math.max(start, nowMin());
+  if (end <= start) { toast('Это время уже прошло'); return false; }
+  if (end-start > CLAUDE_MAX) { toast('Одна бронь — не больше 4 часов. Дай поработать и другим 🙂'); return false; }
+  if (!claudeFree(start, end)) { toast(ic('CircleAlert')+' Это время уже занято — выбери другое'); return false; }
+  const ok = await write(()=>col('hub_claude').add({by:S.me, start, end, note:clip(note,140), createdAt:now()}));
+  if (ok) { log('забронировал(а) Claude', dayf.format(start)+', '+hhmm(start)+'–'+hhmm(end)); gain(2, ic('Bot')+' Claude забронирован: '+hhmm(start)+'–'+hhmm(end)); }
+  return ok;
+}
+function claudeFocus(){
+  const b = myClaude(); if (!b) return;
+  if (!focusOf(S.me) || !(me().focus||{}).claude || me().focus.until!==b.end) patchMe({focus:{task:null, claude:true, until:b.end}});
+  overlay(`<div class="cfocus" role="dialog" aria-label="Фокус-режим Claude"><div class="cf-in">
+    <span class="cf-badge">${ic('Bot')} Фокус-режим Claude</span>
+    <div class="cf-time mono" data-until="${b.end}">${mmss(b.end-now())}</div>
+    <p class="cf-note">${esc(b.note || 'Без цели — просто работаю с Claude')}</p>
+    <small>Бронь ${hhmm(b.start)}–${hhmm(b.end)}. Команда видит, что Claude занят, а ты в фокусе.</small>
+    <div class="cf-act"><button class="btn" data-action="claude-extend" data-id="${esc(b.id)}">${ic('Plus')} Ещё 30 мин</button><button class="btn" data-action="close-overlay">Свернуть</button><button class="btn danger" data-action="claude-end" data-id="${esc(b.id)}">${ic('Check')} Закончить и освободить</button></div>
+  </div></div>`);
+}
+function claudeBookForm(){
+  const days = Array.from({length:7},(_,i)=>[i, i===0?'Сегодня':i===1?'Завтра':dayf.format(dayAt(i))]);
+  overlay(`<form class="pal" data-form="claude-book"><div class="cap"><h2>${ic('Calendar')} Забронировать Claude</h2>
+    <div class="fld-row">${inSelect('day','День',days,UI.cday)}${inSelect('from','С',claudeTimes(UI.cday),'')}</div>
+    ${inSelect('dur','Сколько',[[SLOT,'30 минут'],[2*SLOT,'1 час'],[3*SLOT,'1,5 часа'],[4*SLOT,'2 часа'],[6*SLOT,'3 часа'],[8*SLOT,'4 часа']],2*SLOT)}
+    ${inText('note','Зачем — коротко, чтобы другие понимали','','maxlength="140" placeholder="Например: рефакторинг Economy.cs"')}
+    <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" data-action="close-overlay">Отмена</button><button class="btn primary">${ic('Check')} Забронировать</button></div></div></form>`);
+}
+function claudeTimes(off){
+  const out = [], d0 = dayAt(off), d1 = nextDay(d0), from = Math.max(d0, floorSlot(now()));
+  for (let t=from; t<d1; t+=SLOT) out.push([t, hhmm(t)+(claudeAt(t)?' — занято':'')]);
+  return out.length ? out : [['', 'на сегодня всё прошло']];
+}
+function claudeDay(off){
+  const d0 = dayAt(off), d1 = nextDay(d0), t = now();
+  const list = bookings().filter(b=>b.end>d0 && b.start<d1);
+  const seg = b => { const s = Math.max(b.start,d0), e = Math.min(b.end,d1); const p = S.people[b.by];
+    return `<i class="cseg" style="left:${(s-d0)/(d1-d0)*100}%;width:${(e-s)/(d1-d0)*100}%;background:${safeColor(p&&p.color)}" title="${esc(pname(b.by))} · ${hhmm(b.start)}–${hhmm(b.end)}${b.note?' · '+esc(b.note):''}"></i>`; };
+  const bar = `<div class="cbar">${list.map(seg).join('')}${t>=d0&&t<d1?`<b class="cnow" style="left:${(t-d0)/(d1-d0)*100}%" title="Сейчас"></b>`:''}</div>
+    <div class="cbar-l">${[0,3,6,9,12,15,18,21,24].map(h=>`<span style="left:${h/24*100}%">${String(h).padStart(2,'0')}</span>`).join('')}</div>`;
+  const rows = [];
+  for (let s=d0; s<d1; s=s+3600e3) {
+    const e = s+3600e3, past = e<=t, cur = s<=t && t<e;
+    if (past && off===0 && !UI.cpast) continue;
+    const here = list.filter(b=>b.start<e && b.end>s);
+    const who = here.map(b=>`<span class="who-pick">${av(b.by,22)} <span>${esc(pname(b.by))}</span> <small class="mono" style="color:var(--muted)">${hhmm(b.start)}–${hhmm(b.end)}</small></span>`).join('<br>');
+    const note = here.map(b=>esc(b.note||'—')).join('<br>');
+    const mine = here.filter(b=>b.by===S.me && b.end>t);
+    const act = past ? '' : mine.length ? mine.map(b=>`<button class="btn sm ghost" data-action="claude-cancel" data-id="${esc(b.id)}">${ic('X')} ${b.start<=t?'Освободить':'Отменить'}</button>`).join('')
+      : claudeFree(Math.max(s, nowMin()), e) ? `<button class="btn sm" data-action="claude-slot" data-s="${s}">${ic('Plus')} Занять</button>` : '';
+    rows.push(`<tr class="${past?'past':''}${cur?' cur':''}${here.length?' busy':''}"><td class="m">${hhmm(s)}–${hhmm(e)}</td><td>${who || (past?'':'<span style="color:var(--ok)">свободно</span>')}</td><td>${note}</td><td style="text-align:right">${act}</td></tr>`);
+  }
+  return {bar, rows:rows.join(''), count:list.length};
+}
+function claudeStats(){
+  const from = dayAt(-6), to = nextDay(dayAt(0)), hours = {};
+  for (const b of bookings()) { const s = Math.max(b.start, from), e = Math.min(b.end, Math.min(to, now())); if (e>s) hours[b.by] = (hours[b.by]||0) + (e-s)/3600e3; }
+  const rows = Object.entries(hours).sort((a,b)=>b[1]-a[1]), max = Math.max(1, ...rows.map(r=>r[1]));
+  return rows.map(([id,h])=>`<div class="cstat">${av(id,24)}<span class="nm">${esc(pname(id))}</span><span class="bar"><i style="width:${h/max*100}%;background:${safeColor(S.people[id]&&S.people[id].color)}"></i></span><b class="mono">${h.toFixed(1).replace('.',',')} ч</b></div>`).join('') || '<small style="color:var(--muted)">За неделю Claude ещё никто не использовал.</small>';
+}
+function viewClaude(){
+  const t = now(), cur = claudeAt(t), mine = myClaude();
+  const next = bookings().find(b=>b.start>t);
+  const day = claudeDay(UI.cday);
+  const days = Array.from({length:7},(_,i)=>`<button data-action="claude-day" data-v="${i}" aria-pressed="${UI.cday===i}">${i===0?'Сегодня':i===1?'Завтра':dayf.format(dayAt(i))}</button>`).join('');
+  const freeNow = n => claudeFree(nowMin(), nowMin()+n*SLOT);
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#E8B07D">${ic('Bot')}</span><div><h1>Claude</h1><p>Общий Claude на команду. Бронируй время, чтобы не мешать друг другу.</p></div></div>${mine?`<button class="btn primary" data-action="claude-focus">${ic('Headphones')} Фокус-режим</button>`:''}</div>
+  <section class="panel cstatus ${cur?'busy':'free'}">
+    <div class="person">${cur?av(cur.by,40):`<span class="ph-ico" style="--dc:var(--ok)">${ic('CircleCheck')}</span>`}<div class="bd">
+      <div class="nm">${cur ? (mine ? 'Claude у тебя' : 'Claude занят: '+esc(pname(cur.by))) : 'Claude свободен'}</div>
+      <div class="st">${cur ? `до ${hhmm(cur.end)} · осталось <span class="mono" data-until="${cur.end}">${mmss(cur.end-t)}</span>${cur.note?' · '+esc(cur.note):''}` : next ? `Следующая бронь: ${esc(pname(next.by))}, ${next.start-dayAt(0)<86400e3?'сегодня':dayf.format(next.start)} в ${hhmm(next.start)}` : 'Броней впереди нет'}</div></div></div>
+  </section>
+  <section class="panel">
+    <div class="panel-h"><h2><span class="hi">${ic('Calendar')}</span>График использования</h2><span class="sub">${plural(day.count,'бронь','брони','броней')}</span></div>
+    <div class="seg cdays">${days}</div>
+    ${day.bar}
+    ${UI.cday===0 ? `<button class="btn sm ghost" style="align-self:flex-start" data-action="claude-past">${ic("Clock")} ${UI.cpast?"Скрыть прошедшие часы":"Показать прошедшие часы"}</button>`:""}<div class="tbl-wrap"><table class="grid ctable"><thead><tr><th>Время</th><th>Кто забронировал</th><th>Зачем</th><th></th></tr></thead><tbody>${day.rows}</tbody></table></div>
+    <div class="cbook">
+      <button class="btn primary" data-action="claude-book">${ic('Calendar')} Забронировать время…</button>
+      ${cur ? '' : `<span class="sub">Сейчас:</span>${[[1,'30 мин'],[2,'1 час'],[4,'2 часа']].map(([n,l])=>`<button class="btn" data-action="claude-now" data-n="${n}" ${freeNow(n)?'':'disabled'}>${ic('Zap')} ${l}</button>`).join('')}`}
+      ${mine ? `<button class="btn" data-action="claude-focus">${ic('Headphones')} Фокус-режим</button>` : cur ? '' : `<button class="btn" data-action="claude-now" data-n="2" data-focus="1" ${freeNow(2)?'':'disabled'}>${ic('Headphones')} Фокус-режим на 1 час</button>`}
+    </div>
+  </section>
+  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('ChartColumn')}</span>Кто сколько работал с Claude</h2><span class="sub">последние 7 дней</span></div>${claudeStats()}</section>`;
 }
 
 /* ── отдел ──────────────────────────────────── */
@@ -578,17 +837,17 @@ function deptOverview(d){
     <div class="tile" style="cursor:default"><span class="k">Решения</span><span class="v">${decs.length}</span><span class="s">ждут итога</span></div>
     <div class="tile" style="cursor:default"><span class="k">Люди</span><span class="v">${people.length}</span><span class="s">${people.filter(isOnline).length} онлайн</span></div>
   </div>
-  <div class="g2">
+  ${!canSee(d.id) ? noRoleHint(d) : `<div class="g2">
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Hammer')}</span>Сейчас в работе</h2></div><div class="list">${doing.map(t=>taskItem(t,{status:true})).join('')||'<div class="empty">Ничего не в работе.</div>'}</div></section>
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('SkipForward')}</span>Следующие</h2><a class="btn sm ghost" href="#/d/${d.id}/tasks">Все задачи</a></div><div class="list">${next.map(t=>taskItem(t)).join('')||'<div class="empty">Очередь пуста.</div>'}</div></section>
-  </div>
+  </div>`}
   ${decs.length?`<h2 class="sub-h">Решения отдела</h2>${decs.map(decisionCard).join('')}`:''}
-  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Кто в отделе</h2><button class="btn sm ghost" data-action="settings">Выбрать свои отделы</button></div><div class="g3">${people.map(id=>`<div class="person">${av(id,32)}<div class="bd"><div class="nm">${esc(S.people[id].name)}</div><div class="st">${esc(S.people[id].role||'')}</div></div></div>`).join('') || '<small style="color:var(--muted)">Пока никто не отметил этот отдел в профиле.</small>'}</div></section>`;
+  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Кто в отделе</h2>${isAdmin()?`<a class="btn sm ghost" href="#/people">Назначить отделы</a>`:''}</div><div class="g3">${people.map(id=>`<div class="person">${av(id,32)}<div class="bd"><div class="nm">${esc(S.people[id].name)}</div><div class="st">${esc(S.people[id].role||'')}</div></div></div>`).join('') || '<small style="color:var(--muted)">Пока никто не отметил этот отдел в профиле.</small>'}</div></section>`;
 }
 function viewDept(){
   const d = D[UI.route.slice(2)];
   const tab = d.tabs.some(t=>t[0]===UI.tab) ? UI.tab : 'overview';
-  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? filters(false) + board(d.id) : d.id==='econ' ? econView(tab) : registry(d.id+'/'+tab, d);
+  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? (canSee(d.id) ? filters(false) + board(d.id) : noRoleHint(d)) : d.id==='econ' ? econView(tab) : registry(d.id+'/'+tab, d);
   const count = id => id==='tasks' ? S.tasks.filter(t=>t.dept===d.id && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' ? econCount(id) : S.reg.filter(x=>x.key===d.id+'/'+id).length;
   const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).includes(d.id)).map(id=>S.people[id].name);
   return `<div style="--dc:${d.color};display:contents">
@@ -1208,6 +1467,7 @@ function drawerTask(t){
   const links = [...new Set([...(t.links||[]), ...back])].filter(id=>task(id)||dec(id));
   const linkable = [...S.tasks.filter(x=>x.id!==t.id && !links.includes(x.id)).map(x=>[x.id,'Задача: '+clip(x.title,60)]), ...S.decisions.filter(x=>!links.includes(x.id)).map(x=>[x.id,'Решение: '+clip(x.q,60)])];
   const top = (me().top3||[]).includes(t.id);
+  const files = S.files.filter(f=>f.task===t.id).sort((a,b)=>a.at-b.at);
   return drawerHead(d, t.title, `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `
   <div class="dr-b">
     ${t.tldr?`<div class="tldr"><b>Суть</b>${esc(t.tldr)}</div>`:''}
@@ -1219,7 +1479,10 @@ function drawerTask(t){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm primary" data-action="focus-start" data-id="${esc(t.id)}">${ic('Headphones')} Фокус 25 мин</button>
       <button class="btn sm" data-action="toggle-top" data-id="${esc(t.id)}">${top?ic('Star','filled')+' В «Моём дне»':ic('Star')+' В день'}</button>
+      <button class="btn sm" data-action="task-chat" data-id="${esc(t.id)}" title="Чат задачи доступен всей команде">${ic('MessagesSquare')} ${S.chats.some(c=>c.task===t.id)?'Открыть чат':'Создать чат'}</button>
     </div>
+    <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${attachBtn('task-attach', t.id, 'Прикрепить')}</div>
+      ${upBar('task:'+t.id)}<div class="files">${files.map(f=>fileChip(f, true)).join('') || '<small style="color:var(--muted)">Макеты, логи, скриншоты — до '+fsize(FILE_MAX)+' на файл.</small>'}</div></div>
     <div><p class="sub-h">Шаги${sub.length?` · ${sd}/${sub.length}`:''}</p>${sub.length?`<div class="mini-bar" style="margin:8px 0"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
       <div class="cl">${sub.map((s,i)=>`<div class="row"><label class="${s.done?'done':''}"><input type="checkbox" data-action="step" data-id="${esc(t.id)}" data-i="${i}" ${s.done?'checked':''}><span>${esc(s.t)}</span></label><button class="mini-x" data-action="step-del" data-id="${esc(t.id)}" data-i="${i}" aria-label="Удалить шаг">${ic('X')}</button></div>`).join('')}</div>
       <form class="inline-add" data-form="step-add" data-id="${esc(t.id)}" style="margin-top:6px"><input class="input" name="s" placeholder="Добавить шаг — маленький и конкретный" autocomplete="off" maxlength="160"><button class="btn sm" aria-label="Добавить шаг">${ic('Plus')}</button></form></div>
@@ -1302,7 +1565,7 @@ function capture(){
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> сохранить · <kbd>Shift</kbd>+<kbd>Enter</kbd> новая строка · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Во «Входящие»</button></div></div></form>`);
 }
 function newTask(status, dept, title, fromInbox){
-  dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : 'dev');
+  dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : (UI.filt.dept!=='all' && UI.filt.dept) || myDepts()[0] || 'dev');
   overlay(`<form class="pal" data-form="task-new" data-status="${status||'todo'}" data-inbox="${esc(fromInbox||'')}"><div class="cap"><h2>${ic('Plus')} Новая задача</h2>
     <input class="input" name="title" placeholder="Что сделать? Начни с глагола: «Починить…», «Добавить…»" value="${esc(title||'')}" required maxlength="160" autocomplete="off">
     <input class="input" name="tldr" placeholder="Суть в одном предложении — зачем это нужно" maxlength="240" autocomplete="off">
@@ -1324,6 +1587,11 @@ function newDecision(dept){
     ${inText('rec','Рекомендуемый вариант (номер строки, пусто — нет)','','inputmode="numeric" maxlength="2"')}
     <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" data-action="close-overlay">Отмена</button><button class="btn primary">Вынести на голосование</button></div></div></form>`);
 }
+function newChat(){
+  overlay(`<form class="pal" data-form="chat-new"><div class="cap"><h2>${ic('MessagesSquare')} Новый чат</h2>
+    <input class="input" name="title" placeholder="О чём чат? Например: «Созвон по экономике»" required maxlength="120" autocomplete="off">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Чат увидит вся команда · <kbd>Enter</kbd> создать</span><span style="flex:1"></span><button class="btn primary">Создать</button></div></div></form>`);
+}
 function palItems(q){
   q = q.trim().toLowerCase();
   const cmds = [
@@ -1331,16 +1599,19 @@ function palItems(q){
     ['Plus','Новая задача','',()=>newTask('todo')],
     ['Scale','Новое решение','',()=>newDecision()],
     ['Headphones','Фокус 25 минут','',()=>startFocus(me().last)],
+    ['MessagesSquare','Новый чат','',()=>newChat()],
+    ['Bot','Забронировать Claude','',()=>{ go('claude'); setTimeout(claudeBookForm, 80); }],
     ['SunMoon','Сменить тему','',()=>{ P.theme = {auto:'dark',dark:'light',light:'auto'}[P.theme]; applyPrefs(); savePrefs(); toast('Тема: '+{auto:'как в системе',dark:'тёмная',light:'светлая'}[P.theme]); }],
     ['Leaf','Спокойный режим вкл/выкл','',()=>{ P.calm = !P.calm; applyPrefs(); savePrefs(); toast(P.calm?'Спокойный режим: без конфетти и всплывающих XP':'Спокойный режим выключен'); }],
     ['Settings','Профиль и настройки','',()=>settings()]
   ].map(c=>({g:'Команды', ico:c[0], t:c[1], r:c[2], run:c[3]}));
-  const pages = [['today','Sun','Мой день'],['inbox','Inbox','Входящие'],['tasks','LayoutGrid','Задачи'],['decisions','Scale','Решения'],['log','ScrollText','Журнал'],['people','Users','Люди'],['wiki','BookOpen','Вики']]
+  const pages = [['today','Sun','Мой день'],['inbox','Inbox','Входящие'],['tasks','LayoutGrid','Задачи'],['decisions','Scale','Решения'],['log','ScrollText','Журнал'],['people','Users','Люди'],['chats','MessagesSquare','Чаты'],['wiki','BookOpen','Вики'],['claude','Bot','Claude — график']]
     .map(p=>({g:'Разделы', ico:p[1], t:p[2], run:()=>go(p[0])}))
     .concat(DEPTS.flatMap(d=>[{g:'Разделы', ico:d.icon, t:d.name, run:()=>go('d/'+d.id)}].concat(d.tabs.slice(1).map(([id,n])=>({g:'Разделы', ico:d.icon, t:d.name+' → '+n, run:()=>go('d/'+d.id+'/'+id)})))));
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:(D[t.dept]||DEPTS[0]).icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
   const decs = S.decisions.map(d=>({g:'Решения', ico:'Scale', t:d.q, extra:d.tldr, run:()=>go('decisions')}));
   const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>{ go('d/'+r.key); setTimeout(()=>openDrawer('reg:'+r.id), 120); }}));
+  const chats = S.chats.map(c=>({g:'Чаты', ico:'MessagesSquare', t:c.title, extra:c.lastText, run:()=>go('chats/'+c.id)}));
   const wiki = S.wiki.map(w=>({g:'Вики', ico:'BookOpen', t:w.title, extra:w.tldr, run:()=>openDrawer('wiki:'+w.id)}));
   const people = Object.entries(S.people).map(([id,p])=>({g:'Люди', ico:'User', t:p.name, extra:p.role, run:()=>go('people')}));
   const eco = !S.E ? [] : [
@@ -1350,7 +1621,7 @@ function palItems(q){
     ...S.E.sections.map(x=>({g:'Экономика', ico:'BookOpen', t:x.title, extra:x.body, run:()=>go('d/econ/plan')})),
     ...S.E.decisions.map(x=>({g:'Экономика', ico:'Scale', t:x.question, run:()=>go('d/econ/edec')}))];
   if (!q) return [...cmds, ...pages.slice(0,7), ...tasks.filter(t=>true).slice(0,4)];
-  return [...cmds, ...pages, ...tasks, ...decs, ...regs, ...wiki, ...people, ...eco].filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q)).slice(0,40);
+  return [...cmds, ...pages, ...tasks, ...decs, ...chats, ...regs, ...wiki, ...people, ...eco].filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q)).slice(0,40);
 }
 function palette(){
   UI.pal = {q:'', i:0, items:palItems('')};
@@ -1375,7 +1646,7 @@ function settings(){
     <h2>${ic('User')} Профиль</h2>
     <form class="form" data-form="profile">
       <div class="fld-row">${inText('name','Имя',m.name,'required maxlength="40"')}${inText('role','Роль в команде',m.role,'maxlength="60" placeholder="Например: сервер, C#"')}</div>
-      <div class="fld"><span style="font-size:12.5px;font-weight:700;color:var(--text-2)">Мои отделы</span><div class="dpick">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="my-dept" data-d="${d.id}" aria-pressed="${(m.depts||[]).includes(d.id)}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div></div>
+      <div class="fld"><span style="font-size:12.5px;font-weight:700;color:var(--text-2)">Мои отделы</span><div class="links">${myDepts().map(dchip).join('') || '<small style="color:var(--muted)">Пока не назначены</small>'}</div>${askAdmin()}</div>
       <div class="fld"><span style="font-size:12.5px;font-weight:700;color:var(--text-2)">Цвет аватарки</span><div class="colors">${PERSON_COLORS.map(c=>`<button type="button" data-action="my-color" data-c="${c}" style="background:${c}" aria-pressed="${safeColor(m.color)===c}" aria-label="Цвет ${c}"></button>`).join('')}</div></div>
       <div style="display:flex;justify-content:flex-end"><button class="btn primary">${ic('Save')} Сохранить профиль</button></div>
     </form>
@@ -1411,7 +1682,9 @@ async function createTask(f){
   const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details:'', dept, status:f.dataset.status||'todo', size:f.size.value, who:f.mine.checked?S.me:null, links:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
   if (!ok) return;
   if (f.dataset.inbox) col('hub_inbox').doc(f.dataset.inbox).delete().catch(()=>{});
-  closeOverlay(); log('создал(а) задачу', title, dept); gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
+  closeOverlay(); log('создал(а) задачу', title, dept);
+  if (!canSee(dept)) { gain(3, ic('Plus')+' Задача передана в отдел «'+esc(D[dept].name)+'». Её видят только его участники.'); return; }
+  gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
 }
 function addInbox(text, dept){
   write(()=>col('hub_inbox').add({text:clip(text,1000), at:now(), by:S.me, dept:dept||null})).then(ok => ok && gain(2, ic('Lightbulb')+' Записано во «Входящие»'));
@@ -1449,7 +1722,7 @@ document.addEventListener('click', e => {
         patchMe({top3:top}); break; }
       case 'step-del': { const t = task(id); const sub = (t.sub||[]).filter((_,i)=>i!==Number(a.dataset.i)); updTask(id, {sub}); break; }
       case 'link-del': { const t = task(UI.drawer.slice(5)); if (t) updTask(t.id, {links:(t.links||[]).filter(x=>x!==a.dataset.l)}); break; }
-      case 'task-del': { const t = task(id); if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.')) break; write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); } }); break; }
+      case 'task-del': { const t = task(id); if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.')) break; write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
       case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const cur = (d.votes||{})[S.me];
         write(()=>col('hub_decisions').doc(id).update({['votes.'+S.me]: cur===i ? FV().delete() : i, updatedAt:now()})).then(ok => { if (ok && cur==null) { log('проголосовал(а) в решении', d.q, d.dept); gain(5, ic('Vote')+' Голос учтён'); } }); break; }
       case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; const r = a.getBoundingClientRect();
@@ -1466,7 +1739,15 @@ document.addEventListener('click', e => {
       case 'pick-size': { const f = a.closest('form'); f.querySelectorAll('[data-action="pick-size"]').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); f.size.value = a.dataset.v; break; }
       case 'pref': { let v = a.dataset.v; if (v==='true') v = true; if (v==='false') v = false; P[a.dataset.k] = v; applyPrefs(); savePrefs(); a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); break; }
       case 'toggle-dept': { const i = P.hidden.indexOf(a.dataset.d); if (i>=0) P.hidden.splice(i,1); else P.hidden.push(a.dataset.d); savePrefs(); a.setAttribute('aria-pressed', String(i>=0)); paint(); break; }
-      case 'my-dept': { const ds = new Set(me().depts||[]); ds.has(a.dataset.d) ? ds.delete(a.dataset.d) : ds.add(a.dataset.d); a.setAttribute('aria-pressed', String(ds.has(a.dataset.d))); patchMe({depts:[...ds]}); break; }
+      case 'set-dept': case 'set-all-depts': { if (!isAdmin()) break; const uid = a.dataset.uid, p = S.people[uid]; if (!p) break;
+        let ds; if (k==='set-all-depts') ds = a.dataset.v==='1' ? DEPTS.map(d=>d.id) : [];
+        else { const s = new Set(p.depts||[]); s.has(a.dataset.d) ? s.delete(a.dataset.d) : s.add(a.dataset.d); ds = DEPTS.map(d=>d.id).filter(x=>s.has(x)); }
+        write(()=>col('hub_people').doc(uid).update({depts:ds})).then(ok => ok && log('назначил(а) отделы: '+(ds.length===DEPTS.length?'все':ds.map(x=>D[x].name).join(', ')||'нет'), p.name)); break; }
+      case 'set-admin': { if (!isAdmin()) break; const uid = a.dataset.uid, p = S.people[uid]; if (!p) break; const on = p.admin!==true;
+        if (!on && uid===S.me && !confirm('Снять с себя роль руководителя? Вернуть её сможет только другой руководитель.')) break;
+        if (!on && Object.values(S.people).filter(x=>x.admin===true).length<=1) { toast(ic('CircleAlert')+' Это последний руководитель — сначала назначь другого'); break; }
+        if (on && !confirm('Сделать '+p.name+' руководителем? Он(а) сможет назначать отделы всем.')) break;
+        write(()=>col('hub_people').doc(uid).update({admin:on})).then(ok => ok && log(on?'сделал(а) руководителем':'снял(а) роль руководителя', p.name)); break; }
       case 'my-color': { a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); patchMe({color:a.dataset.c}); break; }
       case 'focus-start': startFocus(id); break;
       case 'focus-stop': patchMe({focus:null}).then(ok => ok && toast('Фокус остановлен')); break;
@@ -1474,6 +1755,29 @@ document.addEventListener('click', e => {
       case 'check-reset': { const items = S.reg.filter(x=>x.key===a.dataset.key && x.done); if (!confirm('Снять все отметки чеклиста?')) break; const b = DB.batch(); items.forEach(x=>b.update(col('hub_reg').doc(x.id), {done:false})); write(()=>b.commit()); break; }
       case 'wiki-new': openDrawer('wikinew:', true); break;
       case 'wiki-del': { const w = wikiItem(id); if (!confirm('Удалить статью «'+w.title+'»?')) break; write(()=>col('hub_wiki').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) статью', w.title); closeDrawer(); } }); break; }
+      case 'file-get': downloadFile(id); break;
+      case 'file-del': { const f = S.files.find(x=>x.id===id); if (!f || !confirm('Удалить файл «'+f.name+'»?')) break; write(()=>deleteFiles([id])); break; }
+      case 'task-chat': openTaskChat(id); break;
+      case 'chat-new': newChat(); break;
+      case 'chat-del': { const c = chat(id); if (!c || !confirm('Удалить чат «'+c.title+'» со всеми сообщениями?')) break;
+        write(async () => { const ms = await col('hub_msgs').where('chat','==',id).get(); const fids = ms.docs.flatMap(d=>d.data().files||[]);
+          for (let i=0;i<ms.docs.length;i+=400) { const b = DB.batch(); ms.docs.slice(i,i+400).forEach(d=>b.delete(d.ref)); await b.commit(); }
+          await deleteFiles(fids); await col('hub_chats').doc(id).delete(); }).then(ok => { if (ok) { log('удалил(а) чат', c.title); go('chats'); } }); break; }
+      case 'msg-del': { const m = S.msgs.find(x=>x.id===id); if (!m || !confirm('Удалить сообщение?')) break; write(async () => { await col('hub_msgs').doc(id).delete(); await deleteFiles(m.files||[]); }); break; }
+      case 'claude-past': UI.cpast = !UI.cpast; paint(); break;
+      case 'claude-day': UI.cday = Number(a.dataset.v); paint(); break;
+      case 'claude-book': claudeBookForm(); break;
+      case 'claude-slot': { const s = Number(a.dataset.s); bookClaude(s, s+3600e3, ''); break; }
+      case 'claude-now': { const s = nowMin(); bookClaude(s, s+Number(a.dataset.n)*SLOT, a.dataset.focus ? 'Фокус-режим' : '').then(ok => { if (ok && a.dataset.focus) setTimeout(claudeFocus, 400); }); break; }
+      case 'claude-focus': claudeFocus(); break;
+      case 'claude-cancel': { const b = S.claude.find(x=>x.id===id); if (!b) break; const running = b.start<=now();
+        if (!confirm(running ? 'Освободить Claude прямо сейчас?' : 'Отменить бронь '+hhmm(b.start)+'–'+hhmm(b.end)+'?')) break;
+        write(()=> running ? col('hub_claude').doc(id).update({end:now()}) : col('hub_claude').doc(id).delete()).then(ok => { if (ok && running && (me().focus||{}).claude) patchMe({focus:null}); }); break; }
+      case 'claude-end': write(()=>col('hub_claude').doc(id).update({end:now()})).then(ok => { if (ok) { closeOverlay(); patchMe({focus:null}); log('освободил(а) Claude', ''); toast(ic('Bot')+' Claude свободен. Спасибо!'); } }); break;
+      case 'claude-extend': { const b = S.claude.find(x=>x.id===id); if (!b) break; const e = b.end+SLOT;
+        if (e-b.start > CLAUDE_MAX) { toast('Одна бронь — не больше 4 часов'); break; }
+        if (!claudeFree(b.end, e, id)) { toast(ic('CircleAlert')+' Дальше Claude уже забронирован'); break; }
+        write(()=>col('hub_claude').doc(id).update({end:e})).then(ok => { if (ok) { patchMe({focus:{task:null, claude:true, until:e}}); setTimeout(claudeFocus, 300); } }); break; }
       case 'logout': if (confirm('Выйти из аккаунта?')) { patchMe({seen:0}).finally(()=>AUTH.signOut()); } break;
     }
     return;
@@ -1484,6 +1788,11 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   const a = e.target;
   if (a.dataset.action==='filt-dept') { UI.filt.dept = a.value; paint(); }
+  if (a.dataset.action==='task-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
+    uploadFiles(list, {task:id}).then(ids => { if (ids.length) { const t = task(id); if (t) log('прикрепил(а) '+plural(ids.length,'файл','файла','файлов')+' к задаче', t.title, t.dept); toast(ic('Paperclip')+' Прикреплено: '+ids.length); } }); }
+  if (a.dataset.action==='chat-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
+    uploadFiles(list, {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); }); }
+  if (a.name==='day' && a.form && a.form.dataset.form==='claude-book') { a.form.from.innerHTML = claudeTimes(Number(a.value)).map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join(''); }
   if (a.dataset.action==='check') { const it = regItem(a.dataset.id); write(()=>col('hub_reg').doc(a.dataset.id).update({done:a.checked, updatedAt:now(), updatedBy:S.me})).then(ok => { if (ok && a.checked) { log('отметил(а) пункт', it.name, it.key.split('/')[0]); gain(2, ic('ListChecks')+' Отмечено'); } }); }
   if (a.dataset.action==='step') { const t = task(a.dataset.id); const sub = (t.sub||[]).map((s,i)=>i===Number(a.dataset.i)?{t:s.t, done:a.checked}:s); updTask(t.id, {sub}).then(ok => ok && a.checked && gain(2, ic('ListChecks')+' Шаг выполнен')); }
   if (a.dataset.action==='link-add' && a.value) { const t = task(a.dataset.id); updTask(t.id, {links:[...new Set([...(t.links||[]), a.value])]}); }
@@ -1493,6 +1802,13 @@ document.addEventListener('submit', async e => {
   const k = f.dataset.form;
   if (k==='capture') { const t = f.t.value.trim(); if (!t) return; closeOverlay(); addInbox(t, f.d.value); }
   if (k==='task-new') createTask(f);
+  if (k==='chat-new') { const title = clip(f.title.value,120); if (!title) return; const ref = col('hub_chats').doc();
+    const ok = await write(()=>ref.set({title, task:null, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''}));
+    if (ok) { closeOverlay(); log('создал(а) чат', title); go('chats/'+ref.id); } }
+  if (k==='msg') { const id = f.dataset.id, text = f.m.value; if (!text.trim()) return; f.m.value = ''; UI.chatDraft[id] = '';
+    const ok = await sendMsg(id, text.trim()); if (!ok) { f.m.value = text; UI.chatDraft[id] = text; } const i = $('#chat-in'); if (i) i.focus(); }
+  if (k==='claude-book') { const s = Number(f.from.value); if (!s) return; const ok = await bookClaude(s, s+Number(f.dur.value), f.note.value);
+    if (ok) { UI.cday = Number(f.day.value); closeOverlay(); paint(); } }
   if (k==='comment') { const t = clip(f.c.value,2000); if (!t) return; const tk = task(f.dataset.id); f.c.value = '';
     updTask(tk.id, {comments:FV().arrayUnion({by:S.me, text:t, at:now()})}).then(ok => { if (ok) { log('прокомментировал(а)', tk.title, tk.dept); gain(3, ic('MessageSquare')+' Комментарий добавлен'); } }); }
   if (k==='step-add') { const t = clip(f.s.value,160); if (!t) return; const tk = task(f.dataset.id); updTask(tk.id, {sub:[...(tk.sub||[]), {t, done:false}]}).then(ok => { if (ok) setTimeout(()=>{ const i = $('#drawer [data-form="step-add"] input'); if (i) i.focus(); }, 60); }); f.s.value = ''; }
@@ -1532,6 +1848,14 @@ function palHover(e, moved){
 }
 document.addEventListener('mouseover', e => palHover(e, false));
 document.addEventListener('mousemove', e => { const p = e.screenX+','+e.screenY; if (p===palMouse) return; palMouse = p; palHover(e, true); });
+document.addEventListener('input', e => { if (e.target.id==='chat-in') { UI.chatDraft[e.target.form.dataset.id] = e.target.value; return; } });
+/* картинку из буфера обмена можно сразу отправить в чат */
+document.addEventListener('paste', e => {
+  if (e.target.id!=='chat-in') return;
+  const files = [...(e.clipboardData && e.clipboardData.files || [])]; if (!files.length) return;
+  e.preventDefault(); const id = e.target.form.dataset.id;
+  uploadFiles(files.map((f,i)=>f.name && f.name!=='image.png' ? f : new File([f], 'скриншот-'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+(i?'-'+i:'')+'.png', {type:f.type})), {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); });
+});
 document.addEventListener('input', e => { if (e.target.id==='pal-in') { UI.pal.q = e.target.value; UI.pal.items = palItems(e.target.value); UI.pal.i = 0; paintPal(); } });
 document.addEventListener('keydown', e => {
   if (document.body.classList.contains('locked')) return;
@@ -1546,6 +1870,7 @@ document.addEventListener('keydown', e => {
     if (e.key==='Enter') { e.preventDefault(); runPal(UI.pal.i); }
     return;
   }
+  if (e.target.id==='chat-in' && e.key==='Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); e.target.form.requestSubmit(); return; }
   if (e.target.name==='t' && e.target.form && e.target.form.dataset.form==='capture' && e.key==='Enter' && !e.shiftKey) { e.preventDefault(); e.target.form.requestSubmit(); return; }
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key==='q' || e.key==='й')) { e.preventDefault(); capture(); }
 });
@@ -1573,6 +1898,9 @@ function viewRoute(){
   if (r==='log') return viewLog();
   if (r==='people') return viewPeople();
   if (r==='wiki') return viewWiki();
+  if (r==='chats') return viewChats();
+  listenChat(null);
+  if (r==='claude') return viewClaude();
   if (r.startsWith('d/')) return viewDept();
   return viewToday();
 }
@@ -1585,9 +1913,12 @@ function focusKey(el){
 function paint(){
   if (document.body.classList.contains('locked')) return;
   const ae = document.activeElement, fk = focusKey(ae), sy = scrollY, sel = ae && ae.id && 'selectionStart' in ae ? [ae.selectionStart, ae.selectionEnd] : null;
+  const ms = $('#msgs'), mst = ms ? {top:ms.scrollTop, end:ms.scrollHeight-ms.scrollTop-ms.clientHeight < 60, chat:UI.chat} : null;
   $('#side').innerHTML = sidebar();
   $('#topbar').innerHTML = topbar();
   $('#view').innerHTML = view();
+  document.body.classList.toggle('r-chats', UI.route==='chats');
+  const ms2 = $('#msgs'); if (ms2) ms2.scrollTop = !mst || mst.end || mst.chat!==UI.chat ? ms2.scrollHeight : mst.top;
   if (fk) { const el = document.querySelector('#side '+fk+',#topbar '+fk+',#view '+fk); if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
   if (scrollY !== sy) scrollTo(0, sy);
 }
@@ -1601,11 +1932,16 @@ function schedule(){
 }
 
 /* таймеры фокуса тикают без полной перерисовки */
-let focusEnded = 0;
+let focusEnded = 0, lastClaude = '';
 setInterval(() => {
   if (!S.me) return;
   const f = me().focus;
-  if (f && f.until <= now()) { if (focusEnded===f.until) return; focusEnded = f.until; patchMe({focus:null}); gain(15, ic('Headphones')+' 25 минут фокуса позади! Сделай перерыв.'); confetti(innerWidth-120, 40); return; }
+  if (f && f.until <= now()) { if (focusEnded===f.until) return; focusEnded = f.until; patchMe({focus:null});
+    if (f.claude) { if ($('#overlay .cfocus')) closeOverlay(); gain(15, ic('Bot')+' Время с Claude закончилось — он свободен для следующего.'); }
+    else gain(15, ic('Headphones')+' 25 минут фокуса позади! Сделай перерыв.');
+    confetti(innerWidth-120, 40); return; }
+  /* начало или конец чужой брони Claude меняет статус в боковой панели */
+  const cb = claudeAt(now()); const cbId = cb ? cb.id : ''; if (cbId!==lastClaude) { lastClaude = cbId; schedule(); }
   const fl = $('#focus-left'); if (fl && f) fl.textContent = mmss(f.until-now());
   document.querySelectorAll('[data-until]').forEach(el => el.textContent = mmss(Number(el.dataset.until)-now()));
 }, 1000);
@@ -1614,18 +1950,44 @@ setInterval(() => {
 function listen(){
   const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); S.loaded.add(c); schedule(); };
   const docs = sn => sn.docs.map(d=>Object.assign({id:d.id}, d.data()));
-  const simple = [['hub_tasks','tasks'],['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki']];
+  const simple = [['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki'],['hub_files','files'],['hub_chats','chats']];
   for (const [c,k] of simple) UNSUB.push(col(c).onSnapshot(sn => { S[k] = docs(sn); S.loaded.add(c); schedule(); }, onErr(c)));
+  /* задачи — отдельная подписка на каждый свой отдел: правила Firestore пускают только к задачам своих отделов */
+  const syncTasks = () => {
+    const want = myDepts(); S.allTasks = want.flatMap(d=>S.tdept[d]||[]); applyVis();
+    if (want.every(d=>S.tdept[d])) S.loaded.add('hub_tasks');
+    schedule();
+  };
+  const listenTasks = () => {
+    const want = new Set(myDepts());
+    for (const d of Object.keys(TASK_UNSUB)) if (!want.has(d)) { try { TASK_UNSUB[d](); } catch (e) {} delete TASK_UNSUB[d]; delete S.tdept[d]; }
+    for (const d of want) if (!TASK_UNSUB[d]) TASK_UNSUB[d] = col('hub_tasks').where('dept','==',d).onSnapshot(sn => { S.tdept[d] = docs(sn); syncTasks(); },
+      e => { if (!canSee(d)) return; /* отдел только что сняли — ответ уже не нужен */ onErr('hub_tasks')(e); });
+    syncTasks();
+  };
+  UNSUB.push(col('hub_claude').where('end','>',now()-14*86400e3).onSnapshot(sn => { S.claude = docs(sn); schedule(); }, onErr('hub_claude')));
   let lastLevel = null;
   UNSUB.push(col('hub_people').onSnapshot(sn => {
-    const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); S.people = p; S.loaded.add('hub_people');
+    const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); S.people = p; S.loaded.add('hub_people'); listenTasks();
     const lv = level(); if (lastLevel!==null && lv>lastLevel && !P.calm) { toast(ic('PartyPopper')+' Новый уровень: '+lv); confetti(innerWidth/2, innerHeight/2, 60); } lastLevel = lv;
     schedule();
   }, onErr('hub_people')));
   UNSUB.push(col('hub_log').orderBy('at','desc').limit(300).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
 }
-function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
+/* сообщения слушаем только у открытого чата */
+let MSG_UNSUB = null, msgChat = null;
+function listenChat(id){
+  if (msgChat===id) return;
+  if (MSG_UNSUB) { try { MSG_UNSUB(); } catch (e) {} MSG_UNSUB = null; }
+  msgChat = id; S.msgs = []; S.loaded.delete('hub_msgs');
+  if (!id) return;
+  MSG_UNSUB = col('hub_msgs').where('chat','==',id).onSnapshot(sn => { if (msgChat!==id) return; S.msgs = sn.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.at-b.at); S.loaded.add('hub_msgs'); markRead(id); schedule(); },
+    e => { console.error('hub_msgs', e); S.errs.hub_msgs = errText(e); schedule(); });
+}
+let TASK_UNSUB = {};
+function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; listenChat(null);
+  Object.values(TASK_UNSUB).forEach(u => { try { u(); } catch (e) {} }); TASK_UNSUB = {}; S.tdept = {}; S.allTasks = []; S.tasks = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
 
 /* стартовое наполнение — один раз на всю команду */
 async function seedIfEmpty(){
