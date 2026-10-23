@@ -1665,7 +1665,7 @@ function regForm(key, it){
     if (f.t==='url') return inText(f.k, f.l, v, 'type="url" placeholder="https://"');
     return inText(f.k, f.l, v, (f.req?'required ':'')+'maxlength="300"'+(f.mono?' style="font-family:var(--f-mono);font-size:13px"':''));
   };
-  return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun) + `<form class="dr-b form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
+  return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun, it && r.type!=='checklist' ? `<button type="button" class="btn sm" data-action="reg-decide" data-id="${esc(it.id)}" title="Вынести запись на решение — она останется на месте">${ic('Scale')} На решение</button>` : '') + `<form class="dr-b form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
     ${r.fields.map(field).join('')}
     ${it && safeUrl(it.link) ? `<a class="btn" href="${esc(it.link)}" target="_blank" rel="noopener">${ic('ExternalLink')} Открыть макет</a>`:''}
     ${it && r.type!=='checklist' ? regDecBlock(it) : ''}
