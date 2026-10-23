@@ -2115,7 +2115,7 @@ function listen(){
   const simple = [['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki'],['hub_files','files'],['hub_chats','chats']];
   for (const [c,k] of simple) UNSUB.push(col(c).onSnapshot(sn => { S[k] = docs(sn); S.loaded.add(c); schedule(); }, onErr(c)));
   /* задачи видят все — одна подписка. Пока в базе старые правила, читаем по своим отделам, как раньше */
-  let allTasks = true;
+  let allTasks = true, allTries = 0;
   const syncTasks = () => {
     const want = myDepts(), seen = new Map();
     for (const d of want) for (const t of [...(S.tdept[d]||[]), ...(S.tdept['+'+d]||[])]) seen.set(t.id, t);
@@ -2125,7 +2125,13 @@ function listen(){
   };
   const listenTasks = () => {
     if (allTasks) { if (!TASK_UNSUB.all) TASK_UNSUB.all = col('hub_tasks').onSnapshot(sn => { S.allTasks = docs(sn); applyVis(); S.loaded.add('hub_tasks'); schedule(); },
-      e => { if (e && e.code==='permission-denied') { console.warn('hub_tasks: правила базы ещё старые — читаю задачи своих отделов'); try { TASK_UNSUB.all(); } catch (x) {} delete TASK_UNSUB.all; allTasks = false; listenTasks(); } else onErr('hub_tasks')(e); });
+      e => { if (!(e && e.code==='permission-denied')) return onErr('hub_tasks')(e);
+        try { TASK_UNSUB.all(); } catch (x) {} delete TASK_UNSUB.all;
+        /* отказ бывает и кратковременным сразу после входа — пробуем ещё, потом читаем по своим отделам и время от времени проверяем снова */
+        if (++allTries < 4) { console.warn('hub_tasks: отказ, пробую ещё раз', allTries, e.message); setTimeout(() => { if (UNSUB.length) listenTasks(); }, 1500*allTries); return; }
+        console.warn('hub_tasks: правила базы ещё старые — читаю задачи своих отделов', e.message); allTasks = false; listenTasks();
+        const probe = setInterval(() => { if (!UNSUB.length) return clearInterval(probe);
+          col('hub_tasks').limit(1).get().then(() => { clearInterval(probe); for (const k of Object.keys(TASK_UNSUB)) { try { TASK_UNSUB[k](); } catch (x) {} delete TASK_UNSUB[k]; } S.tdept = {}; allTasks = true; allTries = 0; listenTasks(); }).catch(() => {}); }, 60e3); });
       return; }
     const want = new Set(myDepts());
     for (const d of Object.keys(TASK_UNSUB)) if (!want.has(d.replace('+',''))) { try { TASK_UNSUB[d](); } catch (e) {} delete TASK_UNSUB[d]; delete S.tdept[d]; }
