@@ -559,8 +559,8 @@ function viewPeople(){
 /* ── вики ───────────────────────────────────── */
 function viewWiki(){
   const list = [...S.wiki].sort(byOrder);
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено. Суть сверху — подробности по клику.</p></div></div><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div>
-  <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body">${esc(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>`;
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено. Суть сверху — подробности по клику. Текст статей понимает Markdown.</p></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" title="Открыть файл .md с компьютера в читалке">${ic('BookOpen')} Открыть .md<input type="file" hidden accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" data-action="md-local"></label><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div></div>
+  <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body md">${md(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>`;
 }
 
 /* ── вложения ───────────────────────────────────
@@ -617,8 +617,88 @@ function fileChip(f, big){
   const del = f.by===S.me ? `<button class="mini-x" data-action="file-del" data-id="${esc(f.id)}" aria-label="Удалить файл" title="Удалить файл">${ic('X')}</button>` : '';
   const src = big && isImg(f) && f.size <= THUMB_MAX ? thumb(f) : '';
   if (src) return `<span class="fimg"><img src="${src}" alt="${esc(f.name)}" data-action="file-get" data-id="${esc(f.id)}" title="${esc(f.name)} · скачать">${del}</span>`;
+  if (isMd(f)) return `<span class="file"><button class="file-b" data-action="file-md" data-id="${esc(f.id)}" title="Открыть в читалке">${ic('BookOpen')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button><button class="mini-x" data-action="file-get" data-id="${esc(f.id)}" aria-label="Скачать" title="Скачать">${ic('Download')}</button>${del}</span>`;
   return `<span class="file"><button class="file-b" data-action="file-get" data-id="${esc(f.id)}" title="Скачать">${ic(isImg(f)?'Eye':'Paperclip')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button>${del}</span>`;
 }
+/* ── markdown ───────────────────────────────────
+   Свой небольшой рендер: сначала экранируем весь текст, потом размечаем.
+   HTML и скрипты из файла не выполняются, ссылки — только http(s). */
+const MD_LIST = /^(\s*)([-*+•]|\d+[.)])\s+(.*)$/;
+function mdInline(s){
+  const code = [];
+  s = String(s).replace(/`+([^`]+?)`+/g, (_,c) => { code.push(c); return '\u0000'+(code.length-1)+'\u0000'; });
+  s = esc(s);
+  const url = u => safeUrl(u.replace(/&amp;/g,'&'));
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m,a,u) => url(u) ? '<img src="'+esc(url(u))+'" alt="'+a+'" loading="lazy">' : a);
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m,t,u) => url(u) ? '<a href="'+esc(url(u))+'" target="_blank" rel="noopener noreferrer">'+t+'</a>' : t);
+  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,:;!?)])/g, (m,p,u) => p+'<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>');
+  s = s.replace(/\*\*(.+?)\*\*|__(.+?)__/g, (m,a,b) => '<b>'+(a||b)+'</b>');
+  s = s.replace(/(^|[^*\w])\*(?!\s)(.+?)\*(?!\w)/g, '$1<i>$2</i>').replace(/(^|[^_\wа-яё])_(?!\s)(.+?)_(?![\wа-яё])/gi, '$1<i>$2</i>');
+  s = s.replace(/~~(.+?)~~/g, '<s>$1</s>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_,i) => '<code>'+esc(code[i])+'</code>');
+}
+function mdList(L, i){
+  const ind = L[i].match(/^\s*/)[0].length, ord = /^\s*\d/.test(L[i]), items = [];
+  while (i < L.length) {
+    const l = L[i], m = l.match(MD_LIST);
+    if (!l.trim()) { const n = L[i+1]; if (n && MD_LIST.test(n) && n.match(/^\s*/)[0].length >= ind) { i++; continue; } break; }
+    if (m && m[1].length === ind) { if (/\d/.test(m[2]) !== ord) break; items.push({t:m[3], sub:''}); i++; continue; }
+    if (m && m[1].length > ind && items.length) { const r = mdList(L, i); items[items.length-1].sub += r.html; i = r.i; continue; }
+    if (!m && /^\s/.test(l) && items.length) { items[items.length-1].t += '\n'+l.trim(); i++; continue; }
+    break;
+  }
+  const tag = ord ? 'ol' : 'ul';
+  return {i, html:'<'+tag+'>'+items.map(it => { const c = it.t.match(/^\[([ xX])\]\s+([\s\S]*)$/);
+    return '<li'+(c?' class="task"':'')+'>'+(c?'<input type="checkbox" disabled'+(c[1]!==' '?' checked':'')+'> ':'')+(c?c[2]:it.t).split('\n').map(mdInline).join('<br>')+it.sub+'</li>'; }).join('')+'</'+tag+'>'};
+}
+function md(src, compact){
+  let L = String(src||'').replace(/\r\n?/g,'\n').split('\n'), i = 0, out = '';
+  if (L[0].trim()==='---') { const e = L.indexOf('---', 1); if (e > 0 && e < 40) L = L.slice(e+1); } // YAML-шапка
+  const isRow = l => !!l && l.includes('|') && !!l.trim();
+  const isSep = l => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l||'');
+  const starts = l => /^(#{1,6}\s|\s*(```|~~~)|\s*>|\s*(-{3,}|\*{3,}|_{3,})\s*$)/.test(l) || MD_LIST.test(l);
+  while (i < L.length) {
+    const l = L[i]; let m;
+    if (!l.trim()) { i++; continue; }
+    if ((m = l.match(/^\s*(```|~~~)\s*([\w+#.-]*)/))) { const buf = []; i++; while (i < L.length && !L[i].trim().startsWith(m[1])) buf.push(L[i++]); i++;
+      out += '<pre'+(m[2]?' data-lang="'+esc(m[2])+'"':'')+'><code>'+esc(buf.join('\n'))+'</code></pre>'; continue; }
+    if ((m = l.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/))) { const h = compact ? (m[1].length<=2 ? 3 : 4) : m[1].length; out += '<h'+h+'>'+mdInline(m[2])+'</h'+h+'>'; i++; continue; }
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)) { out += '<hr>'; i++; continue; }
+    if (/^\s*>/.test(l)) { const buf = []; while (i < L.length && /^\s*>/.test(L[i])) buf.push(L[i++].replace(/^\s*>\s?/,'')); out += '<blockquote>'+md(buf.join('\n'), compact)+'</blockquote>'; continue; }
+    if (isRow(l) && isSep(L[i+1])) {
+      const cells = r => r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
+      const al = cells(L[i+1]).map(c => c.startsWith(':')&&c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : '');
+      const td = (t,c,j) => '<'+t+(al[j]?' style="text-align:'+al[j]+'"':'')+'>'+mdInline(c)+'</'+t+'>';
+      const head = cells(l), rows = []; i += 2; while (i < L.length && isRow(L[i])) rows.push(cells(L[i++]));
+      out += '<div class="md-table"><table><thead><tr>'+head.map((c,j)=>td('th',c,j)).join('')+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+head.map((_,j)=>td('td',r[j]||'',j)).join('')+'</tr>').join('')+'</tbody></table></div>'; continue;
+    }
+    if (MD_LIST.test(l)) { const r = mdList(L, i); out += r.html; i = r.i; continue; }
+    const buf = [l]; i++; while (i < L.length && L[i].trim() && !starts(L[i]) && !(isRow(L[i]) && isSep(L[i+1]))) buf.push(L[i++]);
+    out += '<p>'+buf.map(x=>mdInline(x.trim())).join('<br>')+'</p>';
+  }
+  return out;
+}
+/* читалка: вложения .md и файлы с компьютера */
+const MD_MAX = 2*1024*1024;
+const isMd = f => /\.(md|markdown|mdown|mkd)$/i.test(f.name||'') || /markdown/i.test(f.type||'');
+let MDR = null;
+function mdReader(){
+  const r = MDR; if (!r) return;
+  const n = (r.text.match(/\S+/g)||[]).length;
+  overlay('<div class="pal mdr" role="dialog" aria-label="'+esc(r.name)+'"><div class="mdr-h"><span class="ph-ico">'+ic('BookOpen')+'</span><div class="bd"><b>'+esc(r.name)+'</b><small>'+plural(n,'слово','слова','слов')+' · ~'+Math.max(1, Math.round(n/180))+' мин чтения</small></div>'
+    +'<div class="seg" role="group" aria-label="Вид"><button type="button" data-action="md-mode" data-v="" aria-pressed="'+!r.raw+'">Текст</button><button type="button" data-action="md-mode" data-v="1" aria-pressed="'+!!r.raw+'">Исходник</button></div>'
+    +'<button class="icon-btn" data-action="md-wiki" title="Сделать статьёй в вики" aria-label="Сделать статьёй в вики">'+ic('Plus')+'</button>'
+    +(r.file?'<button class="icon-btn" data-action="file-dl" data-id="'+esc(r.file)+'" title="Скачать" aria-label="Скачать">'+ic('Download')+'</button>':'')
+    +'<button class="icon-btn" data-action="close-overlay" aria-label="Закрыть">'+ic('X')+'</button></div>'
+    +'<div class="mdr-b">'+(r.raw ? '<pre class="md-src">'+esc(r.text)+'</pre>' : '<article class="md">'+(md(r.text)||'<p style="color:var(--muted)">Файл пустой.</p>')+'</article>')+'</div></div>');
+}
+function openMd(name, text, file){ MDR = {name, text, file:file||null, raw:false}; mdReader(); }
+async function openMdFile(id){
+  const f = S.files.find(x=>x.id===id); if (!f) return;
+  if (f.size > MD_MAX) { toast(ic('CircleAlert')+' Файл больше '+fsize(MD_MAX)+' — скачиваю'); downloadFile(id); return; }
+  try { openMd(f.name, await (await fileBlob(f)).text(), id); } catch (e) { console.error(e); toast(ic('CircleAlert')+' Не открылось: '+esc(errText(e))); }
+}
+const mdTitle = (text, name) => { const m = String(text).match(/^#{1,2}\s+(.+?)\s*#*\s*$/m); return clip(m ? m[1].replace(/[*_`]/g,'') : name.replace(/\.[^.]+$/,''), 120); };
 const upBar = key => S.up[key] ? `<div class="upbar"><span class="spin"></span> Загружаем «${esc(clip(S.up[key].name,40))}» · ${S.up[key].pct}%</div>` : '';
 const attachBtn = (action, id, label) => `<label class="btn sm" title="До ${fsize(FILE_MAX)} на файл">${ic('Paperclip')}${label?' '+label:''}<input type="file" multiple hidden data-action="${action}" data-id="${esc(id)}"></label>`;
 
@@ -959,36 +1039,8 @@ function workTime(v){
   return '≈ '+nfmt.format(Math.round(h))+' ч работы';
 }
 
-/* мини-markdown, как на странице экономики */
-function inline(t){
-  return esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-    .replace(/(^|[\s(«])\*([^*\s][^*]*?)\*(?=[\s.,;:!?)»]|$)/g,'$1<em>$2</em>');
-}
-function md(src){
-  const L = String(src||'').replace(/\r/g,'').split('\n'); const out = []; let i = 0;
-  const isTable = s => /^\s*\|/.test(s), isUl = s => /^\s*[-•]\s+/.test(s), isOl = s => /^\s*\d+[.)]\s+/.test(s), isH = s => /^\s*#{1,4}\s+/.test(s), isQ = s => /^\s*>\s?/.test(s);
-  while (i < L.length) {
-    const s = L[i];
-    if (!s.trim()) { i++; continue; }
-    if (isH(s)) { const lvl = s.match(/^\s*(#+)/)[1].length; const tg = lvl<=2?'h3':'h4'; out.push(`<${tg}>${inline(s.replace(/^\s*#+\s+/,''))}</${tg}>`); i++; continue; }
-    if (isTable(s)) {
-      const rows = []; while (i < L.length && isTable(L[i])) { rows.push(L[i]); i++; }
-      const cells = r => r.trim().replace(/^\|/,'').replace(/\|$/,'').split('|').map(c=>c.trim());
-      const body = rows.filter(r => !/^[\s|:\-]+$/.test(r)); const head = body.shift(); if (!head) continue;
-      out.push(`<div class="md-table"><table><thead><tr>${cells(head).map(c=>`<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${body.map(r=>`<tr>${cells(r).map(c=>`<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`);
-      continue;
-    }
-    if (isUl(s) || isOl(s)) {
-      const ol = isOl(s); const items = [];
-      while (i < L.length && (ol ? isOl(L[i]) : isUl(L[i]))) { items.push(L[i].replace(ol ? /^\s*\d+[.)]\s+/ : /^\s*[-•]\s+/, '')); i++; }
-      out.push(`<${ol?'ol':'ul'}>${items.map(x=>`<li>${inline(x)}</li>`).join('')}</${ol?'ol':'ul'}>`); continue;
-    }
-    if (isQ(s)) { const q = []; while (i < L.length && isQ(L[i])) { q.push(L[i].replace(/^\s*>\s?/,'')); i++; } out.push(`<blockquote>${inline(q.join(' '))}</blockquote>`); continue; }
-    const p = []; while (i < L.length && L[i].trim() && !isH(L[i]) && !isTable(L[i]) && !isUl(L[i]) && !isOl(L[i]) && !isQ(L[i])) { p.push(L[i]); i++; }
-    out.push(`<p>${p.map(inline).join('<br>')}</p>`);
-  }
-  return out.join('');
-}
+/* markdown — общий рендер md() выше; inline — для ячеек таблиц экономики */
+const inline = mdInline;
 const isNumCell = v => { v = String(v ?? '').trim(); return /\d/.test(v) && /^[-−+≈~]?\s?[\d\s.,]+\s?(%|\$|₽|RB|тыс|млн|млрд|трлн)?$/.test(v); };
 function tableHtml(s){
   const cols = Array.isArray(s.columns) ? s.columns : [], rows = Array.isArray(s.rowOrder) ? s.rowOrder : [], cells = s.cells || {};
@@ -1047,7 +1099,7 @@ function ePlan(){
   const tools = `<div class="reg-tools"><small>${plural(list.length,'раздел','раздела','разделов')} плана</small><span class="sp"></span><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown</button><button class="btn sm" data-open="etable:">${ic('Table')} Таблица</button><button class="btn sm primary" data-open="enew:sections">${ic('Plus')} Раздел</button></div>`;
   if (!list.length) return tools + '<div class="empty"><b>В плане пока нет разделов</b>Раздел — текст плана, таблица — сетка строк и столбцов.</div>';
   return tools + list.map(s => `<section class="panel"><div class="panel-h"><h2>${esc(s.title)}</h2>${eActions('sections', s.id, true)}</div>
-    ${s.kind==='table' ? tableHtml(s) + (s.note ? `<div class="md">${md(s.note)}</div>` : '') : `<div class="md">${md(s.body)}</div>`}${eMeta(s)}</section>`).join('');
+    ${s.kind==='table' ? tableHtml(s) + (s.note ? `<div class="md">${md(s.note, true)}</div>` : '') : `<div class="md">${md(s.body, true)}</div>`}${eMeta(s)}</section>`).join('');
 }
 function eGroups(){
   const g = new Map();
@@ -1521,13 +1573,14 @@ function regForm(key, it){
   </form>`;
 }
 function wikiDrawer(w){
+  const pre = (!w && UI.wikiPre) || {};
   if (!w || UI.edit) return drawerHead(null, w ? 'Изменить статью' : 'Новая статья') + `<form class="dr-b form" data-form="wiki-save" data-id="${w?esc(w.id):''}">
-    ${inText('title','Заголовок',w&&w.title,'required maxlength="120"')}
+    ${inText('title','Заголовок',w ? w.title : pre.title,'required maxlength="120"')}
     ${inText('tldr','Суть в одном предложении',w&&w.tldr,'maxlength="240"')}
-    ${inArea('body','Текст',w&&w.body,14)}
+    ${inArea('body','Текст — можно Markdown: # заголовок, **жирный**, - список, | таблица |',w ? w.body : pre.body,14)}
     <div class="form-foot"><button class="btn primary">${ic('Save')} Сохранить</button><button type="button" class="btn ghost" data-action="${w?'edit-cancel':'close-drawer'}">Отмена</button><span class="sp"></span>${w?`<button type="button" class="btn danger" data-action="wiki-del" data-id="${esc(w.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
   </form>`;
-  return drawerHead(null, w.title, `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `<div class="dr-b">${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}<div class="md-body">${esc(w.body||'')}</div>${w.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(w.updatedBy))}, ${ago(w.updatedAt)}</small>`:''}</div>`;
+  return drawerHead(null, w.title, `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `<div class="dr-b">${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}<article class="md">${md(w.body||'')}</article>${w.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(w.updatedBy))}, ${ago(w.updatedAt)}</small>`:''}</div>`;
 }
 function paintDrawer(){
   const ref = UI.drawer; if (!ref) return;
@@ -1766,7 +1819,12 @@ document.addEventListener('click', e => {
       case 'focus-stop': patchMe({focus:null}).then(ok => ok && toast('Фокус остановлен')); break;
       case 'reg-del': { const it = regItem(id); if (!confirm('Удалить «'+it.name+'»?')) break; write(()=>col('hub_reg').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) запись', it.name, it.key.split('/')[0]); closeDrawer(); } }); break; }
       case 'check-reset': { const items = S.reg.filter(x=>x.key===a.dataset.key && x.done); if (!confirm('Снять все отметки чеклиста?')) break; const b = DB.batch(); items.forEach(x=>b.update(col('hub_reg').doc(x.id), {done:false})); write(()=>b.commit()); break; }
-      case 'wiki-new': openDrawer('wikinew:', true); break;
+      case 'wiki-new': UI.wikiPre = null; openDrawer('wikinew:', true); break;
+      case 'file-md': openMdFile(id); break;
+      case 'file-dl': downloadFile(id); break;
+      case 'md-mode': if (MDR) { MDR.raw = !!a.dataset.v; mdReader(); } break;
+      case 'md-wiki': if (MDR) { const r = MDR; if (r.text.length > 20000) toast(ic('CircleAlert')+' В статью влезает 20 000 знаков — остальное обрежется');
+        UI.wikiPre = {title:mdTitle(r.text, r.name), body:r.text.slice(0, 20000)}; closeOverlay(); go('wiki'); openDrawer('wikinew:', true); } break;
       case 'wiki-del': { const w = wikiItem(id); if (!confirm('Удалить статью «'+w.title+'»?')) break; write(()=>col('hub_wiki').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) статью', w.title); closeDrawer(); } }); break; }
       case 'file-get': downloadFile(id); break;
       case 'file-del': { const f = S.files.find(x=>x.id===id); if (!f || !confirm('Удалить файл «'+f.name+'»?')) break; write(()=>deleteFiles([id])); break; }
@@ -1801,6 +1859,9 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   const a = e.target;
   if (a.dataset.action==='filt-dept') { UI.filt.dept = a.value; paint(); }
+  if (a.dataset.action==='md-local' && a.files.length) { const file = a.files[0]; a.value = '';
+    if (file.size > MD_MAX) toast(ic('CircleAlert')+' Файл больше '+fsize(MD_MAX));
+    else file.text().then(t => openMd(file.name, t)).catch(e => toast(ic('CircleAlert')+' Не открылось: '+esc(errText(e)))); }
   if (a.dataset.action==='task-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
     uploadFiles(list, {task:id}).then(ids => { if (ids.length) { const t = task(id); if (t) log('прикрепил(а) '+plural(ids.length,'файл','файла','файлов')+' к задаче', t.title, t.dept); toast(ic('Paperclip')+' Прикреплено: '+ids.length); } }); }
   if (a.dataset.action==='chat-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
