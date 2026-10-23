@@ -21,9 +21,17 @@ service cloud.firestore {
         (request.auth.uid == uid && !changed().hasAny(['depts', 'admin']))
         || (isAdmin() && changed().hasOnly(['depts', 'admin'])));
     }
-    // Задачи видят и меняют только участники отдела задачи. Создать задачу для любого отдела может каждый.
+    // Задачи видят и меняют только участники отделов задачи. Создать задачу для любого отдела может каждый.
+    // dept — основной отдел, depts — все отделы задачи. Отделы перечислены явно: так база
+    // может проверить запрос where('depts', 'array-contains', отдел).
+    function shares(d) { return d in myDepts() && d in resource.data.get('depts', []); }
+    function seesTask() {
+      return resource.data.dept in myDepts()
+        || shares('dev') || shares('cef') || shares('design') || shares('art3d') || shares('gd') || shares('econ')
+        || shares('qa') || shares('release') || shares('admin') || shares('smm') || shares('donate') || shares('analytics');
+    }
     match /hub_tasks/{id} {
-      allow read, update, delete: if request.auth != null && resource.data.dept in myDepts();
+      allow read, update, delete: if request.auth != null && seesTask();
       allow create: if request.auth != null;
     }
     // Входящие личные: каждый видит и удаляет только свои
