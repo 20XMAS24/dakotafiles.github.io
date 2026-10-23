@@ -118,32 +118,29 @@ const PRESENCE_MS = 240e3, ONLINE_MS = 600e3;
 const PERSON_COLORS = ['#7C5CE6','#4C6FB8','#A0558F','#A86A3C','#3F8466','#6B55B8','#8E7A2E','#3B7F95','#9C4D4D','#5E6AD2'];
 
 const DEPTS = [
-  {id:'dev', name:'Разработка', icon:'Code', color:'#8DB6F8', tldr:'Серверная часть на C# (RAGE MP). Задачи по коду и реестры: remote-события, конфиги, таблицы БД. Фронт и геймдизайн смотрят сюда, чтобы знать, что уже есть.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['events','Remote-события'],['configs','Конфиги'],['db','База данных'],['adr','Архитектура']]},
-  {id:'cef', name:'Фронт CEF', icon:'Monitor', color:'#7DD3E8', tldr:'Интерфейсы в игре (CEF). Каждый экран связан с макетом и с событиями сервера. Перед вёрсткой экрана проверь, что макет утверждён.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['screens','Экраны'],['components','Компоненты']]},
+  {id:'dev', name:'Разработка', icon:'Code', color:'#8DB6F8', has:['cef'], tldr:'Сервер на C# (RAGE MP) и интерфейсы в игре (CEF): remote-события, конфиги, таблицы БД, экраны и компоненты. Перед вёрсткой экрана проверь, что макет утверждён.',
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['events','Remote-события'],['configs','Конфиги'],['db','База данных'],['adr','Архитектура'],['screens','Экраны CEF','cef/screens'],['components','Компоненты CEF','cef/components']]},
   {id:'design', name:'UI/UX-дизайн', icon:'Palette', color:'#F0A6CA', tldr:'Макеты, UI-кит и передача в разработку. Макет считается готовым после статуса «Утверждён» и пройденного чеклиста передачи.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mockups','Макеты'],['kit','UI-кит'],['handoff','Передача']]},
   {id:'art3d', name:'3D и маппинг', icon:'Car', color:'#F5B98A', tldr:'Машины, одежда, интерьеры (MLO) и маппинг. В реестре видны размер стрима и лицензия каждого ассета, чтобы не превысить лимиты.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['assets','Ассеты'],['limits','Лимиты']]},
   {id:'gd', name:'Геймдизайн', icon:'Dice5', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mechanics','Механики'],['jobs','Работы'],['factions','Фракции']]},
-  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', tldr:'Полное рабочее место экономистов: план, параметры, баги, этапы, решения и журнал. Те же данные, что на старой странице /economy/ — правки видны в обеих.',
-    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['bugs','Баги'],['stages','Этапы'],['edec','Решения'],['elog','Журнал'],['tasks','Задачи']]},
-  {id:'qa', name:'QA', icon:'FlaskConical', color:'#F49A9A', tldr:'Баги, тест-кейсы и чеклист перед релизом. Критичный баг блокирует релиз, пока не исправлен или не принято решение.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза']]},
-  {id:'release', name:'Релизы', icon:'Rocket', color:'#7FD8C9', tldr:'Версии сервера, changelog для игроков и статус деплоя. Релиз выходит, когда чеклист QA закрыт.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['versions','Версии'],['changelog','Changelog'],['deploy','Деплой']]},
+  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', has:['donate','analytics'], tldr:'Деньги сервера целиком: план, параметры, баги, этапы, решения и журнал экономики, донат (позиции, акции, курс) и метрики. Экономические данные те же, что на странице /economy/ — правки видны в обеих.',
+    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['bugs','Баги'],['stages','Этапы'],['edec','Решения'],['elog','Журнал'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['tasks','Задачи']]},
+  {id:'qa', name:'QA и релизы', icon:'FlaskConical', color:'#F49A9A', has:['release'], tldr:'Баги, тест-кейсы, чеклист релиза, версии, changelog и деплой. Релиз выходит, когда чеклист закрыт; критичный баг блокирует релиз, пока не исправлен или не принято решение.',
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза'],['versions','Версии','release/versions'],['changelog','Changelog','release/changelog'],['deploy','Деплой','release/deploy']]},
   {id:'admin', name:'Администрация', icon:'Shield', color:'#B8DD8A', tldr:'Правила сервера и фидбек игроков. Предложения игроков голосуются и при поддержке становятся задачами.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['rules','Правила'],['feedback','Фидбек игроков']]},
   {id:'smm', name:'SMM', icon:'Megaphone', color:'#E3A6F0', tldr:'Контент-план и анонсы. Каждый анонс привязан к релизу, чтобы не анонсировать то, что ещё не готово.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Контент-план'],['posts','Анонсы']]},
-  {id:'donate', name:'Донат', icon:'Gem', color:'#F2CF7E', tldr:'Позиции доната, цены и акции. Курс и лимиты конвертации согласуются с экономикой: одна валюта, один курс.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['items','Позиции'],['promos','Акции']]},
-  {id:'analytics', name:'Аналитика', icon:'ChartColumn', color:'#A5B0F7', tldr:'Метрики сервера: онлайн, удержание, денежная масса. Цели по метрикам задаются здесь.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['metrics','Метрики'],['reports','Отчёты']]}
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Контент-план'],['posts','Анонсы']]}
 ];
-const D = Object.fromEntries(DEPTS.map(d=>[d.id,d]));
+/* объединённые отделы: старые id (cef, release, donate, analytics) остаются в базе и ведут в новый отдел */
+const D = Object.fromEntries(DEPTS.flatMap(d=>[[d.id,d], ...(d.has||[]).map(x=>[x,d])]));
+const hd = id => (D[id]||{}).id;                              // старый id → id отдела
+const deptIds = id => D[id] ? [D[id].id, ...(D[id].has||[])] : []; // все id отдела, как они хранятся у людей и в правилах
+const ALL_IDS = DEPTS.flatMap(d=>deptIds(d.id));
+const tabKey = (d, tab) => ((d.tabs.find(t=>t[0]===tab)||[])[2]) || d.id+'/'+tab;
 
 /* ── реестры отделов: схема полей ───────────── */
 const fName = l => ({k:'name', l, t:'text', req:true});
@@ -255,14 +252,14 @@ const dec = id => S.decisions.find(d=>d.id===id);
 const regItem = id => S.reg.find(r=>r.id===id);
 const wikiItem = id => S.wiki.find(w=>w.id===id);
 const me = () => S.people[S.me] || {};
-const myDepts = () => (me().depts||[]).filter(id=>D[id]);
+const myDepts = () => [...new Set((me().depts||[]).map(hd).filter(Boolean))];
 const canSee = dept => myDepts().includes(dept);
 const seesAll = () => DEPTS.every(d=>canSee(d.id));
 /* отделы назначает руководитель (поле admin в hub_people); сами участники их не меняют */
 const isAdmin = () => me().admin === true;
 const adminNames = () => Object.values(S.people).filter(p=>p.admin===true).map(p=>p.name).join(', ');
 /* задача может относиться к нескольким отделам: dept — основной, depts — все (с основным) */
-const tDepts = t => [...new Set([t.dept, ...(Array.isArray(t.depts)?t.depts:[])])].filter(x=>D[x]);
+const tDepts = t => [...new Set([t.dept, ...(Array.isArray(t.depts)?t.depts:[])].map(hd).filter(Boolean))];
 const inDept = (t, d) => tDepts(t).includes(d);
 const canEdit = t => tDepts(t).some(canSee); // задачи видят все, меняют участники их отделов
 const roMsg = t => ic('Lock')+' Менять задачу могут участники отдела '+tDepts(t).map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Комментировать можно всем.';
@@ -331,7 +328,7 @@ function toast(html, xp){
 /* ── маршрутизация ──────────────────────────── */
 function readHash(){
   const p = (location.hash||'').replace(/^#\/?/,'').split('/');
-  if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+p[1]; UI.tab = p[2] || 'overview'; }
+  if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; }
   else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
   UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
 }
@@ -406,7 +403,7 @@ function heatmap(){
   const days = Array.from({length:14},(_,i)=>dayKey(now()-(13-i)*86400e3));
   const nums = Array.from({length:14},(_,i)=>new Date(now()-(13-i)*86400e3).getDate());
   const counts = {};
-  for (const l of S.log) { if (!l.dept) continue; const k = dayKey(l.at); const i = days.indexOf(k); if (i<0) continue; (counts[l.dept] = counts[l.dept] || Array(14).fill(0))[i]++; }
+  for (const l of S.log) { if (!l.dept) continue; const k = dayKey(l.at); const i = days.indexOf(k); if (i<0) continue; const dd = hd(l.dept); if (dd) (counts[dd] = counts[dd] || Array(14).fill(0))[i]++; }
   const rows = DEPTS.filter(d=>!P.hidden.includes(d.id)).sort((a,b)=>(counts[b.id]||[]).reduce((x,y)=>x+y,0)-(counts[a.id]||[]).reduce((x,y)=>x+y,0)).slice(0,6);
   const lv = n => n>=6?3:n>=3?2:n>=1?1:0;
   return `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('TrendingUp')}</span>Активность команды</h2><a class="btn sm ghost" href="#/log">Журнал</a></div>
@@ -522,7 +519,7 @@ function decisionCard(d){
   </article>`;
 }
 function viewDecisions(dept){
-  const list = S.decisions.filter(d=>!dept||d.dept===dept).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const list = S.decisions.filter(d=>!dept||hd(d.dept)===dept).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
   const open = list.filter(d=>d.chosen==null), closed = list.filter(d=>d.chosen!=null);
   return `${dept?'':`<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#B9A3FF">${ic('Scale')}</span><div><h1>Решения</h1><p>Спорные вопросы: варианты, голоса, итог. Принятое не теряется в чатах.</p></div></div><button class="btn primary" data-action="new-decision">${ic('Plus')} Решение</button></div>`}
   ${open.length?`<h2 class="sub-h">Голосуем · ${open.length}</h2>${open.map(decisionCard).join('')}`:''}
@@ -550,10 +547,10 @@ function viewPeople(){
   const ids = Object.keys(S.people).sort((a,b)=>(isOnline(b)-isOnline(a)) || String(S.people[a].name).localeCompare(String(S.people[b].name)));
   const adm = isAdmin();
   const roles = (id, p) => adm
-    ? `<div class="dpick roles" role="group" aria-label="Отделы: ${esc(p.name)}">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="set-dept" data-uid="${esc(id)}" data-d="${d.id}" aria-pressed="${(p.depts||[]).includes(d.id)}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
+    ? `<div class="dpick roles" role="group" aria-label="Отделы: ${esc(p.name)}">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="set-dept" data-uid="${esc(id)}" data-d="${d.id}" aria-pressed="${(p.depts||[]).some(x=>hd(x)===d.id)}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm ghost" data-action="set-all-depts" data-uid="${esc(id)}" data-v="1">Все отделы</button><button class="btn sm ghost" data-action="set-all-depts" data-uid="${esc(id)}" data-v="0">Снять все</button>
       <button class="btn sm${p.admin===true?' primary':''}" data-action="set-admin" data-uid="${esc(id)}" title="Руководитель назначает отделы">${ic('Shield')} ${p.admin===true?'Руководитель':'Сделать руководителем'}</button></div>`
-    : `<div class="links">${(p.depts||[]).map(dchip).join('') || '<small style="color:var(--muted)">Отделы не назначены</small>'}</div>`;
+    : `<div class="links">${[...new Set((p.depts||[]).map(hd).filter(Boolean))].map(dchip).join('') || '<small style="color:var(--muted)">Отделы не назначены</small>'}</div>`;
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#86D9B0">${ic('Users')}</span><div><h1>Люди</h1><p>${adm ? 'Ты руководитель: отмечай каждому его отделы — человек сразу увидит задачи этих отделов.' : 'Кто за что отвечает и кто сейчас онлайн. Отделы назначает руководитель'+(adminNames()?' ('+esc(adminNames())+')':'')+'.'}</p></div></div><button class="btn" data-action="settings">${ic('Pencil')} Мой профиль</button></div>
   <div class="g3">${ids.map(id => { const p = S.people[id]; const f = focusOf(id); const open = S.tasks.filter(t=>t.who===id && t.status!=='done').length;
     return `<section class="panel"><div class="person">${av(id,40)}<div class="bd"><div class="nm">${esc(p.name)}${id===S.me?' <small style="color:var(--muted)">(вы)</small>':''}${p.admin===true?` <span class="chip t-violet" title="Назначает отделы">${ic('Shield')} руководитель</span>`:''}</div><div class="st">${esc(p.role || '@'+(p.login||''))}</div></div></div>
@@ -980,8 +977,8 @@ function kit(){
 function deptOverview(d){
   const tasks = S.tasks.filter(t=>inDept(t,d.id));
   const open = tasks.filter(t=>t.status!=='done');
-  const decs = S.decisions.filter(x=>x.dept===d.id && x.chosen==null);
-  const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).includes(d.id));
+  const decs = S.decisions.filter(x=>hd(x.dept)===d.id && x.chosen==null);
+  const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).some(x=>hd(x)===d.id));
   const doing = open.filter(t=>t.status==='doing'||t.status==='review');
   const next = open.filter(t=>t.status==='todo'||t.status==='inbox').slice(0,4);
   return `
@@ -1002,9 +999,9 @@ function deptOverview(d){
 function viewDept(){
   const d = D[UI.route.slice(2)];
   const tab = d.tabs.some(t=>t[0]===UI.tab) ? UI.tab : 'overview';
-  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? (canSee(d.id) ? '' : roHint(d)) + filters(false) + board(d.id) : d.id==='econ' ? econView(tab) : registry(d.id+'/'+tab, d);
-  const count = id => id==='tasks' ? S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' ? econCount(id) : S.reg.filter(x=>x.key===d.id+'/'+id).length;
-  const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).includes(d.id)).map(id=>S.people[id].name);
+  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? (canSee(d.id) ? '' : roHint(d)) + filters(false) + board(d.id) : d.id==='econ' && !REGS[tabKey(d, tab)] ? econView(tab) : registry(tabKey(d, tab), d);
+  const count = id => id==='tasks' ? S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' && !REGS[tabKey(d, id)] ? econCount(id) : S.reg.filter(x=>x.key===tabKey(d, id)).length;
+  const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).some(x=>hd(x)===d.id)).map(id=>S.people[id].name);
   return `<div style="--dc:${d.color};display:contents">
   <div class="ph"><div class="ph-l"><span class="ph-ico">${ic(d.icon)}</span><div><h1>${esc(d.name)}</h1><p>${people.length?esc(people.join(', ')):'В отделе пока никого'}</p></div></div>
   <button class="btn primary" data-action="new-task" data-status="todo" data-dept="${d.id}">${ic('Plus')} Задача</button></div>
@@ -1746,7 +1743,7 @@ function palItems(q){
     .concat(DEPTS.flatMap(d=>[{g:'Разделы', ico:d.icon, t:d.name, run:()=>go('d/'+d.id)}].concat(d.tabs.slice(1).map(([id,n])=>({g:'Разделы', ico:d.icon, t:d.name+' → '+n, run:()=>go('d/'+d.id+'/'+id)})))));
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:(D[t.dept]||DEPTS[0]).icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
   const decs = S.decisions.map(d=>({g:'Решения', ico:'Scale', t:d.q, extra:d.tldr, run:()=>go('decisions')}));
-  const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>{ go('d/'+r.key); setTimeout(()=>openDrawer('reg:'+r.id), 120); }}));
+  const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>{ const dd = D[r.key.split('/')[0]], t = dd && (dd.tabs.find(x=>tabKey(dd, x[0])===r.key)||[])[0]; go('d/'+(dd ? dd.id+'/'+t : r.key)); setTimeout(()=>openDrawer('reg:'+r.id), 120); }}));
   const chats = S.chats.map(c=>({g:'Чаты', ico:'MessagesSquare', t:c.title, extra:c.lastText, run:()=>go('chats/'+c.id)}));
   const wiki = S.wiki.map(w=>({g:'Вики', ico:'BookOpen', t:w.title, extra:w.tldr, run:()=>openDrawer('wiki:'+w.id)}));
   const people = Object.entries(S.people).map(([id,p])=>({g:'Люди', ico:'User', t:p.name, extra:p.role, run:()=>go('people')}));
@@ -1880,8 +1877,8 @@ document.addEventListener('click', e => {
       case 'pref': { let v = a.dataset.v; if (v==='true') v = true; if (v==='false') v = false; P[a.dataset.k] = v; applyPrefs(); savePrefs(); a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); break; }
       case 'toggle-dept': { const i = P.hidden.indexOf(a.dataset.d); if (i>=0) P.hidden.splice(i,1); else P.hidden.push(a.dataset.d); savePrefs(); a.setAttribute('aria-pressed', String(i>=0)); paint(); break; }
       case 'set-dept': case 'set-all-depts': { if (!isAdmin()) break; const uid = a.dataset.uid, p = S.people[uid]; if (!p) break;
-        let ds; if (k==='set-all-depts') ds = a.dataset.v==='1' ? DEPTS.map(d=>d.id) : [];
-        else { const s = new Set(p.depts||[]); s.has(a.dataset.d) ? s.delete(a.dataset.d) : s.add(a.dataset.d); ds = DEPTS.map(d=>d.id).filter(x=>s.has(x)); }
+        let ds; if (k==='set-all-depts') ds = a.dataset.v==='1' ? ALL_IDS : [];
+        else { const s = new Set(p.depts||[]), on = [...s].some(x=>hd(x)===a.dataset.d); for (const x of deptIds(a.dataset.d)) on ? s.delete(x) : s.add(x); ds = ALL_IDS.filter(x=>s.has(x)); }
         write(()=>col('hub_people').doc(uid).update({depts:ds})).then(ok => ok && log('назначил(а) отделы: '+(ds.length===DEPTS.length?'все':ds.map(x=>D[x].name).join(', ')||'нет'), p.name)); break; }
       case 'set-admin': { if (!isAdmin()) break; const uid = a.dataset.uid, p = S.people[uid]; if (!p) break; const on = p.admin!==true;
         if (!on && uid===S.me && !confirm('Снять с себя роль руководителя? Вернуть её сможет только другой руководитель.')) break;
@@ -2147,7 +2144,7 @@ function listen(){
   UNSUB.push(col('hub_claude').where('end','>',now()-14*86400e3).onSnapshot(sn => { S.claude = docs(sn); schedule(); }, onErr('hub_claude')));
   let lastLevel = null;
   UNSUB.push(col('hub_people').onSnapshot(sn => {
-    const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); S.people = p; S.loaded.add('hub_people'); listenTasks();
+    const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); S.people = p; S.loaded.add('hub_people'); normalizeDepts(); listenTasks();
     const lv = level(); if (lastLevel!==null && lv>lastLevel && !P.calm) { toast(ic('PartyPopper')+' Новый уровень: '+lv); confetti(innerWidth/2, innerHeight/2, 60); } lastLevel = lv;
     schedule();
   }, onErr('hub_people')));
@@ -2165,6 +2162,16 @@ function listenChat(id){
     e => { console.error('hub_msgs', e); S.errs.hub_msgs = errText(e); schedule(); });
 }
 let TASK_UNSUB = {};
+/* после объединения отделов: у кого отмечена часть отдела (например, только cef), руководитель один раз дописывает остальные id —
+   правила базы сверяют задачи с id из профиля */
+let normDone = false;
+function normalizeDepts(){
+  if (normDone || !isAdmin()) return; normDone = true;
+  for (const [uid, p] of Object.entries(S.people)) {
+    const cur = p.depts||[], want = ALL_IDS.filter(x => cur.some(c => hd(c)===hd(x)));
+    if (want.some(x => !cur.includes(x))) col('hub_people').doc(uid).update({depts:want}).catch(e => console.warn('отделы', uid, e.code));
+  }
+}
 function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; listenChat(null);
   Object.values(TASK_UNSUB).forEach(u => { try { u(); } catch (e) {} }); TASK_UNSUB = {}; S.tdept = {}; S.allTasks = []; S.tasks = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
 
