@@ -719,3 +719,26 @@ details.more .body.md{white-space:normal}
 .ro-note .ic{flex:none;margin-top:2px}
 .card.ro{cursor:pointer}
 .check[disabled],.statusbar button[disabled]{opacity:.5;cursor:not-allowed}
+
+/* ── решения из записей отделов ── */
+.ref-chip{display:inline-flex;align-self:flex-start;gap:6px;align-items:center;max-width:100%;padding:5px 10px;border-radius:99px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text-2);font-size:12.5px;font-weight:600;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-chip:hover:not([disabled]){border-color:var(--acc-line);color:var(--text)}
+.ref-chip[disabled]{cursor:default;opacity:.7}
+.reacts{display:flex;flex-direction:column;gap:8px}
+.react{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 8px;border-radius:14px;border:1px solid var(--line);background:var(--panel-2)}
+.react.mine{border-color:var(--acc)}
+.react.chosen{border-color:var(--acc-line);background:radial-gradient(100% 140% at 100% 100%,var(--glow),transparent 70%),var(--panel-2)}
+.react-b{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border-radius:99px;border:1px solid var(--line-2);background:var(--panel);color:var(--text);font:600 14px var(--f-body);cursor:pointer;min-width:150px}
+.react-b b{margin-left:auto;font-variant-numeric:tabular-nums}
+.react-b[aria-pressed="true"]{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 18%,var(--panel))}
+.react-b[disabled]{cursor:default}
+.react .votes{flex:1}
+.reg-decs{display:flex;flex-direction:column;gap:6px}
+.dec-line{display:flex;gap:10px;align-items:center;width:100%;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);color:var(--text);text-align:left;cursor:pointer;font:inherit}
+.dec-line:hover{border-color:var(--acc-line)}
+.dec-line .q{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.dec-line small{color:var(--muted);white-space:nowrap}
+.dec-mark{display:inline-flex;margin-left:6px;vertical-align:-2px;color:var(--muted)}
+.dec-mark.open{color:var(--acc)}
+.dec-mark .ic{width:14px;height:14px}
+.decision.flash{outline:2px solid var(--acc);outline-offset:3px;transition:outline-color .4s}

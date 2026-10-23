@@ -505,11 +505,37 @@ function viewTasks(){
 }
 
 /* ── решения ────────────────────────────────── */
+/* решение можно вынести из записи отдела (ассет, механика, экран…): запись остаётся на месте, решение ссылается на неё.
+   Решать — вариантами или реакцией (за / против / есть вопросы) */
+const REACTS = [{t:'👍 За', d:''}, {t:'👎 Против', d:''}, {t:'🤔 Есть вопросы', d:''}];
+const regTab = it => { const dd = D[it.key.split('/')[0]]; return dd ? dd.id+'/'+((dd.tabs.find(x=>tabKey(dd, x[0])===it.key)||[])[0]||'overview') : it.key; };
+function openReg(id){ const it = regItem(id); if (!it) { toast(ic('CircleAlert')+' Запись уже удалили'); return; } go('d/'+regTab(it)); setTimeout(()=>openDrawer('reg:'+id), 120); }
+function openDec(id){ go('decisions'); setTimeout(() => { const el = document.getElementById('dec-'+id); if (el) { el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 1600); } }, 150); }
+const regDecs = id => S.decisions.filter(d=>d.ref && d.ref.id===id).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+const decMark = id => { const ds = regDecs(id); if (!ds.length) return ''; const open = ds.some(d=>d.chosen==null);
+  return `<span class="dec-mark${open?' open':''}" title="${open?'На решении':'Решение принято'}">${ic('Scale')}</span>`; };
+function refChip(d){
+  if (!d.ref) return '';
+  const it = regItem(d.ref.id), r = REGS[d.ref.key];
+  return `<button type="button" class="ref-chip" data-action="open-reg" data-id="${esc(d.ref.id)}" ${it?'':'disabled'} title="${it?'Открыть запись':'Запись удалена'}">${ic('Paperclip')} ${esc((r ? r.noun[0].toUpperCase()+r.noun.slice(1) : 'Запись')+': '+((it && it.name) || d.ref.name || ''))}${it?'':' · удалена'}</button>`;
+}
+function reactRow(d){
+  const votes = d.votes||{}, mine = votes[S.me], open = d.chosen==null;
+  return `<div class="reacts">${(d.options||[]).map((o,i) => { const who = Object.entries(votes).filter(([,v])=>v===i).map(([u])=>u);
+    return `<div class="react${mine===i?' mine':''}${d.chosen===i?' chosen':''}"><button class="react-b" ${open?`data-action="vote" data-id="${esc(d.id)}" data-i="${i}"`:'disabled'} aria-pressed="${mine===i}" title="${esc(who.map(pname).join(', ')||'Пока никого')}">${esc(o.t)} <b>${who.length}</b></button><span class="votes">${who.map(u=>av(u,22)).join('')}</span>
+      ${open && who.length ? `<button class="btn sm ghost" data-action="accept" data-id="${esc(d.id)}" data-i="${i}" title="Зафиксировать итог">Принять</button>` : ''}</div>`; }).join('')}</div>`;
+}
 function decisionCard(d){
   const votes = d.votes||{}, mine = votes[S.me];
-  return `<article class="decision">
+  if (d.mode==='react') return `<article class="decision" id="dec-${esc(d.id)}">
+    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Реакции','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
+    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${esc(d.tldr)}</div>`:''}
+    ${reactRow(d)}
+    ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">Итог: <b style="color:var(--text)">${esc((d.options[d.chosen]||{}).t||'')}</b> · зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
+  </article>`;
+  return `<article class="decision" id="dec-${esc(d.id)}">
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
-    ${d.tldr?`<div class="tldr"><b>Суть</b>${esc(d.tldr)}</div>`:''}
+    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${esc(d.tldr)}</div>`:''}
     <div class="list">${(d.options||[]).map((o,i)=>`<div class="opt${d.chosen===i?' chosen':''}${mine===i?' mine':''}">
       <div><div class="l">${esc(o.t)} ${d.rec===i?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.d?`<div class="d">${esc(o.d)}</div>`:''}</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes">${Object.entries(votes).filter(([,v])=>v===i).map(([u])=>av(u,24)).join('')}</span>
@@ -956,11 +982,11 @@ function registry(key, d){
   const tools = `<div class="reg-tools"><small>${plural(items.length,'запись','записи','записей')}</small><span class="sp"></span><button class="btn sm primary" data-open="regnew:${key}">${ic('Plus')} Добавить ${esc(r.noun)}</button></div>`;
   if (!items.length) return tools + `<div class="empty"><b>Пока пусто</b>Добавь первую запись — её увидит вся команда.</div>`;
   if (r.type==='table') { const fs = tableFields(r);
-    return tools + `<div class="tbl-wrap"><table class="grid"><thead><tr>${fs.map(f=>`<th>${esc(f.l)}</th>`).join('')}</tr></thead><tbody>${items.map(it=>`<tr tabindex="0" data-open="reg:${esc(it.id)}">${fs.map((f,j)=>`<td class="${j===0?'b':f.mono?'m':''}">${j===0?coverMini(it.id):''}${cell(f, it[f.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
+    return tools + `<div class="tbl-wrap"><table class="grid"><thead><tr>${fs.map(f=>`<th>${esc(f.l)}</th>`).join('')}</tr></thead><tbody>${items.map(it=>`<tr tabindex="0" data-open="reg:${esc(it.id)}">${fs.map((f,j)=>`<td class="${j===0?'b':f.mono?'m':''}">${j===0?coverMini(it.id):''}${cell(f, it[f.k])}${j===0?decMark(it.id):''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
   const stF = r.fields.find(f=>f.k==='status');
   const st = it => stF && it.status ? chip(it.status, toneOf(stF, it.status)) : '';
   const cover = it => (f => f && thumb(f) ? `<div class="tile-img"><img src="${thumb(f)}" alt="" loading="lazy"></div>` : '')(regCover(it.id));
-  if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
+  if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}${decMark(it.id)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
   if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb">${(f => f && thumb(f) ? `<img src="${thumb(f)}" alt="" loading="lazy">` : '<div class="ui"></div>')(regCover(it.id))}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
   if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), d.color)}<span class="s">${esc(it.note||'')}</span></button>`).join('')}</div>`;
   if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}</div>`).join('')}</div></section>`;
@@ -1623,6 +1649,12 @@ function drawerTask(t){
     <form data-form="comment" data-id="${esc(t.id)}" style="display:flex;gap:8px;margin-top:8px"><input class="input" name="c" placeholder="Написать комментарий…" autocomplete="off" maxlength="2000"><button class="btn" aria-label="Отправить">${ic('ArrowRight')}</button></form></div>
   </div>`;
 }
+function regDecBlock(it){
+  const ds = regDecs(it.id);
+  return `<div class="reg-decs" id="reg-decs" data-id="${esc(it.id)}"><div style="display:flex;align-items:center;gap:8px"><p class="sub-h" style="margin:0">Решения${ds.length?' · '+ds.length:''}</p><span style="flex:1"></span><button type="button" class="btn sm" data-action="reg-decide" data-id="${esc(it.id)}">${ic('Scale')} Вынести на решение</button></div>
+    ${ds.map(d => { const lead = d.chosen!=null ? (d.options[d.chosen]||{}).t : null, n = Object.keys(d.votes||{}).length;
+      return `<button type="button" class="dec-line" data-action="open-dec" data-id="${esc(d.id)}">${d.chosen!=null?chip('Принято','ok'):chip(d.mode==='react'?'Реакции':'Голосуем','info')}<span class="q">${esc(d.q)}</span><small>${lead ? esc(lead) : plural(n,'голос','голоса','голосов')}</small></button>`; }).join('') || '<small style="color:var(--muted)">Спорный момент по записи? Вынеси его на решение — запись останется здесь.</small>'}</div>`;
+}
 function regForm(key, it){
   const r = REGS[key], d = D[key.split('/')[0]];
   const field = f => {
@@ -1636,6 +1668,7 @@ function regForm(key, it){
   return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun) + `<form class="dr-b form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
     ${r.fields.map(field).join('')}
     ${it && safeUrl(it.link) ? `<a class="btn" href="${esc(it.link)}" target="_blank" rel="noopener">${ic('ExternalLink')} Открыть макет</a>`:''}
+    ${it && r.type!=='checklist' ? regDecBlock(it) : ''}
     ${r.type==='checklist' ? '' : `<div class="reg-gal" id="reg-gal" data-id="${it?esc(it.id):''}">${regGallery(it&&it.id)}</div>`}
     <div class="form-foot"><button class="btn primary">${ic('Save')} ${it?'Сохранить':'Добавить'}</button><button type="button" class="btn ghost" data-action="close-drawer">Отмена</button><span class="sp"></span>${it?`<button type="button" class="btn danger" data-action="reg-del" data-id="${esc(it.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
     ${it&&it.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(it.updatedBy))}, ${ago(it.updatedAt)}</small>`:''}
@@ -1673,7 +1706,8 @@ function paintDrawer(){
 function refreshDrawer(){
   if (!UI.drawer) return;
   if ($('#drawer .loading')) return paintDrawer();
-  paintRegGal(); // фото записи обновляются, даже пока форма открыта
+  paintRegGal(); // фото и решения записи обновляются, даже пока форма открыта
+  { const rd = $('#reg-decs'), it = rd && regItem(rd.dataset.id); if (it) rd.outerHTML = regDecBlock(it); }
   const force = UI.forceDrawer; UI.forceDrawer = false;
   if (!force && (UI.edit || /^(reg|regnew|wikinew|eedit|enew|etable):/.test(UI.drawer))) return;
   const a = document.activeElement, inside = a && $('#drawer').contains(a);
@@ -1710,14 +1744,21 @@ function newTask(status, dept, title, fromInbox){
     <label class="check-row"><input type="checkbox" name="mine" checked> Я ответственный</label>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> создать · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Создать</button></div></div></form>`);
 }
-function newDecision(dept){
-  dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : 'econ');
-  overlay(`<form class="pal" data-form="decision-new" style="max-height:85vh;overflow:auto"><div class="cap"><h2>${ic('Scale')} Новое решение</h2>
-    ${inText('q','Вопрос','','required maxlength="200" placeholder="Например: «Комиссия отмыва денег»"')}
-    ${inText('tldr','Суть — почему это важно','','maxlength="240"')}
+function newDecision(dept, pre){
+  pre = pre || {}; const mode = pre.mode || 'options';
+  dept = hd(dept) || (UI.route.startsWith('d/') ? UI.route.slice(2) : 'econ');
+  overlay(`<form class="pal" data-form="decision-new" style="max-height:85vh;overflow:auto"><div class="cap"><h2>${ic('Scale')} ${pre.ref ? 'Вынести на решение' : 'Новое решение'}</h2>
+    ${pre.ref ? `<div class="ref-chip" style="cursor:default">${ic('Paperclip')} ${esc(pre.refLabel)} — запись останется на месте</div>` : ''}
+    <input type="hidden" name="ref" value="${esc(pre.ref ? JSON.stringify(pre.ref) : '')}">
+    ${inText('q','Вопрос',pre.q||'','required maxlength="200" placeholder="Например: «Комиссия отмыва денег»"')}
+    ${inText('tldr','Суть — почему это важно',pre.tldr||'','maxlength="240"')}
     ${inSelect('dept','Отдел',deptOpts(),dept)}
+    <div class="fld"><span>Как решаем</span><div class="seg" role="radiogroup" aria-label="Как решаем"><button type="button" data-action="dec-mode" data-v="react" aria-pressed="${mode==='react'}">👍 Реакцией</button><button type="button" data-action="dec-mode" data-v="options" aria-pressed="${mode==='options'}">${ic('ListChecks')} Вариантами</button></div>
+      <input type="hidden" name="mode" value="${mode}"></div>
+    <small class="dec-react-hint" style="color:var(--muted)" ${mode==='react'?'':'hidden'}>Каждый ставит одну реакцию: 👍 за, 👎 против или 🤔 есть вопросы. Итог фиксирует любой участник.</small>
+    <div class="dec-opts" ${mode==='options'?'':'hidden'}>
     ${inArea('options','Варианты — по одному на строку, «Название — пояснение»','',5)}
-    ${inText('rec','Рекомендуемый вариант (номер строки, пусто — нет)','','inputmode="numeric" maxlength="2"')}
+    ${inText('rec','Рекомендуемый вариант (номер строки, пусто — нет)','','inputmode="numeric" maxlength="2"')}</div>
     <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" data-action="close-overlay">Отмена</button><button class="btn primary">Вынести на голосование</button></div></div></form>`);
 }
 function newChat(){
@@ -1859,7 +1900,7 @@ document.addEventListener('click', e => {
       case 'task-del': { const t = task(id); if (!canEdit(t)) { toast(roMsg(t)); break; } if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.')) break; write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
       case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const cur = (d.votes||{})[S.me];
         write(()=>col('hub_decisions').doc(id).update({['votes.'+S.me]: cur===i ? FV().delete() : i, updatedAt:now()})).then(ok => { if (ok && cur==null) { log('проголосовал(а) в решении', d.q, d.dept); gain(5, ic('Vote')+' Голос учтён'); } }); break; }
-      case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; const r = a.getBoundingClientRect();
+      case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; if (d.ref) { const it = regItem(d.ref.id); if (it) log('итог по записи «'+it.name+'»: '+d.options[i].t, d.q, d.dept); } const r = a.getBoundingClientRect();
         write(()=>col('hub_decisions').doc(id).update({chosen:i, chosenBy:S.me, chosenAt:now(), updatedAt:now()})).then(ok => { if (ok) { log('принял(а) решение', d.q+' → '+d.options[i].t, d.dept); confetti(r.left, r.top); gain(10, ic('Scale')+' Решение принято'); } }); break; }
       case 'reopen': { const d = dec(id); write(()=>col('hub_decisions').doc(id).update({chosen:null, chosenBy:null, chosenAt:null})).then(ok => ok && log('переоткрыл(а) решение', d.q, d.dept)); break; }
       case 'dec-del': { const d = dec(id); if (!confirm('Удалить решение «'+d.q+'»?')) break; write(()=>col('hub_decisions').doc(id).delete()).then(ok => ok && log('удалил(а) решение', d.q, d.dept)); break; }
@@ -1890,6 +1931,12 @@ document.addEventListener('click', e => {
       case 'focus-stop': patchMe({focus:null}).then(ok => ok && toast('Фокус остановлен')); break;
       case 'reg-del': { const it = regItem(id); if (!confirm('Удалить «'+it.name+'»?')) break; write(()=>col('hub_reg').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) запись', it.name, it.key.split('/')[0]); closeDrawer(); deleteFiles(regFiles(id).map(f=>f.id)).catch(()=>{}); } }); break; }
       case 'img-view': openImg(id); break;
+      case 'open-reg': openReg(id); break;
+      case 'open-dec': closeDrawer(); openDec(id); break;
+      case 'reg-decide': { const it = regItem(id); if (!it) break; const r = REGS[it.key];
+        newDecision(it.key.split('/')[0], {mode:'react', q:clip(it.name,200), tldr:clip(it.tldr||it.what||'',240), ref:{kind:'reg', id:it.id, key:it.key, name:clip(it.name,120)}, refLabel:(r ? r.noun[0].toUpperCase()+r.noun.slice(1) : 'Запись')+': '+it.name}); break; }
+      case 'dec-mode': { const f = a.closest('form'); f.mode.value = a.dataset.v; f.querySelectorAll('[data-action="dec-mode"]').forEach(b=>b.setAttribute('aria-pressed', String(b===a)));
+        f.querySelector('.dec-opts').hidden = a.dataset.v!=='options'; f.querySelector('.dec-react-hint').hidden = a.dataset.v!=='react'; break; }
       case 'lb-go': lbGo(Number(a.dataset.v)); break;
       case 'lb-bg': if (e.target===a) closeOverlay(); break;
       case 'reg-unpend': { const p = REG_PENDING.splice(Number(a.dataset.i), 1)[0]; if (p && p.url) URL.revokeObjectURL(p.url); paintRegGal(); break; }
@@ -1967,11 +2014,12 @@ document.addEventListener('submit', async e => {
     const ok = await updTask(t.id, {title, tldr:clip(f.tldr.value,240), details:clip(f.details.value,8000), dept:ds[0], depts:ds, size:f.size.value, who:f.who.value||null});
     if (ok) { log('изменил(а) задачу', title, ds[0]); UI.edit = false; paintDrawer(); } }
   if (k==='decision-new') {
-    const q = clip(f.q.value,200); const options = f.options.value.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,8).map(l=>{ const m = l.split(/\s+[—–-]\s+/); return {t:clip(m[0],120), d:clip(m.slice(1).join(' — '),240)}; });
+    const q = clip(f.q.value,200), mode = f.mode.value==='react' ? 'react' : 'options'; let ref = null; try { ref = f.ref.value ? JSON.parse(f.ref.value) : null; } catch (e) {}
+    const options = mode==='react' ? REACTS : f.options.value.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,8).map(l=>{ const m = l.split(/\s+[—–-]\s+/); return {t:clip(m[0],120), d:clip(m.slice(1).join(' — '),240)}; });
     if (!q) return; if (options.length < 2) { toast(ic('CircleAlert')+' Нужно хотя бы два варианта'); return; }
     const rec = parseInt(f.rec.value,10); const dept = f.dept.value;
-    const ok = await write(()=>col('hub_decisions').add({q, tldr:clip(f.tldr.value,240), dept, options, rec:rec>=1&&rec<=options.length?rec-1:-1, votes:{}, chosen:null, createdAt:now(), createdBy:S.me}));
-    if (ok) { closeOverlay(); log('вынес(ла) на голосование', q, dept); gain(5, ic('Scale')+' Решение вынесено на голосование'); if (UI.route!=='decisions' && !UI.route.startsWith('d/')) go('decisions'); } }
+    const ok = await write(()=>col('hub_decisions').add({q, tldr:clip(f.tldr.value,240), dept, mode, options, rec:mode==='options' && rec>=1&&rec<=options.length?rec-1:-1, votes:{}, chosen:null, ref, createdAt:now(), createdBy:S.me}));
+    if (ok) { closeOverlay(); log('вынес(ла) на голосование', q, dept); gain(5, ic('Scale')+' Решение вынесено на голосование'); if (!ref && UI.route!=='decisions' && !UI.route.startsWith('d/')) go('decisions'); } }
   if (k==='reg-save') {
     const key = f.dataset.key, r = REGS[key], id = f.dataset.id; const data = {};
     for (const fl of r.fields) data[fl.k] = fl.t==='textarea' ? clip(f[fl.k].value,8000) : fl.t==='url' ? (safeUrl(f[fl.k].value.trim()) || '') : clip(f[fl.k].value,300);
