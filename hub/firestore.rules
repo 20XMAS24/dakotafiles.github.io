@@ -21,7 +21,8 @@ service cloud.firestore {
         (request.auth.uid == uid && !changed().hasAny(['depts', 'admin']))
         || (isAdmin() && changed().hasOnly(['depts', 'admin'])));
     }
-    // Задачи видят и меняют только участники отделов задачи. Создать задачу для любого отдела может каждый.
+    // Задачи видят все. Меняют и удаляют участники отделов задачи, остальные могут только дописать комментарий.
+    // Создать задачу для любого отдела может каждый.
     // dept — основной отдел, depts — все отделы задачи. Отделы перечислены явно: так база
     // может проверить запрос where('depts', 'array-contains', отдел).
     function shares(d) { return d in myDepts() && d in resource.data.get('depts', []); }
@@ -30,9 +31,17 @@ service cloud.firestore {
         || shares('dev') || shares('cef') || shares('design') || shares('art3d') || shares('gd') || shares('econ')
         || shares('qa') || shares('release') || shares('admin') || shares('smm') || shares('donate') || shares('analytics');
     }
+    function isComment() {
+      let before = resource.data.get('comments', []);
+      let after = request.resource.data.get('comments', []);
+      return changed().hasOnly(['comments', 'updatedAt', 'updatedBy'])
+        && after.size() == before.size() + 1
+        && after[after.size() - 1].by == request.auth.uid;
+    }
     match /hub_tasks/{id} {
-      allow read, update, delete: if request.auth != null && seesTask();
-      allow create: if request.auth != null;
+      allow read, create: if request.auth != null;
+      allow update: if request.auth != null && (seesTask() || isComment());
+      allow delete: if request.auth != null && seesTask();
     }
     // Входящие личные: каждый видит и удаляет только свои
     match /hub_inbox/{id} {

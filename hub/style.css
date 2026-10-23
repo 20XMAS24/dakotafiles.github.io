@@ -713,3 +713,9 @@ details.more .body.md{white-space:normal}
 .lb-nav.prev{left:12px}.lb-nav.next{right:12px}
 .lb-load{position:absolute;right:14px;bottom:14px}
 @media (max-width:640px){.lb-h small{display:none}.lb{height:100%}}
+
+/* задачи других отделов: только просмотр */
+.ro-note{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--panel-2);border:1px solid var(--line);color:var(--text-2);font-size:13px}
+.ro-note .ic{flex:none;margin-top:2px}
+.card.ro{cursor:pointer}
+.check[disabled],.statusbar button[disabled]{opacity:.5;cursor:not-allowed}

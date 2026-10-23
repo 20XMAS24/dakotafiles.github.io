@@ -244,7 +244,7 @@ const SEED = {
 /* ── состояние ──────────────────────────────── */
 /* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
 const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], up:{}, E:null, loaded:new Set(), errs:{}};
-const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'all', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
+const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
 const PREFS_KEY = 'kyHubPrefs';
 const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[]}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
@@ -263,9 +263,10 @@ const adminNames = () => Object.values(S.people).filter(p=>p.admin===true).map(p
 /* задача может относиться к нескольким отделам: dept — основной, depts — все (с основным) */
 const tDepts = t => [...new Set([t.dept, ...(Array.isArray(t.depts)?t.depts:[])])].filter(x=>D[x]);
 const inDept = (t, d) => tDepts(t).includes(d);
-const seeTask = t => tDepts(t).some(canSee);
+const canEdit = t => tDepts(t).some(canSee); // задачи видят все, меняют участники их отделов
+const roMsg = t => ic('Lock')+' Менять задачу могут участники отдела '+tDepts(t).map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Комментировать можно всем.';
 const dchips = t => tDepts(t).map(dchip).join('');
-function applyVis(){ S.tasks = S.allTasks.filter(seeTask); }
+function applyVis(){ S.tasks = S.allTasks; }
 const pname = id => !id ? 'Не назначен' : (S.people[id] && S.people[id].name) || 'Участник';
 const isOnline = id => id===S.me || !!(S.people[id] && S.people[id].seen > now()-ONLINE_MS);
 const focusOf = id => { const f = S.people[id] && S.people[id].focus; return f && f.until > now() ? f : null; };
@@ -349,7 +350,7 @@ function sidebar(){
   <nav class="nav">
     ${link('today','Sun','Мой день', myTop, '#F5B971')}
     ${link('inbox','Inbox','Входящие', S.inbox.length, '#A9A8B6')}
-    ${link('tasks','LayoutGrid','Задачи', S.tasks.filter(t=>t.status!=='done').length, '#8DB6F8')}
+    ${link('tasks','LayoutGrid','Задачи', S.tasks.filter(t=>canEdit(t) && t.status!=='done').length, '#8DB6F8')}
     ${link('decisions','Scale','Решения', openDec, '#B9A3FF', openDec>0)}
     ${link('log','ScrollText','Журнал', 0, '#A9A8B6')}
     ${link('people','Users','Люди', Object.keys(S.people).filter(isOnline).length, '#86D9B0')}
@@ -391,7 +392,7 @@ function taskItem(t, opts={}){
   const done = t.status==='done';
   const sub = t.sub||[], sd = sub.filter(s=>s.done).length;
   return `<div class="item" tabindex="0" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
-    <button class="check${done?' on':''}" data-action="toggle-done" data-id="${esc(t.id)}" aria-label="${done?'Вернуть в работу':'Готово'}">${ic('Check')}</button>
+    <button class="check${done?' on':''}" ${canEdit(t)?'':'disabled title="Только просмотр"'} data-action="toggle-done" data-id="${esc(t.id)}" aria-label="${done?'Вернуть в работу':'Готово'}">${ic('Check')}</button>
     <div class="bd">
       <div class="tt" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.title)}</div>
       ${t.tldr ? `<div class="ds">${esc(t.tldr)}</div>`:''}
@@ -418,7 +419,7 @@ function viewToday(){
   const wd = weekDone(), pct = Math.min(100, Math.round(wd/WEEK_GOAL*100));
   const last = m.last && task(m.last);
   const pendingVotes = S.decisions.filter(d=>d.chosen==null && (d.votes||{})[S.me]==null);
-  const quick = S.tasks.filter(t=>t.size==='S' && t.status!=='done' && (!t.who || t.who===S.me) && !(m.top3||[]).includes(t.id)).slice(0,3);
+  const quick = S.tasks.filter(t=>canEdit(t) && t.size==='S' && t.status!=='done' && (!t.who || t.who===S.me) && !(m.top3||[]).includes(t.id)).slice(0,3);
   const online = Object.keys(S.people).filter(id=>id!==S.me && isOnline(id));
   return `
   <section class="hero">
@@ -469,15 +470,15 @@ function viewToday(){
 /* ── задачи: доска ──────────────────────────── */
 function filteredTasks(dept){
   const top = me().top3||[];
-  return S.tasks.filter(t => (dept ? inDept(t,dept) : UI.filt.dept==='all' || inDept(t,UI.filt.dept)) && (!UI.filt.small || t.size==='S') && (!UI.filt.mine || t.who===S.me || top.includes(t.id)));
+  return S.tasks.filter(t => (dept ? inDept(t,dept) : UI.filt.dept==='all' || (UI.filt.dept==='mine' ? canEdit(t) : inDept(t,UI.filt.dept))) && (!UI.filt.small || t.size==='S') && (!UI.filt.mine || t.who===S.me || top.includes(t.id)));
 }
 function card(t){
   const d = D[t.dept] || DEPTS[0]; const sub = t.sub||[], sd = sub.filter(s=>s.done).length;
-  return `<div class="card" tabindex="0" draggable="true" data-id="${esc(t.id)}" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
+  return `<div class="card${canEdit(t)?'':' ro'}" tabindex="0" draggable="${canEdit(t)}" data-id="${esc(t.id)}" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
     <div class="tt">${esc(t.title)}</div>
     ${t.tldr?`<div class="tl">${esc(t.tldr)}</div>`:''}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
-    <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
+    <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
   </div>`;
 }
 function board(dept){
@@ -489,7 +490,7 @@ function board(dept){
 function filters(withDept){
   const f = UI.filt;
   return `<div class="toolbar">
-    ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел"><option value="all">${seesAll()?'Все отделы':'Все мои отделы'}</option>${DEPTS.filter(d=>canSee(d.id)).map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`:''}
+    ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел">${myDepts().length && !seesAll() ? `<option value="mine" ${f.dept==='mine'?'selected':''}>Мои отделы</option>`:''}<option value="all" ${f.dept==='all'?'selected':''}>Все отделы</option>${DEPTS.map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`:''}
     <div class="seg"><button data-action="filt-small" aria-pressed="${f.small}">${ic('Zap')} Только ≤ 15 мин</button><button data-action="filt-mine" aria-pressed="${f.mine}">${ic('Sun')} Только мои</button></div>
     <small style="color:var(--muted)">Перетаскивайте карточки между колонками</small>
   </div>`;
@@ -497,12 +498,12 @@ function filters(withDept){
 /* задачи отдела видят только те, у кого этот отдел отмечен в профиле */
 const askAdmin = () => isAdmin() ? `<a class="btn sm" href="#/people">${ic('Users')} Назначить отделы</a>`
   : `<small style="color:var(--muted)">Отделы назначает руководитель${adminNames() ? ': '+esc(adminNames()) : ''}.</small>`;
-const noRoleHint = d => `<div class="empty"><b>${ic('Lock')} ${d ? 'Задачи отдела «'+esc(d.name)+'» видят только его участники' : 'У тебя пока нет ролей'}</b>${d ? 'Если ты работаешь в этом отделе, попроси руководителя добавить тебя в него — задачи появятся сразу.' : 'Руководитель назначает каждому отделы: разработчик видит задачи разработки, дизайнер — дизайна, у кого все отделы — видит всё.'}${askAdmin()}</div>`;
+const roHint = d => `<div class="tldr"><b>${ic('Eye')} Только просмотр</b>Задачи отдела «${esc(d.name)}» меняют его участники. Ты можешь смотреть, комментировать и обсуждать в чате задачи. ${askAdmin()}</div>`;
 function viewTasks(){
   const mine = myDepts();
-  if (UI.filt.dept!=='all' && !canSee(UI.filt.dept)) UI.filt.dept = 'all';
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#8DB6F8">${ic('LayoutGrid')}</span><div><h1>Задачи</h1><p>${!mine.length ? 'Задачи видны по ролям — выбери свои отделы.' : seesAll() ? 'У тебя все роли — видны задачи всех отделов.' : 'Видны задачи твоих отделов: '+esc(mine.map(id=>D[id].name).join(', '))+'.'}</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">${ic('Plus')} Задача</button></div>
-  ${mine.length ? filters(mine.length>1) + board(null) : noRoleHint(null)}`;
+  if (UI.filt.dept==='mine' && (!mine.length || seesAll())) UI.filt.dept = 'all';
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#8DB6F8">${ic('LayoutGrid')}</span><div><h1>Задачи</h1><p>${seesAll() ? 'У тебя все роли — можешь менять задачи всех отделов.' : 'Видны задачи всех отделов. Менять можно задачи своих'+(mine.length ? ': '+esc(mine.map(id=>D[id].name).join(', ')) : ' — отделы назначает руководитель')+', остальные — смотреть и комментировать.'}</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">${ic('Plus')} Задача</button></div>
+  ${filters(true) + board(null)}`;
 }
 
 /* ── решения ────────────────────────────────── */
@@ -805,7 +806,7 @@ function viewChats(){
   if (c) {
     const msgs = S.msgs;
     main = `<div class="chat-h"><a class="icon-btn chat-back" href="#/chats" aria-label="К списку чатов">${ic('ArrowRight')}</a><div class="bd"><b>${esc(c.title)}</b>
-      <small>${t ? (seeTask(t) ? `<span class="lnk" data-open="task:${esc(t.id)}">${ic('LayoutGrid')} Открыть задачу</span> · `:'')+dchips(t) : c.task ? (c.dept && !canSee(c.dept) ? 'Задача отдела '+dchip(c.dept) : 'Задача удалена') : 'Создал(а) '+esc(pname(c.by))}</small></div>
+      <small>${t ? (true ? `<span class="lnk" data-open="task:${esc(t.id)}">${ic('LayoutGrid')} Открыть задачу</span> · `:'')+dchips(t) : c.task ? (c.dept && !canSee(c.dept) ? 'Задача отдела '+dchip(c.dept) : 'Задача удалена') : 'Создал(а) '+esc(pname(c.by))}</small></div>
       ${c.by===S.me?`<button class="icon-btn" data-action="chat-del" data-id="${esc(c.id)}" title="Удалить чат" aria-label="Удалить чат">${ic('Trash2')}</button>`:''}</div>
       <div class="msgs" id="msgs">${!S.loaded.has('hub_msgs') ? '<div class="loading"><span class="spin"></span>Загружаем сообщения…</div>' : msgs.map((m,i)=>msgHtml(m, msgs[i-1])).join('') || '<div class="empty" style="margin:auto">Здесь пока тихо. Напиши первым.</div>'}</div>
       ${upBar('chat:'+c.id)}
@@ -990,7 +991,7 @@ function deptOverview(d){
     <div class="tile" style="cursor:default"><span class="k">Решения</span><span class="v">${decs.length}</span><span class="s">ждут итога</span></div>
     <div class="tile" style="cursor:default"><span class="k">Люди</span><span class="v">${people.length}</span><span class="s">${people.filter(isOnline).length} онлайн</span></div>
   </div>
-  ${!canSee(d.id) ? noRoleHint(d) : `<div class="g2">
+  ${canSee(d.id) ? '' : roHint(d)}${`<div class="g2">
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Hammer')}</span>Сейчас в работе</h2></div><div class="list">${doing.map(t=>taskItem(t,{status:true})).join('')||'<div class="empty">Ничего не в работе.</div>'}</div></section>
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('SkipForward')}</span>Следующие</h2><a class="btn sm ghost" href="#/d/${d.id}/tasks">Все задачи</a></div><div class="list">${next.map(t=>taskItem(t)).join('')||'<div class="empty">Очередь пуста.</div>'}</div></section>
   </div>`}
@@ -1000,7 +1001,7 @@ function deptOverview(d){
 function viewDept(){
   const d = D[UI.route.slice(2)];
   const tab = d.tabs.some(t=>t[0]===UI.tab) ? UI.tab : 'overview';
-  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? (canSee(d.id) ? filters(false) + board(d.id) : noRoleHint(d)) : d.id==='econ' ? econView(tab) : registry(d.id+'/'+tab, d);
+  const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? (canSee(d.id) ? '' : roHint(d)) + filters(false) + board(d.id) : d.id==='econ' ? econView(tab) : registry(d.id+'/'+tab, d);
   const count = id => id==='tasks' ? S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' ? econCount(id) : S.reg.filter(x=>x.key===d.id+'/'+id).length;
   const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).includes(d.id)).map(id=>S.people[id].name);
   return `<div style="--dc:${d.color};display:contents">
@@ -1582,8 +1583,8 @@ function linkChip(id, removable){
   return '';
 }
 function drawerTask(t){
-  const d = D[t.dept] || DEPTS[0];
-  if (UI.edit) return drawerHead(d, 'Изменить задачу') + `<form class="dr-b form" data-form="task-edit" data-id="${esc(t.id)}">
+  const d = D[t.dept] || DEPTS[0], ro = !canEdit(t);
+  if (UI.edit && !ro) return drawerHead(d, 'Изменить задачу') + `<form class="dr-b form" data-form="task-edit" data-id="${esc(t.id)}">
     ${inText('title','Название — начни с глагола',t.title,'required maxlength="160"')}
     ${inText('tldr','Суть в одном предложении — зачем',t.tldr,'maxlength="240"')}
     ${deptsPick(tDepts(t))}
@@ -1598,12 +1599,13 @@ function drawerTask(t){
   const linkable = [...S.tasks.filter(x=>x.id!==t.id && !links.includes(x.id)).map(x=>[x.id,'Задача: '+clip(x.title,60)]), ...S.decisions.filter(x=>!links.includes(x.id)).map(x=>[x.id,'Решение: '+clip(x.q,60)])];
   const top = (me().top3||[]).includes(t.id);
   const files = S.files.filter(f=>f.task===t.id).sort((a,b)=>a.at-b.at);
-  return drawerHead(d, t.title, `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `
+  return drawerHead(d, t.title, ro ? '' : `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `
   <div class="dr-b">
+    ${ro ? `<div class="ro-note">${roMsg(t)}</div>` : ''}
     ${t.tldr?`<div class="tldr"><b>Суть</b>${esc(t.tldr)}</div>`:''}
-    <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}">${n}</button>`).join('')}</div>
+    <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}" ${ro?'disabled':''}>${n}</button>`).join('')}</div>
     <dl class="kv"><dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
-      <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
+      <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me && !ro?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
       <dt>Размер</dt><dd><span class="size">${esc(t.size||'M')}</span> <small style="color:var(--muted)">${SIZES[t.size]||''}</small></dd>
       ${t.createdBy?`<dt>Создал(а)</dt><dd style="color:var(--text-2)">${esc(pname(t.createdBy))} · ${ago(t.createdAt)}</dd>`:''}</dl>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1611,14 +1613,14 @@ function drawerTask(t){
       <button class="btn sm" data-action="toggle-top" data-id="${esc(t.id)}">${top?ic('Star','filled')+' В «Моём дне»':ic('Star')+' В день'}</button>
       <button class="btn sm" data-action="task-chat" data-id="${esc(t.id)}" title="Чат задачи доступен всей команде">${ic('MessagesSquare')} ${S.chats.some(c=>c.task===t.id)?'Открыть чат':'Создать чат'}</button>
     </div>
-    <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${attachBtn('task-attach', t.id, 'Прикрепить')}</div>
+    <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${ro ? '' : attachBtn('task-attach', t.id, 'Прикрепить')}</div>
       ${upBar('task:'+t.id)}<div class="files">${files.map(f=>fileChip(f, true)).join('') || '<small style="color:var(--muted)">Макеты, логи, скриншоты — до '+fsize(FILE_MAX)+' на файл.</small>'}</div></div>
     <div><p class="sub-h">Шаги${sub.length?` · ${sd}/${sub.length}`:''}</p>${sub.length?`<div class="mini-bar" style="margin:8px 0"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
-      <div class="cl">${sub.map((s,i)=>`<div class="row"><label class="${s.done?'done':''}"><input type="checkbox" data-action="step" data-id="${esc(t.id)}" data-i="${i}" ${s.done?'checked':''}><span>${esc(s.t)}</span></label><button class="mini-x" data-action="step-del" data-id="${esc(t.id)}" data-i="${i}" aria-label="Удалить шаг">${ic('X')}</button></div>`).join('')}</div>
-      <form class="inline-add" data-form="step-add" data-id="${esc(t.id)}" style="margin-top:6px"><input class="input" name="s" placeholder="Добавить шаг — маленький и конкретный" autocomplete="off" maxlength="160"><button class="btn sm" aria-label="Добавить шаг">${ic('Plus')}</button></form></div>
+      <div class="cl">${sub.map((s,i)=>`<div class="row"><label class="${s.done?'done':''}"><input type="checkbox" data-action="step" data-id="${esc(t.id)}" data-i="${i}" ${s.done?'checked':''} ${ro?'disabled':''}><span>${esc(s.t)}</span></label>${ro?'':`<button class="mini-x" data-action="step-del" data-id="${esc(t.id)}" data-i="${i}" aria-label="Удалить шаг">${ic('X')}</button>`}</div>`).join('')}${ro && !sub.length ? '<small style="color:var(--muted)">Шагов нет.</small>' : ''}</div>
+      ${ro ? '' : `<form class="inline-add" data-form="step-add" data-id="${esc(t.id)}" style="margin-top:6px"><input class="input" name="s" placeholder="Добавить шаг — маленький и конкретный" autocomplete="off" maxlength="160"><button class="btn sm" aria-label="Добавить шаг">${ic('Plus')}</button></form>`}</div>
     ${t.details?`<details class="more"><summary>Подробности</summary><div class="body">${esc(t.details)}</div></details>`:''}
-    <div><p class="sub-h" style="margin-bottom:8px">Связано</p><div class="links">${links.map(id=>linkChip(id, (t.links||[]).includes(id))).join('')}</div>
-      ${linkable.length?`<select class="input" data-action="link-add" data-id="${esc(t.id)}" aria-label="Связать" style="margin-top:8px"><option value="">${'＋ Связать с задачей или решением…'}</option>${linkable.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`:''}</div>
+    <div><p class="sub-h" style="margin-bottom:8px">Связано</p><div class="links">${links.map(id=>linkChip(id, !ro && (t.links||[]).includes(id))).join('') || (ro ? '<small style="color:var(--muted)">Связей нет.</small>' : '')}</div>
+      ${linkable.length && !ro?`<select class="input" data-action="link-add" data-id="${esc(t.id)}" aria-label="Связать" style="margin-top:8px"><option value="">${'＋ Связать с задачей или решением…'}</option>${linkable.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`:''}</div>
     <div><p class="sub-h" style="margin-bottom:8px">Обсуждение</p><div class="list">${(t.comments||[]).map(c=>`<div class="comment">${av(c.by,26)}<div class="bd"><b>${esc(pname(c.by))}</b> <small>${ago(c.at)}</small><div style="white-space:pre-wrap">${esc(c.text)}</div></div></div>`).join('')}</div>
     <form data-form="comment" data-id="${esc(t.id)}" style="display:flex;gap:8px;margin-top:8px"><input class="input" name="c" placeholder="Написать комментарий…" autocomplete="off" maxlength="2000"><button class="btn" aria-label="Отправить">${ic('ArrowRight')}</button></form></div>
   </div>`;
@@ -1698,7 +1700,7 @@ function capture(){
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> сохранить · <kbd>Shift</kbd>+<kbd>Enter</kbd> новая строка · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Во «Входящие»</button></div></div></form>`);
 }
 function newTask(status, dept, title, fromInbox){
-  dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : (UI.filt.dept!=='all' && UI.filt.dept) || myDepts()[0] || 'dev');
+  dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : (D[UI.filt.dept] && UI.filt.dept) || myDepts()[0] || 'dev');
   overlay(`<form class="pal" data-form="task-new" data-status="${status||'todo'}" data-inbox="${esc(fromInbox||'')}"><div class="cap"><h2>${ic('Plus')} Новая задача</h2>
     <input class="input" name="title" placeholder="Что сделать? Начни с глагола: «Починить…», «Добавить…»" value="${esc(title||'')}" required maxlength="160" autocomplete="off">
     <input class="input" name="tldr" placeholder="Суть в одном предложении — зачем это нужно" maxlength="240" autocomplete="off">
@@ -1800,6 +1802,7 @@ function applyPrefs(){
 /* ── действия с данными ─────────────────────── */
 function setStatus(id, s, x, y){
   const t = task(id); if (!t || t.status===s) return;
+  if (!canEdit(t)) { toast(roMsg(t)); return; }
   const patch = Object.assign({status:s}, stamp());
   if (s==='done') { patch.doneAt = now(); patch.doneBy = S.me; }
   else if (t.status==='done') { patch.doneAt = FV().delete(); patch.doneBy = FV().delete(); }
@@ -1816,17 +1819,17 @@ async function createTask(f){
   if (!ok) return;
   if (f.dataset.inbox) col('hub_inbox').doc(f.dataset.inbox).delete().catch(()=>{});
   closeOverlay(); log('создал(а) задачу', title, dept);
-  if (!depts.some(canSee)) { gain(3, ic('Plus')+' Задача передана: '+depts.map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Её видят только участники этих отделов.'); return; }
+  if (!depts.some(canSee)) { gain(3, ic('Plus')+' Задача передана: '+depts.map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Менять её будут участники этих отделов.'); openDrawer('task:'+ref.id); return; }
   gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
 }
 function addInbox(text, dept){
   write(()=>col('hub_inbox').add({text:clip(text,1000), at:now(), by:S.me, dept:dept||null})).then(ok => ok && gain(2, ic('Lightbulb')+' Записано во «Входящие»'));
 }
 function startFocus(id){
-  if (!id || !task(id)) { const m = me(); id = (m.top3||[]).find(x=>task(x) && task(x).status!=='done') || (S.tasks.find(t=>t.status!=='done' && t.who===S.me) || S.tasks.find(t=>t.status!=='done') || {}).id || null; }
+  if (!id || !task(id)) { const m = me(); id = (m.top3||[]).find(x=>task(x) && task(x).status!=='done') || (S.tasks.find(t=>t.status!=='done' && t.who===S.me) || S.tasks.find(t=>t.status!=='done' && canEdit(t)) || {}).id || null; }
   patchMe({focus:{task:id, until:now()+25*60e3}, last:id}).then(ok => ok && toast(ic('Headphones')+' Фокус 25 минут. Коллеги видят, что ты работаешь.'));
 }
-const updTask = (id, patch) => { if (UI.drawer==='task:'+id) UI.forceDrawer = true; return write(()=>col('hub_tasks').doc(id).update(Object.assign(patch, stamp()))); };
+const updTask = (id, patch) => { const t = task(id); if (t && !canEdit(t) && Object.keys(patch).some(k=>k!=='comments')) { toast(roMsg(t)); return Promise.resolve(false); } if (UI.drawer==='task:'+id) UI.forceDrawer = true; return write(()=>col('hub_tasks').doc(id).update(Object.assign(patch, stamp()))); };
 
 document.addEventListener('click', e => {
   if (document.body.classList.contains('locked')) return;
@@ -1855,7 +1858,7 @@ document.addEventListener('click', e => {
         patchMe({top3:top}); break; }
       case 'step-del': { const t = task(id); const sub = (t.sub||[]).filter((_,i)=>i!==Number(a.dataset.i)); updTask(id, {sub}); break; }
       case 'link-del': { const t = task(UI.drawer.slice(5)); if (t) updTask(t.id, {links:(t.links||[]).filter(x=>x!==a.dataset.l)}); break; }
-      case 'task-del': { const t = task(id); if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.')) break; write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
+      case 'task-del': { const t = task(id); if (!canEdit(t)) { toast(roMsg(t)); break; } if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.')) break; write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
       case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const cur = (d.votes||{})[S.me];
         write(()=>col('hub_decisions').doc(id).update({['votes.'+S.me]: cur===i ? FV().delete() : i, updatedAt:now()})).then(ok => { if (ok && cur==null) { log('проголосовал(а) в решении', d.q, d.dept); gain(5, ic('Vote')+' Голос учтён'); } }); break; }
       case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; const r = a.getBoundingClientRect();
@@ -1964,7 +1967,7 @@ document.addEventListener('submit', async e => {
   if (k==='task-edit') { const t = task(f.dataset.id); const title = clip(f.title.value,160); if (!title) return;
     const ds = formDepts(f); if (!ds.length) return;
     const ok = await updTask(t.id, {title, tldr:clip(f.tldr.value,240), details:clip(f.details.value,8000), dept:ds[0], depts:ds, size:f.size.value, who:f.who.value||null});
-    if (ok) { log('изменил(а) задачу', title, ds[0]); UI.edit = false; if (seeTask({dept:ds[0], depts:ds})) paintDrawer(); else closeDrawer(); } }
+    if (ok) { log('изменил(а) задачу', title, ds[0]); UI.edit = false; paintDrawer(); } }
   if (k==='decision-new') {
     const q = clip(f.q.value,200); const options = f.options.value.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,8).map(l=>{ const m = l.split(/\s+[—–-]\s+/); return {t:clip(m[0],120), d:clip(m.slice(1).join(' — '),240)}; });
     if (!q) return; if (options.length < 2) { toast(ic('CircleAlert')+' Нужно хотя бы два варианта'); return; }
@@ -2036,7 +2039,7 @@ document.addEventListener('keydown', e => {
 
 /* перетаскивание карточек между колонками */
 let dragId = null;
-document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.card'); if (!c) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.card'); if (!c || c.classList.contains('ro')) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
 document.addEventListener('dragend', () => { document.querySelectorAll('.dragging,.drop').forEach(x=>x.classList.remove('dragging','drop')); dragId = null; });
 document.addEventListener('dragover', e => { const c = e.target.closest && e.target.closest('.colm'); if (!c || !dragId) return; e.preventDefault(); document.querySelectorAll('.drop').forEach(x=>x!==c&&x.classList.remove('drop')); c.classList.add('drop'); });
 document.addEventListener('drop', e => { const c = e.target.closest && e.target.closest('.colm'); if (!c || !dragId) return; e.preventDefault(); setStatus(dragId, c.dataset.col, e.clientX, e.clientY); });
@@ -2111,7 +2114,8 @@ function listen(){
   const docs = sn => sn.docs.map(d=>Object.assign({id:d.id}, d.data()));
   const simple = [['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki'],['hub_files','files'],['hub_chats','chats']];
   for (const [c,k] of simple) UNSUB.push(col(c).onSnapshot(sn => { S[k] = docs(sn); S.loaded.add(c); schedule(); }, onErr(c)));
-  /* задачи — отдельная подписка на каждый свой отдел: правила Firestore пускают только к задачам своих отделов */
+  /* задачи видят все — одна подписка. Пока в базе старые правила, читаем по своим отделам, как раньше */
+  let allTasks = true;
   const syncTasks = () => {
     const want = myDepts(), seen = new Map();
     for (const d of want) for (const t of [...(S.tdept[d]||[]), ...(S.tdept['+'+d]||[])]) seen.set(t.id, t);
@@ -2120,6 +2124,9 @@ function listen(){
     schedule();
   };
   const listenTasks = () => {
+    if (allTasks) { if (!TASK_UNSUB.all) TASK_UNSUB.all = col('hub_tasks').onSnapshot(sn => { S.allTasks = docs(sn); applyVis(); S.loaded.add('hub_tasks'); schedule(); },
+      e => { if (e && e.code==='permission-denied') { console.warn('hub_tasks: правила базы ещё старые — читаю задачи своих отделов'); try { TASK_UNSUB.all(); } catch (x) {} delete TASK_UNSUB.all; allTasks = false; listenTasks(); } else onErr('hub_tasks')(e); });
+      return; }
     const want = new Set(myDepts());
     for (const d of Object.keys(TASK_UNSUB)) if (!want.has(d.replace('+',''))) { try { TASK_UNSUB[d](); } catch (e) {} delete TASK_UNSUB[d]; delete S.tdept[d]; }
     for (const d of want) if (!TASK_UNSUB[d]) TASK_UNSUB[d] = col('hub_tasks').where('dept','==',d).onSnapshot(sn => { S.tdept[d] = docs(sn); syncTasks(); },
