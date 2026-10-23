@@ -113,7 +113,8 @@ const colName = id => (COLS.find(c=>c[0]===id)||[,id])[1];
 const SIZES = {S:'≤ 15 мин', M:'≈ 1–2 ч', L:'полдня+'};
 const XP_BY_SIZE = {S:10, M:20, L:40};
 const WEEK_GOAL = 10;
-const ONLINE_MS = 150e3;
+/* отметка «онлайн» раз в 4 минуты: каждая запись в hub_people стоит одно чтение у каждого открытого хаба */
+const PRESENCE_MS = 240e3, ONLINE_MS = 600e3;
 const PERSON_COLORS = ['#7C5CE6','#4C6FB8','#A0558F','#A86A3C','#3F8466','#6B55B8','#8E7A2E','#3B7F95','#9C4D4D','#5E6AD2'];
 
 const DEPTS = [
@@ -1127,7 +1128,7 @@ function econListen(){
   const docs = sn => sn.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id}, d.data()));
   const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); E.loaded.add(c); schedule(); };
   for (const c of ECOLLS) UNSUB.push(DB.collection(c).onSnapshot(sn => { E[c] = docs(sn); E.loaded.add(c); schedule(); }, onErr(c)));
-  UNSUB.push(DB.collection('log').orderBy('at','desc').limit(300).onSnapshot(sn => { E.log = docs(sn); schedule(); }, onErr('log')));
+  UNSUB.push(DB.collection('log').orderBy('at','desc').limit(150).onSnapshot(sn => { E.log = docs(sn); schedule(); }, onErr('log')));
   UNSUB.push(DB.doc('meta/settings').onSnapshot(d => { if (d.exists) { E.meta = d.data(); E.anchor = Number(E.meta.anchor) || 3e6; } schedule(); }, onErr('meta')));
   UNSUB.push(DB.collection('people').onSnapshot(sn => { const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); E.people = p; schedule(); }, () => {}));
 }
@@ -2074,6 +2075,7 @@ function focusKey(el){
 }
 function paint(){
   if (document.body.classList.contains('locked')) return;
+  if (UI.route.startsWith('d/econ')) econListen(); // данные экономики грузим, только когда их открыли
   const ae = document.activeElement, fk = focusKey(ae), sy = scrollY, sel = ae && ae.id && 'selectionStart' in ae ? [ae.selectionStart, ae.selectionEnd] : null;
   const ms = $('#msgs'), mst = ms ? {top:ms.scrollTop, end:ms.scrollHeight-ms.scrollTop-ms.clientHeight < 60, chat:UI.chat} : null;
   $('#side').innerHTML = sidebar();
@@ -2131,7 +2133,7 @@ function listen(){
         if (++allTries < 4) { console.warn('hub_tasks: отказ, пробую ещё раз', allTries, e.message); setTimeout(() => { if (UNSUB.length) listenTasks(); }, 1500*allTries); return; }
         console.warn('hub_tasks: правила базы ещё старые — читаю задачи своих отделов', e.message); allTasks = false; listenTasks();
         const probe = setInterval(() => { if (!UNSUB.length) return clearInterval(probe);
-          col('hub_tasks').limit(1).get().then(() => { clearInterval(probe); for (const k of Object.keys(TASK_UNSUB)) { try { TASK_UNSUB[k](); } catch (x) {} delete TASK_UNSUB[k]; } S.tdept = {}; allTasks = true; allTries = 0; listenTasks(); }).catch(() => {}); }, 60e3); });
+          col('hub_tasks').limit(1).get().then(() => { clearInterval(probe); for (const k of Object.keys(TASK_UNSUB)) { try { TASK_UNSUB[k](); } catch (x) {} delete TASK_UNSUB[k]; } S.tdept = {}; allTasks = true; allTries = 0; listenTasks(); }).catch(() => {}); }, 600e3); });
       return; }
     const want = new Set(myDepts());
     for (const d of Object.keys(TASK_UNSUB)) if (!want.has(d.replace('+',''))) { try { TASK_UNSUB[d](); } catch (e) {} delete TASK_UNSUB[d]; delete S.tdept[d]; }
@@ -2149,7 +2151,7 @@ function listen(){
     const lv = level(); if (lastLevel!==null && lv>lastLevel && !P.calm) { toast(ic('PartyPopper')+' Новый уровень: '+lv); confetti(innerWidth/2, innerHeight/2, 60); } lastLevel = lv;
     schedule();
   }, onErr('hub_people')));
-  UNSUB.push(col('hub_log').orderBy('at','desc').limit(300).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
+  UNSUB.push(col('hub_log').where('at','>',now()-14*86400e3).orderBy('at','desc').limit(150).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
 }
 /* сообщения слушаем только у открытого чата */
@@ -2277,8 +2279,8 @@ async function enter(user){
   }
   gateBusy = false;
   document.body.classList.remove('locked');
-  readHash(); listen(); econListen(); paint();
-  clearInterval(presenceTimer); presenceTimer = setInterval(presence, 60e3);
+  readHash(); listen(); paint();
+  clearInterval(presenceTimer); presenceTimer = setInterval(presence, PRESENCE_MS);
 }
 function lock(){ S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
 applyPrefs();
@@ -2286,6 +2288,8 @@ try {
   if (!window.firebase || !firebase.auth || !firebase.firestore) throw new Error('sdk');
   firebase.initializeApp(FIREBASE_CONFIG);
   AUTH = firebase.auth(); DB = firebase.firestore();
+  /* кэш базы в браузере: при повторном открытии хаб докачивает только изменения, а не все документы заново (меньше чтений) */
+  if (DB.enablePersistence) DB.enablePersistence({synchronizeTabs:true}).catch(e => console.warn('Кэш базы выключен:', e.code));
   AUTH.onAuthStateChanged(u => u ? enter(u) : lock());
 } catch (e) {
   $('#gate-card').innerHTML = BRAND + '<div class="gate-err">Не загрузился модуль входа. Обнови страницу или проверь, не блокирует ли что-то gstatic.com.</div>';
