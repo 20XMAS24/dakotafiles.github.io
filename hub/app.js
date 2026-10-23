@@ -79,6 +79,9 @@ const ICONS = {
   Download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
   Send:'<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
   MessagesSquare:'<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+  ChevronLeft:'<path d="m15 18-6-6 6-6"/>',
+  ChevronRight:'<path d="m9 18 6-6-6-6"/>',
+  Image:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
   Zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'
 };
 const ic = (n, cls) => `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -578,14 +581,14 @@ async function fileBlob(f){
   return new Blob([u], {type:f.type||'application/octet-stream'});
 }
 async function uploadFiles(list, target){
-  const key = target.task ? 'task:'+target.task : 'chat:'+target.chat, ids = [];
+  const key = target.task ? 'task:'+target.task : target.reg ? 'reg:'+target.reg : 'chat:'+target.chat, ids = [];
   for (const file of list) {
     if (file.size > FILE_MAX) { toast(ic('CircleAlert')+' «'+esc(file.name)+'» больше '+fsize(FILE_MAX)+' — положи его в облако и прикрепи ссылку'); continue; }
     S.up[key] = {name:file.name, pct:0}; schedule();
     try {
       const data = b64(await file.arrayBuffer()), ref = col('hub_files').doc(), parts = Math.max(1, Math.ceil(data.length/PART));
       for (let i=0;i<parts;i++) { await col('hub_fileparts').doc(ref.id+'_'+i).set({file:ref.id, i, data:data.slice(i*PART, (i+1)*PART)}); S.up[key].pct = Math.round((i+1)/parts*100); schedule(); }
-      await ref.set(Object.assign({name:clip(file.name,160), type:clip(file.type,100), size:file.size, parts, by:S.me, at:now()}, target));
+      await ref.set(Object.assign({name:clip(file.name,160), type:clip(file.type,100), size:file.size, parts, by:S.me, at:now()}, await mkThumb(file) || {}, target));
       ids.push(ref.id);
     } catch (e) { console.error(e); toast(ic('CircleAlert')+' «'+esc(file.name)+'» не загрузился: '+esc(errText(e))); }
   }
@@ -607,6 +610,7 @@ async function deleteFiles(ids){
   }
 }
 function thumb(f){
+  if (f.th) return f.th;
   if (THUMBS[f.id]) return THUMBS[f.id]==='…' ? '' : THUMBS[f.id];
   THUMBS[f.id] = '…';
   fileBlob(f).then(b => { THUMBS[f.id] = URL.createObjectURL(b); schedule(); }).catch(() => { THUMBS[f.id] = ''; });
@@ -615,8 +619,8 @@ function thumb(f){
 function fileChip(f, big){
   if (!f) return '';
   const del = f.by===S.me ? `<button class="mini-x" data-action="file-del" data-id="${esc(f.id)}" aria-label="Удалить файл" title="Удалить файл">${ic('X')}</button>` : '';
-  const src = big && isImg(f) && f.size <= THUMB_MAX ? thumb(f) : '';
-  if (src) return `<span class="fimg"><img src="${src}" alt="${esc(f.name)}" data-action="file-get" data-id="${esc(f.id)}" title="${esc(f.name)} · скачать">${del}</span>`;
+  const src = big && isImg(f) && (f.th || f.size <= THUMB_MAX) ? thumb(f) : '';
+  if (src) return `<span class="fimg"><img src="${src}" alt="${esc(f.name)}" data-action="img-view" data-id="${esc(f.id)}" title="${esc(f.name)} · открыть">${del}</span>`;
   if (isMd(f)) return `<span class="file"><button class="file-b" data-action="file-md" data-id="${esc(f.id)}" title="Открыть в читалке">${ic('BookOpen')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button><button class="mini-x" data-action="file-get" data-id="${esc(f.id)}" aria-label="Скачать" title="Скачать">${ic('Download')}</button>${del}</span>`;
   return `<span class="file"><button class="file-b" data-action="file-get" data-id="${esc(f.id)}" title="Скачать">${ic(isImg(f)?'Eye':'Paperclip')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button>${del}</span>`;
 }
@@ -699,6 +703,69 @@ async function openMdFile(id){
   try { openMd(f.name, await (await fileBlob(f)).text(), id); } catch (e) { console.error(e); toast(ic('CircleAlert')+' Не открылось: '+esc(errText(e))); }
 }
 const mdTitle = (text, name) => { const m = String(text).match(/^#{1,2}\s+(.+?)\s*#*\s*$/m); return clip(m ? m[1].replace(/[*_`]/g,'') : name.replace(/\.[^.]+$/,''), 120); };
+/* маленькое превью картинки прямо в hub_files: списки показывают его, не скачивая весь файл */
+async function mkThumb(file){
+  if (!/^image\/(png|jpe?g|gif|webp)$/i.test(file.type||'')) return null;
+  try {
+    const bm = await createImageBitmap(file), w = bm.width, h = bm.height, k = Math.min(1, 480/Math.max(w, h));
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w*k)); c.height = Math.max(1, Math.round(h*k));
+    const g = c.getContext('2d'); g.fillStyle = '#16161c'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bm, 0, 0, c.width, c.height); if (bm.close) bm.close();
+    return {th:c.toDataURL('image/jpeg', .78), w, h};
+  } catch (e) { return null; }
+}
+/* просмотр картинок на весь экран: листание стрелками, скачивание */
+let LB = null; const FULL = {};
+function imgGroup(f){ const k = f.reg ? 'reg' : f.task ? 'task' : 'chat'; return S.files.filter(x=>x[k] && x[k]===f[k] && isImg(x)).sort((a,b)=>a.at-b.at).map(x=>x.id); }
+function lightbox(){
+  if (!LB) return;
+  const id = LB.ids[LB.i], f = S.files.find(x=>x.id===id); if (!f) { closeOverlay(); return; }
+  if (!FULL[id] && THUMBS[id] && THUMBS[id]!=='…') FULL[id] = THUMBS[id];
+  if (!FULL[id]) { FULL[id] = '…'; fileBlob(f).then(b => { FULL[id] = URL.createObjectURL(b); if (LB && LB.ids[LB.i]===id) lightbox(); }).catch(() => { FULL[id] = ''; }); }
+  const full = FULL[id] && FULL[id]!=='…' ? FULL[id] : '', src = full || f.th || '', n = LB.ids.length;
+  overlay('<div class="lb" role="dialog" aria-label="'+esc(f.name)+'"><div class="lb-h"><b>'+esc(f.name)+'</b><small>'+fsize(f.size)+(f.w?' · '+f.w+'×'+f.h:'')+(n>1?' · '+(LB.i+1)+' из '+n:'')+'</small><span class="sp"></span>'
+    +'<button class="icon-btn" data-action="file-dl" data-id="'+esc(id)+'" title="Скачать" aria-label="Скачать">'+ic('Download')+'</button>'
+    +'<button class="icon-btn" data-action="close-overlay" aria-label="Закрыть">'+ic('X')+'</button></div>'
+    +'<div class="lb-b" data-action="lb-bg">'+(n>1?'<button class="icon-btn lb-nav prev" data-action="lb-go" data-v="-1" aria-label="Предыдущее">'+ic('ChevronLeft')+'</button>':'')
+    +(src?'<img src="'+src+'" alt="'+esc(f.name)+'">':'<span class="spin"></span>')+(!full && src?'<span class="lb-load"><span class="spin"></span></span>':'')
+    +(n>1?'<button class="icon-btn lb-nav next" data-action="lb-go" data-v="1" aria-label="Следующее">'+ic('ChevronRight')+'</button>':'')+'</div></div>');
+}
+function openImg(id){ const f = S.files.find(x=>x.id===id); if (!f) return; const ids = imgGroup(f); LB = {ids, i:Math.max(0, ids.indexOf(id))}; lightbox(); }
+function lbGo(d){ if (!LB || LB.ids.length<2) return; LB.i = (LB.i + d + LB.ids.length) % LB.ids.length; lightbox(); }
+/* фото и скриншоты записей реестров отделов */
+const regFiles = id => S.files.filter(f=>f.reg===id).sort((a,b)=>a.at-b.at);
+const regCover = id => regFiles(id).find(isImg);
+let REG_PENDING = []; // для ещё не сохранённой записи: загрузятся после «Добавить»
+function clearPending(){ REG_PENDING.forEach(p => p.url && URL.revokeObjectURL(p.url)); REG_PENDING = []; }
+const shotName = (f, i) => f.name && f.name!=='image.png' ? f : new File([f], 'скриншот-'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+(i?'-'+i:'')+'.png', {type:f.type});
+function imgTile(f){
+  const s = thumb(f);
+  return '<span class="gimg"><button type="button" class="gimg-b" data-action="img-view" data-id="'+esc(f.id)+'" title="'+esc(f.name)+' · открыть">'+(s?'<img src="'+s+'" alt="'+esc(f.name)+'" loading="lazy">':'<span class="spin"></span>')+'</button>'
+    +(f.by===S.me?'<button type="button" class="mini-x" data-action="file-del" data-id="'+esc(f.id)+'" aria-label="Удалить фото" title="Удалить">'+ic('X')+'</button>':'')+'</span>';
+}
+function regGallery(id){
+  const files = id ? regFiles(id) : [], n = files.length + REG_PENDING.length;
+  const tiles = files.filter(isImg).map(imgTile).join('')
+    + REG_PENDING.map((p,i) => '<span class="gimg pending">'+(p.url?'<span class="gimg-b"><img src="'+p.url+'" alt="'+esc(p.file.name)+'"></span>':'<span class="gimg-b"><small>'+esc(clip(p.file.name,24))+'</small></span>')
+      +'<button type="button" class="mini-x" data-action="reg-unpend" data-i="'+i+'" aria-label="Убрать" title="Убрать">'+ic('X')+'</button></span>').join('');
+  const other = files.filter(f=>!isImg(f)).map(f=>fileChip(f)).join('');
+  return '<div style="display:flex;align-items:center;gap:8px"><p class="sub-h" style="margin:0">Фото и файлы'+(n?' · '+n:'')+'</p><span style="flex:1"></span>'+attachBtn('reg-attach', id||'', 'Добавить')+'</div>'
+    + upBar('reg:'+(id||''))
+    + (tiles ? '<div class="gal">'+tiles+'</div>' : '')
+    + (other ? '<div class="files">'+other+'</div>' : '')
+    + '<small style="color:var(--muted)">'+(n ? 'Ещё можно перетащить сюда или вставить скриншот: Ctrl+V.' : 'Перетащи сюда картинки или вставь скриншот: Ctrl+V. До '+fsize(FILE_MAX)+' на файл.')+(id||!REG_PENDING.length?'':' Загрузятся после «Добавить».')+'</small>';
+}
+function addRegFiles(id, list){
+  if (!list.length) return;
+  if (!id) { for (const file of list) { if (file.size > FILE_MAX) { toast(ic('CircleAlert')+' «'+esc(file.name)+'» больше '+fsize(FILE_MAX)); continue; } REG_PENDING.push({file, url: /^image\//.test(file.type) ? URL.createObjectURL(file) : null}); } paintRegGal(); return; }
+  uploadFiles(list, {reg:id}).then(ids => { if (!ids.length) return; const it = regItem(id); if (it) log('прикрепил(а) '+plural(ids.length,'фото','фото','фото')+' к записи', it.name, it.key.split('/')[0]); toast(ic('Image')+' Добавлено: '+ids.length); });
+}
+function paintRegGal(){ const g = $('#reg-gal'); if (g) g.innerHTML = regGallery(g.dataset.id); }
+/* превью в списках реестра */
+function coverMini(id){
+  const fs = regFiles(id).filter(isImg); if (!fs.length) return '';
+  const s = thumb(fs[0]);
+  return '<span class="rthumb">'+(s?'<img src="'+s+'" alt="" loading="lazy">':'')+(fs.length>1?'<i>'+fs.length+'</i>':'')+'</span>';
+}
 const upBar = key => S.up[key] ? `<div class="upbar"><span class="spin"></span> Загружаем «${esc(clip(S.up[key].name,40))}» · ${S.up[key].pct}%</div>` : '';
 const attachBtn = (action, id, label) => `<label class="btn sm" title="До ${fsize(FILE_MAX)} на файл">${ic('Paperclip')}${label?' '+label:''}<input type="file" multiple hidden data-action="${action}" data-id="${esc(id)}"></label>`;
 
@@ -890,11 +957,12 @@ function registry(key, d){
   const tools = `<div class="reg-tools"><small>${plural(items.length,'запись','записи','записей')}</small><span class="sp"></span><button class="btn sm primary" data-open="regnew:${key}">${ic('Plus')} Добавить ${esc(r.noun)}</button></div>`;
   if (!items.length) return tools + `<div class="empty"><b>Пока пусто</b>Добавь первую запись — её увидит вся команда.</div>`;
   if (r.type==='table') { const fs = tableFields(r);
-    return tools + `<div class="tbl-wrap"><table class="grid"><thead><tr>${fs.map(f=>`<th>${esc(f.l)}</th>`).join('')}</tr></thead><tbody>${items.map(it=>`<tr tabindex="0" data-open="reg:${esc(it.id)}">${fs.map((f,j)=>`<td class="${j===0?'b':f.mono?'m':''}">${cell(f, it[f.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
+    return tools + `<div class="tbl-wrap"><table class="grid"><thead><tr>${fs.map(f=>`<th>${esc(f.l)}</th>`).join('')}</tr></thead><tbody>${items.map(it=>`<tr tabindex="0" data-open="reg:${esc(it.id)}">${fs.map((f,j)=>`<td class="${j===0?'b':f.mono?'m':''}">${j===0?coverMini(it.id):''}${cell(f, it[f.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
   const stF = r.fields.find(f=>f.k==='status');
   const st = it => stF && it.status ? chip(it.status, toneOf(stF, it.status)) : '';
-  if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
-  if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb"><div class="ui"></div></div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
+  const cover = it => (f => f && thumb(f) ? `<div class="tile-img"><img src="${thumb(f)}" alt="" loading="lazy"></div>` : '')(regCover(it.id));
+  if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
+  if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb">${(f => f && thumb(f) ? `<img src="${thumb(f)}" alt="" loading="lazy">` : '<div class="ui"></div>')(regCover(it.id))}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
   if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), d.color)}<span class="s">${esc(it.note||'')}</span></button>`).join('')}</div>`;
   if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}</div>`).join('')}</div></section>`;
   if (r.type==='checklist') { const n = items.filter(i=>i.done).length;
@@ -1499,12 +1567,12 @@ const sizeOpts = () => Object.entries(SIZES).map(([k,v])=>[k, k+' · '+v]);
 
 /* ── шторка ─────────────────────────────────── */
 function openDrawer(ref, edit){
-  UI.drawer = ref; UI.edit = !!edit; UI.openedAt = now();
+  clearPending(); UI.drawer = ref; UI.edit = !!edit; UI.openedAt = now();
   if (ref.startsWith('task:') && me().last !== ref.slice(5)) col('hub_people').doc(S.me).update({last:ref.slice(5)}).catch(()=>{});
   paintDrawer();
   const el = $('#drawer'); el.classList.add('open'); el.setAttribute('aria-hidden','false');
 }
-function closeDrawer(){ UI.drawer = null; UI.edit = false; TE = null; const el = $('#drawer'); el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+function closeDrawer(){ clearPending(); UI.drawer = null; UI.edit = false; TE = null; const el = $('#drawer'); el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 const drawerHead = (d, title, extra='') => `<div class="dr-h" style="--dc:${d?d.color:'var(--acc)'}"><span class="ph-ico" style="width:40px;height:40px">${ic(d?d.icon:'BookOpen')}</span><h2>${esc(title)}</h2>${extra}<button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">${ic('X')}</button></div>`;
 function linkChip(id, removable){
   const t = task(id), d = dec(id);
@@ -1568,6 +1636,7 @@ function regForm(key, it){
   return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun) + `<form class="dr-b form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
     ${r.fields.map(field).join('')}
     ${it && safeUrl(it.link) ? `<a class="btn" href="${esc(it.link)}" target="_blank" rel="noopener">${ic('ExternalLink')} Открыть макет</a>`:''}
+    ${r.type==='checklist' ? '' : `<div class="reg-gal" id="reg-gal" data-id="${it?esc(it.id):''}">${regGallery(it&&it.id)}</div>`}
     <div class="form-foot"><button class="btn primary">${ic('Save')} ${it?'Сохранить':'Добавить'}</button><button type="button" class="btn ghost" data-action="close-drawer">Отмена</button><span class="sp"></span>${it?`<button type="button" class="btn danger" data-action="reg-del" data-id="${esc(it.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
     ${it&&it.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(it.updatedBy))}, ${ago(it.updatedAt)}</small>`:''}
   </form>`;
@@ -1604,6 +1673,7 @@ function paintDrawer(){
 function refreshDrawer(){
   if (!UI.drawer) return;
   if ($('#drawer .loading')) return paintDrawer();
+  paintRegGal(); // фото записи обновляются, даже пока форма открыта
   const force = UI.forceDrawer; UI.forceDrawer = false;
   if (!force && (UI.edit || /^(reg|regnew|wikinew|eedit|enew|etable):/.test(UI.drawer))) return;
   const a = document.activeElement, inside = a && $('#drawer').contains(a);
@@ -1617,7 +1687,7 @@ function refreshDrawer(){
 }
 
 /* ── оверлеи: палитра, захват, формы, настройки ── */
-function closeOverlay(){ $('#overlay').innerHTML = ''; UI.pal = null; }
+function closeOverlay(){ $('#overlay').innerHTML = ''; UI.pal = null; LB = null; }
 function overlay(html){ UI.pal = null; $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg">${html}</div>`; const f = $('#overlay input:not([type=hidden]),#overlay textarea'); if (f) f.focus(); }
 function capture(){
   const cur = UI.route.startsWith('d/') ? UI.route.slice(2) : '';
@@ -1817,7 +1887,11 @@ document.addEventListener('click', e => {
       case 'my-color': { a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); patchMe({color:a.dataset.c}); break; }
       case 'focus-start': startFocus(id); break;
       case 'focus-stop': patchMe({focus:null}).then(ok => ok && toast('Фокус остановлен')); break;
-      case 'reg-del': { const it = regItem(id); if (!confirm('Удалить «'+it.name+'»?')) break; write(()=>col('hub_reg').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) запись', it.name, it.key.split('/')[0]); closeDrawer(); } }); break; }
+      case 'reg-del': { const it = regItem(id); if (!confirm('Удалить «'+it.name+'»?')) break; write(()=>col('hub_reg').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) запись', it.name, it.key.split('/')[0]); closeDrawer(); deleteFiles(regFiles(id).map(f=>f.id)).catch(()=>{}); } }); break; }
+      case 'img-view': openImg(id); break;
+      case 'lb-go': lbGo(Number(a.dataset.v)); break;
+      case 'lb-bg': if (e.target===a) closeOverlay(); break;
+      case 'reg-unpend': { const p = REG_PENDING.splice(Number(a.dataset.i), 1)[0]; if (p && p.url) URL.revokeObjectURL(p.url); paintRegGal(); break; }
       case 'check-reset': { const items = S.reg.filter(x=>x.key===a.dataset.key && x.done); if (!confirm('Снять все отметки чеклиста?')) break; const b = DB.batch(); items.forEach(x=>b.update(col('hub_reg').doc(x.id), {done:false})); write(()=>b.commit()); break; }
       case 'wiki-new': UI.wikiPre = null; openDrawer('wikinew:', true); break;
       case 'file-md': openMdFile(id); break;
@@ -1864,6 +1938,7 @@ document.addEventListener('change', e => {
     else file.text().then(t => openMd(file.name, t)).catch(e => toast(ic('CircleAlert')+' Не открылось: '+esc(errText(e)))); }
   if (a.dataset.action==='task-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
     uploadFiles(list, {task:id}).then(ids => { if (ids.length) { const t = task(id); if (t) log('прикрепил(а) '+plural(ids.length,'файл','файла','файлов')+' к задаче', t.title, t.dept); toast(ic('Paperclip')+' Прикреплено: '+ids.length); } }); }
+  if (a.dataset.action==='reg-attach' && a.files.length) { const list = [...a.files]; a.value = ''; addRegFiles(a.dataset.id, list); }
   if (a.dataset.action==='chat-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
     uploadFiles(list, {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); }); }
   if (a.name==='day' && a.form && a.form.dataset.form==='claude-book') { a.form.from.innerHTML = claudeTimes(Number(a.value)).map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join(''); }
@@ -1901,9 +1976,11 @@ document.addEventListener('submit', async e => {
     for (const fl of r.fields) data[fl.k] = fl.t==='textarea' ? clip(f[fl.k].value,8000) : fl.t==='url' ? (safeUrl(f[fl.k].value.trim()) || '') : clip(f[fl.k].value,300);
     if (!data.name) return;
     const dept = key.split('/')[0];
-    const ok = id ? await write(()=>col('hub_reg').doc(id).update(Object.assign(data, stamp())))
-                  : await write(()=>col('hub_reg').add(Object.assign(data, {key, createdAt:now(), createdBy:S.me}, stamp())));
-    if (ok) { log(id?'изменил(а) запись':'добавил(а) запись', data.name, dept); if (!id) gain(3, ic('Plus')+' Запись добавлена'); closeDrawer(); } }
+    const ref = id ? col('hub_reg').doc(id) : col('hub_reg').doc(), pend = REG_PENDING.map(p=>p.file);
+    const ok = id ? await write(()=>ref.update(Object.assign(data, stamp())))
+                  : await write(()=>ref.set(Object.assign(data, {key, createdAt:now(), createdBy:S.me}, stamp())));
+    if (ok) { log(id?'изменил(а) запись':'добавил(а) запись', data.name, dept); if (!id) gain(3, ic('Plus')+' Запись добавлена'); closeDrawer();
+      if (pend.length) { toast(ic('Image')+' Загружаем фото: '+pend.length); addRegFiles(ref.id, pend); } } }
   if (k==='wiki-save') {
     const data = {title:clip(f.title.value,120), tldr:clip(f.tldr.value,240), body:clip(f.body.value,20000)}; if (!data.title) return;
     const id = f.dataset.id;
@@ -1926,17 +2003,24 @@ document.addEventListener('mousemove', e => { const p = e.screenX+','+e.screenY;
 document.addEventListener('input', e => { if (e.target.id==='chat-in') { UI.chatDraft[e.target.form.dataset.id] = e.target.value; return; } });
 /* картинку из буфера обмена можно сразу отправить в чат */
 document.addEventListener('paste', e => {
+  const g = $('#reg-gal');
+  if (g && e.target.closest && e.target.closest('#drawer')) { const files = [...(e.clipboardData && e.clipboardData.files || [])].filter(f=>/^image\//.test(f.type)); if (!files.length) return; e.preventDefault(); addRegFiles(g.dataset.id, files.map(shotName)); return; }
   if (e.target.id!=='chat-in') return;
   const files = [...(e.clipboardData && e.clipboardData.files || [])]; if (!files.length) return;
   e.preventDefault(); const id = e.target.form.dataset.id;
-  uploadFiles(files.map((f,i)=>f.name && f.name!=='image.png' ? f : new File([f], 'скриншот-'+new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')+(i?'-'+i:'')+'.png', {type:f.type})), {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); });
+  uploadFiles(files.map(shotName), {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); });
 });
+const dragFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+document.addEventListener('dragover', e => { const g = e.target.closest && e.target.closest('#reg-gal'); if (!g || !dragFiles(e)) return; e.preventDefault(); g.classList.add('drag'); });
+document.addEventListener('dragleave', e => { const g = e.target.closest && e.target.closest('#reg-gal'); if (g && !g.contains(e.relatedTarget)) g.classList.remove('drag'); });
+document.addEventListener('drop', e => { const g = e.target.closest && e.target.closest('#reg-gal'); if (!g || !dragFiles(e)) return; e.preventDefault(); g.classList.remove('drag'); addRegFiles(g.dataset.id, [...e.dataTransfer.files]); });
 document.addEventListener('input', e => { if (e.target.id==='pal-in') { UI.pal.q = e.target.value; UI.pal.items = palItems(e.target.value); UI.pal.i = 0; paintPal(); } });
 document.addEventListener('keydown', e => {
   if (document.body.classList.contains('locked')) return;
   if (e.key==='Enter' && e.target.matches('[data-go]:not(button),[data-open]:not(button)')) { e.preventDefault(); e.target.click(); return; }
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); UI.pal ? closeOverlay() : palette(); return; }
+  if (LB && (e.key==='ArrowLeft' || e.key==='ArrowRight')) { e.preventDefault(); lbGo(e.key==='ArrowLeft' ? -1 : 1); return; }
   if (e.key==='Escape') { if ($('#overlay').innerHTML) closeOverlay(); else if (UI.drawer) closeDrawer(); else document.body.classList.remove('nav-open'); return; }
   if (UI.pal) {
     if (e.key==='ArrowDown' || e.key==='ArrowUp') palKeyAt = now();
