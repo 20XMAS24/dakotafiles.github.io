@@ -153,6 +153,8 @@ body:not(.locked) .gate{display:none}
 
 /* профиль прилипает к низу меню: виден всегда, даже если отделов много */
 .me-card{margin-top:auto;position:sticky;bottom:0;z-index:1;border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px;background:var(--panel-2);box-shadow:0 -14px 18px -6px var(--panel)}
+/* полоса под карточкой закрывает пункты меню, прокручиваемые под ней */
+.me-card::after{content:"";position:absolute;left:-12px;right:-12px;top:100%;height:30px;background:var(--panel)}
 .me-card .me-row:first-child>div{overflow:hidden}
 .me-card .me-row:first-child small,.me-card .me-row:first-child b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .me-card .me-row:first-child br{display:none}
@@ -708,6 +710,29 @@ details.more .body.md{white-space:normal}
 .md pre code{background:none;padding:0;font-size:13px;word-break:normal}
 .md hr{border:0;border-top:1px solid var(--line);margin:1.4em 0}
 .md img{max-width:100%;border-radius:10px}
+/* компактный Markdown внутри заметок, комментариев, сообщений */
+.md-c{max-width:none;font-size:inherit;line-height:1.5;white-space:normal;color:inherit}
+.md-c p{margin:0 0 .45em}
+.md-c h3,.md-c h4{font-size:1em;margin:.6em 0 .3em}
+.md-c ul,.md-c ol{margin:0 0 .45em}
+.md-c pre{margin:.3em 0 .5em;font-size:12.5px}
+.md-c blockquote{margin:.3em 0 .5em}
+.md-c>:last-child,.md-c>:last-child>:last-child{margin-bottom:0}
+.txt>b+.md-c,.note-text>.md-c{margin-top:2px}
+.msg .tx.md-c,.msg .tx .md-c{white-space:normal}
+.msg.me .md-c a,.tile .s a,.item .ds a{color:var(--acc-2)}
+/* строчная разметка в «сути» и подписях */
+.tldr code,.ds code,.tl code,.tt code,.s code,.d code,.cl code{font-family:var(--f-mono);font-size:.86em;background:var(--panel-3);padding:1px 5px;border-radius:5px}
+.tldr a,.ds a,.tl a,.d a,.cl a{color:var(--acc-2)}
+/* предпросмотр под полем ввода */
+details.mdp{margin-top:-4px}
+details.mdp summary{cursor:pointer;list-style:none;display:inline-flex;gap:6px;align-items:center;font-size:12px;font-weight:600;color:var(--muted);padding:2px 0}
+details.mdp summary::-webkit-details-marker{display:none}
+details.mdp summary::before{content:"▸";transition:transform .15s;color:var(--acc)}
+details.mdp[open] summary::before{transform:rotate(90deg)}
+details.mdp summary:hover{color:var(--text-2)}
+details.mdp>.md{margin-top:8px;padding:10px 12px;border:1px dashed var(--line-2);border-radius:10px;background:var(--bg-2);max-height:320px;overflow:auto}
+.fld details.mdp{margin-top:2px}
 @media (max-width:640px){.mdr-b{padding:16px}.mdr-h .seg{order:3;width:100%}}
 
 /* ── фото записей и просмотр картинок ── */

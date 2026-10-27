@@ -393,7 +393,7 @@ function taskItem(t, opts={}){
     <button class="check${done?' on':''}" ${canEdit(t)?'':'disabled title="Только просмотр"'} data-action="toggle-done" data-id="${esc(t.id)}" aria-label="${done?'Вернуть в работу':'Готово'}">${ic('Check')}</button>
     <div class="bd">
       <div class="tt" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.title)}</div>
-      ${t.tldr ? `<div class="ds">${esc(t.tldr)}</div>`:''}
+      ${t.tldr ? `<div class="ds">${mdLine(t.tldr)}</div>`:''}
       <div class="mt">${dchips(t)}<span class="size" title="${SIZES[t.size]||''}">${esc(t.size||'M')}</span>${opts.status?chip(colName(t.status), COL_TONE[t.status]):''}${sub.length?`<small style="color:var(--muted)">${ic('ListChecks')} ${sd}/${sub.length}</small>`:''}</div>
     </div>
     ${av(t.who)}
@@ -438,7 +438,7 @@ function viewToday(){
       </section>
       ${pendingVotes.length ? `<section class="panel">
         <div class="panel-h"><h2><span class="hi">${ic('Scale')}</span>Ждут твоего голоса</h2><a class="btn sm ghost" href="#/decisions">Все решения</a></div>
-        <div class="list">${pendingVotes.map(d=>`<div class="item" tabindex="0" data-go="decisions"><div class="bd"><div class="tt">${esc(d.q)}</div><div class="ds">${esc(d.tldr)}</div><div class="mt">${dchip(d.dept)}<small style="color:var(--muted)">${plural(Object.keys(d.votes||{}).length,'голос','голоса','голосов')}</small></div></div></div>`).join('')}</div>
+        <div class="list">${pendingVotes.map(d=>`<div class="item" tabindex="0" data-go="decisions"><div class="bd"><div class="tt">${esc(d.q)}</div><div class="ds">${mdLine(d.tldr)}</div><div class="mt">${dchip(d.dept)}<small style="color:var(--muted)">${plural(Object.keys(d.votes||{}).length,'голос','голоса','голосов')}</small></div></div></div>`).join('')}</div>
       </section>`:''}
       <section class="panel">
         <div class="panel-h"><h2><span class="hi">${ic('Zap')}</span>Если сил мало: задачи на 15 минут</h2></div>
@@ -474,7 +474,7 @@ function card(t){
   const d = D[t.dept] || DEPTS[0]; const sub = t.sub||[], sd = sub.filter(s=>s.done).length;
   return `<div class="card${canEdit(t)?'':' ro'}" tabindex="0" draggable="${canEdit(t)}" data-id="${esc(t.id)}" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
     <div class="tt">${esc(t.title)}</div>
-    ${t.tldr?`<div class="tl">${esc(t.tldr)}</div>`:''}
+    ${t.tldr?`<div class="tl">${mdLine(t.tldr)}</div>`:''}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
     <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
   </div>`;
@@ -529,15 +529,15 @@ function decisionCard(d){
   const votes = d.votes||{}, mine = votes[S.me];
   if (d.mode==='react') return `<article class="decision" id="dec-${esc(d.id)}">
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Реакции','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
-    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${esc(d.tldr)}</div>`:''}
+    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}
     ${reactRow(d)}
     ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">Итог: <b style="color:var(--text)">${esc((d.options[d.chosen]||{}).t||'')}</b> · зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
   </article>`;
   return `<article class="decision" id="dec-${esc(d.id)}">
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
-    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${esc(d.tldr)}</div>`:''}
+    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}
     <div class="list">${(d.options||[]).map((o,i)=>`<div class="opt${d.chosen===i?' chosen':''}${mine===i?' mine':''}">
-      <div><div class="l">${esc(o.t)} ${d.rec===i?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.d?`<div class="d">${esc(o.d)}</div>`:''}</div>
+      <div><div class="l">${esc(o.t)} ${d.rec===i?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.d?`<div class="d">${mdLine(o.d)}</div>`:''}</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes">${Object.entries(votes).filter(([,v])=>v===i).map(([u])=>av(u,24)).join('')}</span>
       ${d.chosen==null ? `<button class="btn sm${mine===i?' primary':''}" data-action="vote" data-id="${esc(d.id)}" data-i="${i}">${mine===i?ic('Check')+' Мой голос':'Голосовать'}</button>
       <button class="btn sm ghost" data-action="accept" data-id="${esc(d.id)}" data-i="${i}" title="Зафиксировать итог">Принять</button>`:''}</div></div>`).join('')}</div>
@@ -557,7 +557,7 @@ function viewDecisions(dept){
 function viewInbox(){
   const list = [...S.inbox].sort((a,b)=>b.at-a.at);
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A9A8B6">${ic('Inbox')}</span><div><h1>Входящие</h1><p>Твои личные заметки: всё, что записано через <kbd>Q</kbd>. Видишь их только ты. Разбирай раз в день.</p></div></div><button class="btn primary" data-action="capture">${ic('Plus')} Записать мысль</button></div>
-  <div class="list">${list.map(i=>`<div class="item" style="cursor:default">${ic('Lightbulb')}<div class="bd"><div class="tt">${esc(i.text)}</div><div class="mt"><small style="color:var(--muted)">${ago(i.at)}</small>${i.dept?dchip(i.dept):''}</div></div>
+  <div class="list">${list.map(i=>`<div class="item" style="cursor:default">${ic('Lightbulb')}<div class="bd"><div class="tt">${mdLine(i.text)}</div><div class="mt"><small style="color:var(--muted)">${ago(i.at)}</small>${i.dept?dchip(i.dept):''}</div></div>
     <button class="btn sm" data-action="inbox-task" data-id="${esc(i.id)}">${ic('ArrowRight')} В задачу</button><button class="icon-btn" data-action="inbox-del" data-id="${esc(i.id)}" aria-label="Удалить" title="Удалить">${ic('Trash2')}</button></div>`).join('') || `<div class="empty"><b>Всё разобрано ${ic('Sparkles')}</b>Голова свободна. Новая мысль — <kbd>Q</kbd>.</div>`}</div>`;
 }
 
@@ -588,7 +588,7 @@ function viewPeople(){
 function viewWiki(){
   const list = [...S.wiki].sort(byOrder);
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено. Суть сверху — подробности по клику. Текст статей понимает Markdown.</p></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" title="Открыть файл .md с компьютера в читалке">${ic('BookOpen')} Открыть .md<input type="file" hidden accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" data-action="md-local"></label><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div></div>
-  <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body md">${md(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>`;
+  <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${mdLine(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body md">${md(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>`;
 }
 
 /* ── вложения ───────────────────────────────────
@@ -707,6 +707,18 @@ function md(src, compact){
   }
   return out;
 }
+/* короткий текст (суть, подписи, шаги): только строчная разметка, переносы строк сохраняются */
+const mdLine = s => String(s||'').replace(/\r\n?/g,'\n').split('\n').map(mdInline).join('<br>');
+/* многострочный текст (заметки, комментарии, сообщения): полный Markdown, компактно */
+const mdBlock = s => '<div class="md md-c">'+md(s, true)+'</div>';
+/* предпросмотр под полем ввода: рисуется только когда раскрыт */
+const mdPrev = () => '<details class="mdp"><summary>Предпросмотр · можно Markdown</summary><div class="md md-c"></div></details>';
+const mdPrevFill = d => { const t = d.previousElementSibling && d.previousElementSibling.matches('textarea') ? d.previousElementSibling : d.parentElement.querySelector('textarea');
+  const out = d.querySelector('.md'); if (t && out) out.innerHTML = md(t.value, true) || '<p style="color:var(--muted)">Пусто.</p>'; };
+document.addEventListener('toggle', e => { if (e.target.matches && e.target.matches('details.mdp') && e.target.open) mdPrevFill(e.target); }, true);
+document.addEventListener('input', e => { const t = e.target; if (!t.matches || !t.matches('textarea')) return;
+  const d = t.nextElementSibling && t.nextElementSibling.matches('details.mdp') ? t.nextElementSibling : t.closest('label') && t.closest('label').nextElementSibling;
+  if (d && d.matches && d.matches('details.mdp') && d.open) mdPrevFill(d); });
 /* читалка: вложения .md и файлы с компьютера */
 const MD_MAX = 2*1024*1024;
 const isMd = f => /\.(md|markdown|mdown|mkd)$/i.test(f.name||'') || /markdown/i.test(f.type||'');
@@ -816,7 +828,7 @@ function msgHtml(m, prev){
   const files = (m.files||[]).map(id=>fileChip(S.files.find(f=>f.id===id), true)).join('');
   return `<div class="msg${m.by===S.me?' me':''}${same?' cont':''}">${same?'<span class="av-sp"></span>':av(m.by,30)}<div class="bd">
     ${same?'':`<div class="mh"><b>${esc(pname(m.by))}</b><small>${dtf.format(m.at)}</small></div>`}
-    ${m.text?`<div class="tx">${esc(m.text)}</div>`:''}${files?`<div class="mf">${files}</div>`:''}</div>
+    ${m.text?`<div class="tx">${mdBlock(m.text)}</div>`:''}${files?`<div class="mf">${files}</div>`:''}</div>
     ${m.by===S.me?`<button class="mini-x" data-action="msg-del" data-id="${esc(m.id)}" aria-label="Удалить сообщение" title="Удалить">${ic('Trash2')}</button>`:''}</div>`;
 }
 function viewChats(){
@@ -986,9 +998,9 @@ function registry(key, d){
   const stF = r.fields.find(f=>f.k==='status');
   const st = it => stF && it.status ? chip(it.status, toneOf(stF, it.status)) : '';
   const cover = it => (f => f && thumb(f) ? `<div class="tile-img"><img src="${thumb(f)}" alt="" loading="lazy"></div>` : '')(regCover(it.id));
-  if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}${decMark(it.id)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
-  if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb">${(f => f && thumb(f) ? `<img src="${thumb(f)}" alt="" loading="lazy">` : '<div class="ui"></div>')(regCover(it.id))}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${esc(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
-  if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), d.color)}<span class="s">${esc(it.note||'')}</span></button>`).join('')}</div>`;
+  if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}${decMark(it.id)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
+  if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb">${(f => f && thumb(f) ? `<img src="${thumb(f)}" alt="" loading="lazy">` : '<div class="ui"></div>')(regCover(it.id))}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
+  if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), d.color)}<span class="s">${mdLine(it.note)}</span></button>`).join('')}</div>`;
   if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}</div>`).join('')}</div></section>`;
   if (r.type==='checklist') { const n = items.filter(i=>i.done).length;
     return tools + `<section class="panel"><div class="panel-h"><h2>Готово ${n} из ${items.length}</h2>${n===items.length?chip('Всё готово','ok'):`<button class="btn sm ghost" data-action="check-reset" data-key="${key}">${ic('RotateCcw')} Сбросить</button>`}</div><div class="mini-bar"><i style="width:${Math.round(n/items.length*100)}%"></i></div>
@@ -1031,7 +1043,7 @@ function viewDept(){
   return `<div style="--dc:${d.color};display:contents">
   <div class="ph"><div class="ph-l"><span class="ph-ico">${ic(d.icon)}</span><div><h1>${esc(d.name)}</h1><p>${people.length?esc(people.join(', ')):'В отделе пока никого'}</p></div></div>
   <button class="btn primary" data-action="new-task" data-status="todo" data-dept="${d.id}">${ic('Plus')} Задача</button></div>
-  <div class="tldr"><b>Суть раздела</b>${esc(d.tldr)}</div>
+  <div class="tldr"><b>Суть раздела</b>${mdLine(d.tldr)}</div>
   <nav class="tabs" role="tablist">${d.tabs.map(([id,name])=>`<a class="tab" role="tab" href="#/d/${d.id}/${id}" aria-selected="${tab===id}">${esc(name)}${count(id)?`<span class="c">${count(id)}</span>`:''}</a>`).join('')}</nav>
   ${body}</div>`;
 }
@@ -1211,7 +1223,7 @@ function eParams(){
     rows += `<tr class="grp"><td colspan="6">${esc(name)}<span>${vis.length}</span></td></tr>` + vis.map(p => {
       const pv = parseMoney(p.proposed);
       return `<tr class="${p.status==='rejected'?'rej':''}">
-        <td><div class="pname">${esc(p.name)}</div>${p.where?`<div class="where mono">${esc(p.where)}</div>`:''}${p.note?`<div class="pnote">${esc(p.note)}</div>`:''}</td>
+        <td><div class="pname">${esc(p.name)}</div>${p.where?`<div class="where mono">${esc(p.where)}</div>`:''}${p.note?`<div class="pnote">${mdBlock(p.note)}</div>`:''}</td>
         <td><div class="val cur">${esc(p.current||'—')}</div></td>
         <td><div class="val">${esc(p.proposed||'—')}</div>${pv && pv >= 1000 ? `<span class="hours">${workTime(pv)}</span>` : ''}</td>
         <td>${eStatusSelect('params', p, PARAM_STATUS)}</td><td>${ewho(p.assignee)}</td>
@@ -1232,7 +1244,7 @@ function eBugs(){
   const list = [...all].sort((a,b)=>(bStRank[a.status]??1)-(bStRank[b.status]??1) || (sevRank[a.severity]??2)-(sevRank[b.severity]??2) || byOrder(a,b)).filter(b => !UI.ef.hideFixed || (b.status!=='fixed' && b.status!=='wontfix'));
   return `<div class="reg-tools"><div class="seg"><button data-action="e-toggle" data-k="hideFixed" aria-pressed="${UI.ef.hideFixed}">Скрыть закрытые <span class="mono" style="color:var(--muted)">${closed}</span></button></div><span class="sp"></span><button class="btn primary" data-open="enew:bugs">${ic('Plus')} Баг</button></div>
   <div class="list">${list.map(b => `<article class="erow sev ${b.status==='fixed'||b.status==='wontfix'?'done':''}" style="--sev:${SEV_VAR[b.severity]||'var(--muted)'}">
-    <div class="body"><h3>${esc(b.title)}</h3>${b.where?`<div class="where mono">${esc(b.where)}</div>`:''}${b.impact?`<div class="txt">${esc(b.impact)}</div>`:''}${b.note?`<div class="txt"><b>Заметка:</b> ${esc(b.note)}</div>`:''}${eMeta(b)}</div>
+    <div class="body"><h3>${esc(b.title)}</h3>${b.where?`<div class="where mono">${esc(b.where)}</div>`:''}${b.impact?`<div class="txt">${mdBlock(b.impact)}</div>`:''}${b.note?`<div class="txt"><b>Заметка:</b>${mdBlock(b.note)}</div>`:''}${eMeta(b)}</div>
     <div class="side">${chip(lab(BUG_SEV,b.severity), ETONE[b.severity])}${eStatusSelect('bugs', b, BUG_STATUS)}${ewho(b.assignee)}${eActions('bugs', b.id, false)}</div></article>`).join('')}</div>`;
 }
 function eStages(){
@@ -1242,7 +1254,7 @@ function eStages(){
   const list = all.map((s,i)=>[s,i+1]).filter(([s]) => !UI.ef.hideDone || s.status!=='done');
   return `<div class="reg-tools"><div class="seg"><button data-action="e-toggle" data-k="hideDone" aria-pressed="${UI.ef.hideDone}">Скрыть готовые <span class="mono" style="color:var(--muted)">${done}</span></button></div><span class="sp"></span><button class="btn primary" data-open="enew:stages">${ic('Plus')} Этап</button></div>
   <div class="list">${list.map(([s,n]) => `<article class="erow ${s.status==='done'?'done':''}">
-    <div class="body"><h3><span class="stage-n">${n}</span>${esc(s.title)}</h3>${s.details?`<div class="txt">${esc(s.details)}</div>`:''}${s.depends?`<div class="txt"><b>Зависит от:</b> ${esc(s.depends)}</div>`:''}${s.note?`<div class="txt"><b>Заметка:</b> ${esc(s.note)}</div>`:''}${eMeta(s)}</div>
+    <div class="body"><h3><span class="stage-n">${n}</span>${esc(s.title)}</h3>${s.details?`<div class="txt">${mdBlock(s.details)}</div>`:''}${s.depends?`<div class="txt"><b>Зависит от:</b> ${mdLine(s.depends)}</div>`:''}${s.note?`<div class="txt"><b>Заметка:</b>${mdBlock(s.note)}</div>`:''}${eMeta(s)}</div>
     <div class="side">${eStatusSelect('stages', s, STAGE_STATUS)}${ewho(s.assignee)}${eActions('stages', s.id, true)}</div></article>`).join('')}</div>`;
 }
 function eDecisions(){
@@ -1255,11 +1267,11 @@ function eDecisions(){
     return `<article class="decision"><div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start"><h3>${esc(x.question)}</h3>${eActions('decisions', x.id, true)}</div>
       <div>${chosen!=null && opts[chosen] ? chip('Принято: '+opts[chosen].label,'ok') : chip('Ждёт решения','warn')}</div>
       <div class="list">${opts.map((o,i) => { const voters = Object.keys(votes).filter(k => votes[k]===i), mine = votes[S.me]===i;
-        return `<div class="opt ${chosen===i?'chosen':''} ${mine?'mine':''}"><div><div class="l">${i+1}. ${esc(o.label)} ${rec===i+1?'<span class="chip t-violet">рекомендовано</span>':''}</div>${o.desc?`<div class="d">${esc(o.desc)}</div>`:''}</div>
+        return `<div class="opt ${chosen===i?'chosen':''} ${mine?'mine':''}"><div><div class="l">${i+1}. ${esc(o.label)} ${rec===i+1?'<span class="chip t-violet">рекомендовано</span>':''}</div>${o.desc?`<div class="d">${mdLine(o.desc)}</div>`:''}</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes" title="${esc(voters.map(epname).join(', '))}">${voters.map(v=>eav(v,24)).join('')}</span>
           <button class="btn sm${mine?' primary':''}" data-action="e-vote" data-id="${esc(x.id)}" data-i="${i}">${mine?ic('Check')+' Мой голос':'Голосую'}</button>
           <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="${chosen===i?'':i}">${chosen===i?'Отменить итог':'Принять'}</button></div></div>`; }).join('')}</div>
-      ${x.note?`<div style="color:var(--text-2);font-size:13.5px;white-space:pre-wrap"><b style="color:var(--text)">Заметка:</b> ${esc(x.note)}</div>`:''}${eMeta(x)}</article>`; }).join('')}`;
+      ${x.note?`<div class="txt"><b>Заметка:</b>${mdBlock(x.note)}</div>`:''}${eMeta(x)}</article>`; }).join('')}`;
 }
 function eLogText(l){
   const N = ENOUN[l.coll] || {n:'запись',a:'добавлена',c:'изменена',d:'удалена',r:'восстановлена'};
@@ -1279,7 +1291,7 @@ function eLog(){
     if (day !== lastDay) { out += `<div class="day">${esc(day)}</div>`; lastDay = day; }
     const diff = Array.isArray(l.diff) && l.diff.length ? `<ul class="diff">${l.diff.map(x=>`<li><span class="f">${esc(x.f)}:</span> <del>${esc(x.from||'—')}</del> → <ins>${esc(x.to||'—')}</ins></li>`).join('')}</ul>` : '';
     const canRestore = l.action==='delete' && l.snapshot && ECOLLS.includes(l.coll) && !efind(l.coll, l.docId);
-    out += `<div class="entry">${eav(l.by||'claude',24)}<div><b>${esc(epname(l.by||'claude'))}</b> — ${eLogText(l)}${l.text?`<div class="note-text">${esc(l.text)}</div>`:''}${diff}${canRestore?`<div style="margin-top:6px"><button class="btn sm" data-action="e-restore" data-id="${esc(l.id)}">${ic('RotateCcw')} Восстановить</button></div>`:''}</div><span class="when">${esc(dtf.format(dt))}</span></div>`;
+    out += `<div class="entry">${eav(l.by||'claude',24)}<div><b>${esc(epname(l.by||'claude'))}</b> — ${eLogText(l)}${l.text?`<div class="note-text">${mdBlock(l.text)}</div>`:''}${diff}${canRestore?`<div style="margin-top:6px"><button class="btn sm" data-action="e-restore" data-id="${esc(l.id)}">${ic('RotateCcw')} Восстановить</button></div>`:''}</div><span class="when">${esc(dtf.format(dt))}</span></div>`;
   }
   return comp + `<section class="panel"><div class="log">${out}</div></section>`;
 }
@@ -1306,7 +1318,7 @@ function eFieldHtml(f, v){
   const mono = f.mono ? ' style="font-family:var(--f-mono);font-size:13px"' : '';
   let ctl;
   switch (f.t) {
-    case 'textarea': ctl = `<textarea class="input" name="${f.k}" rows="${f.rows||3}"${mono}>${esc(v ?? '')}</textarea>`; break;
+    case 'textarea': ctl = `<textarea class="input" name="${f.k}" rows="${f.rows||3}"${mono}>${esc(v ?? '')}</textarea>${f.mono?'':mdPrev()}`; break;
     case 'options': ctl = `<textarea class="input" name="${f.k}" rows="${f.rows||5}">${esc(optionsToText(v))}</textarea>`; break;
     case 'number': ctl = `<input class="input" name="${f.k}" type="number" inputmode="numeric" value="${esc(v ?? '')}">`; break;
     case 'select': ctl = `<select class="input" name="${f.k}">${f.o.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select>`; break;
@@ -1580,7 +1592,7 @@ document.addEventListener('submit', async e => {
 
 /* ── формы ──────────────────────────────────── */
 const inText = (name, label, val, extra='') => `<label class="fld"><span>${label}</span><input class="input" name="${name}" value="${esc(val??'')}" autocomplete="off" ${extra}></label>`;
-const inArea = (name, label, val, rows=4) => `<label class="fld"><span>${label}</span><textarea class="input" name="${name}" rows="${rows}">${esc(val??'')}</textarea></label>`;
+const inArea = (name, label, val, rows=4) => `<label class="fld"><span>${label}</span><textarea class="input" name="${name}" rows="${rows}">${esc(val??'')}</textarea></label>${mdPrev()}`;
 const inSelect = (name, label, opts, val) => `<label class="fld"><span>${label}</span><select class="input" name="${name}">${opts.map(([v,l])=>`<option value="${esc(v)}" ${String(v)===String(val??'')?'selected':''}>${esc(l)}</option>`).join('')}</select></label>`;
 const peopleOpts = () => [['','Не назначен'], ...Object.entries(S.people).sort((a,b)=>String(a[1].name).localeCompare(String(b[1].name))).map(([id,p])=>[id, (p.name||'Участник')+(id===S.me?' (вы)':'')])];
 const deptOpts = () => DEPTS.map(d=>[d.id, d.name]);
@@ -1626,7 +1638,7 @@ function drawerTask(t){
   return drawerHead(d, t.title, ro ? '' : `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `
   <div class="dr-b">
     ${ro ? `<div class="ro-note">${roMsg(t)}</div>` : ''}
-    ${t.tldr?`<div class="tldr"><b>Суть</b>${esc(t.tldr)}</div>`:''}
+    ${t.tldr?`<div class="tldr"><b>Суть</b>${mdLine(t.tldr)}</div>`:''}
     <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}" ${ro?'disabled':''}>${n}</button>`).join('')}</div>
     <dl class="kv"><dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
       <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me && !ro?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
@@ -1640,12 +1652,12 @@ function drawerTask(t){
     <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${ro ? '' : attachBtn('task-attach', t.id, 'Прикрепить')}</div>
       ${upBar('task:'+t.id)}<div class="files">${files.map(f=>fileChip(f, true)).join('') || '<small style="color:var(--muted)">Макеты, логи, скриншоты — до '+fsize(FILE_MAX)+' на файл.</small>'}</div></div>
     <div><p class="sub-h">Шаги${sub.length?` · ${sd}/${sub.length}`:''}</p>${sub.length?`<div class="mini-bar" style="margin:8px 0"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
-      <div class="cl">${sub.map((s,i)=>`<div class="row"><label class="${s.done?'done':''}"><input type="checkbox" data-action="step" data-id="${esc(t.id)}" data-i="${i}" ${s.done?'checked':''} ${ro?'disabled':''}><span>${esc(s.t)}</span></label>${ro?'':`<button class="mini-x" data-action="step-del" data-id="${esc(t.id)}" data-i="${i}" aria-label="Удалить шаг">${ic('X')}</button>`}</div>`).join('')}${ro && !sub.length ? '<small style="color:var(--muted)">Шагов нет.</small>' : ''}</div>
+      <div class="cl">${sub.map((s,i)=>`<div class="row"><label class="${s.done?'done':''}"><input type="checkbox" data-action="step" data-id="${esc(t.id)}" data-i="${i}" ${s.done?'checked':''} ${ro?'disabled':''}><span>${mdLine(s.t)}</span></label>${ro?'':`<button class="mini-x" data-action="step-del" data-id="${esc(t.id)}" data-i="${i}" aria-label="Удалить шаг">${ic('X')}</button>`}</div>`).join('')}${ro && !sub.length ? '<small style="color:var(--muted)">Шагов нет.</small>' : ''}</div>
       ${ro ? '' : `<form class="inline-add" data-form="step-add" data-id="${esc(t.id)}" style="margin-top:6px"><input class="input" name="s" placeholder="Добавить шаг — маленький и конкретный" autocomplete="off" maxlength="160"><button class="btn sm" aria-label="Добавить шаг">${ic('Plus')}</button></form>`}</div>
-    ${t.details?`<details class="more"><summary>Подробности</summary><div class="body">${esc(t.details)}</div></details>`:''}
+    ${t.details?`<details class="more"><summary>Подробности</summary><div class="body md">${md(t.details, true)}</div></details>`:''}
     <div><p class="sub-h" style="margin-bottom:8px">Связано</p><div class="links">${links.map(id=>linkChip(id, !ro && (t.links||[]).includes(id))).join('') || (ro ? '<small style="color:var(--muted)">Связей нет.</small>' : '')}</div>
       ${linkable.length && !ro?`<select class="input" data-action="link-add" data-id="${esc(t.id)}" aria-label="Связать" style="margin-top:8px"><option value="">${'＋ Связать с задачей или решением…'}</option>${linkable.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`:''}</div>
-    <div><p class="sub-h" style="margin-bottom:8px">Обсуждение</p><div class="list">${(t.comments||[]).map(c=>`<div class="comment">${av(c.by,26)}<div class="bd"><b>${esc(pname(c.by))}</b> <small>${ago(c.at)}</small><div style="white-space:pre-wrap">${esc(c.text)}</div></div></div>`).join('')}</div>
+    <div><p class="sub-h" style="margin-bottom:8px">Обсуждение</p><div class="list">${(t.comments||[]).map(c=>`<div class="comment">${av(c.by,26)}<div class="bd"><b>${esc(pname(c.by))}</b> <small>${ago(c.at)}</small>${mdBlock(c.text)}</div></div>`).join('')}</div>
     <form data-form="comment" data-id="${esc(t.id)}" style="display:flex;gap:8px;margin-top:8px"><input class="input" name="c" placeholder="Написать комментарий…" autocomplete="off" maxlength="2000"><button class="btn" aria-label="Отправить">${ic('ArrowRight')}</button></form></div>
   </div>`;
 }
@@ -1682,7 +1694,7 @@ function wikiDrawer(w){
     ${inArea('body','Текст — можно Markdown: # заголовок, **жирный**, - список, | таблица |',w ? w.body : pre.body,14)}
     <div class="form-foot"><button class="btn primary">${ic('Save')} Сохранить</button><button type="button" class="btn ghost" data-action="${w?'edit-cancel':'close-drawer'}">Отмена</button><span class="sp"></span>${w?`<button type="button" class="btn danger" data-action="wiki-del" data-id="${esc(w.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
   </form>`;
-  return drawerHead(null, w.title, `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `<div class="dr-b">${w.tldr?`<div class="tldr"><b>Суть</b>${esc(w.tldr)}</div>`:''}<article class="md">${md(w.body||'')}</article>${w.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(w.updatedBy))}, ${ago(w.updatedAt)}</small>`:''}</div>`;
+  return drawerHead(null, w.title, `<button class="icon-btn" data-action="edit" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button>`) + `<div class="dr-b">${w.tldr?`<div class="tldr"><b>Суть</b>${mdLine(w.tldr)}</div>`:''}<article class="md">${md(w.body||'')}</article>${w.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(w.updatedBy))}, ${ago(w.updatedAt)}</small>`:''}</div>`;
 }
 function paintDrawer(){
   const ref = UI.drawer; if (!ref) return;
