@@ -321,9 +321,12 @@ details.more .body{padding:0 0 14px;color:var(--text-2);font-size:14px;white-spa
 .legend i{width:8px;height:8px;border-radius:50%;background:var(--acc)}
 
 /* ── доска ── */
-.board{display:grid;grid-template-columns:repeat(5,minmax(250px,1fr));gap:12px;overflow-x:auto;padding-bottom:10px;align-items:start}
+/* доска занимает всю ширину экрана; колонки делят её поровну, а на узком экране переносятся вниз — без горизонтального скролла */
+.wrap:has(>.board),.wrap:has(>*>.board){max-width:none}
+body:has(.board) .topbar .in{max-width:none}
+.board{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding-bottom:10px;align-items:start}
 /* на телефоне колонки листаются по одной и встают ровно */
-@media (max-width:640px){.board{grid-template-columns:repeat(5,82%);scroll-snap-type:x mandatory;margin-inline:-16px;padding-inline:16px;scroll-padding-inline:16px}.colm{scroll-snap-align:start}}
+@media (max-width:640px){.board{grid-template-columns:repeat(5,82%);overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:-16px;padding-inline:16px;scroll-padding-inline:16px}.colm{scroll-snap-align:start}}
 .colm{background:var(--muted-bg);border:1px solid var(--line);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;gap:8px;min-height:150px}
 .colm.drop{border-color:var(--acc-line);background:var(--acc-bg)}
 .colm-h{display:flex;align-items:center;gap:8px;padding:6px 8px 4px;font-weight:700;font-size:13.5px}
