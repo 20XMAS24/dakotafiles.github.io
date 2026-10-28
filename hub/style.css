@@ -797,3 +797,26 @@ details.mdp>.md{margin-top:8px;padding:10px 12px;border:1px dashed var(--line-2)
 .dec-mark.open{color:var(--acc)}
 .dec-mark .ic{width:14px;height:14px}
 .decision.flash{outline:2px solid var(--acc);outline-offset:3px;transition:outline-color .4s}
+
+/* ── уведомления и сроки ── */
+.icon-btn.bell{position:relative}
+.icon-btn.bell.on{color:var(--text)}
+.bell .bdg{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--red);color:#fff;font:800 10.5px/18px var(--f-display);text-align:center;box-shadow:0 0 0 2px var(--bg,#0C0D11)}
+.pal.notifs{max-height:80vh;overflow-y:auto}
+.pal.notifs .cap{gap:12px}
+.ntf-list{display:flex;flex-direction:column;gap:6px}
+.ntf{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);border-left:3px solid var(--dc);background:var(--panel-2);color:var(--text);cursor:pointer;font:inherit}
+.ntf:hover{background:var(--panel-3)}
+.ntf.new{border-color:var(--line-2);border-left-color:var(--dc);background:var(--sel,var(--panel-3))}
+.ntf.new .hd b::after{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:7px;vertical-align:middle}
+.ntf .bd{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.ntf .hd{display:flex;gap:8px;align-items:baseline;justify-content:space-between;font-size:13px}
+.ntf .hd small{color:var(--muted);white-space:nowrap;flex:none}
+.ntf .tt{font-weight:700;font-size:14px;display:flex;gap:6px;align-items:center;overflow-wrap:anywhere}
+.ntf .tt .ic{width:14px;height:14px;color:var(--muted);flex:none}
+.ntf .tx{font-size:13px;color:var(--text-2);overflow-wrap:anywhere;white-space:pre-line}
+.ntf-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--panel-3);color:var(--dc);flex:none}
+.ntf-ic .ic{width:16px;height:16px}
+.due{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--f-display);padding:2px 7px;border-radius:6px;white-space:nowrap}
+.due .ic{width:12px;height:12px}
+.due.t-muted{color:var(--muted);background:var(--muted-bg)}

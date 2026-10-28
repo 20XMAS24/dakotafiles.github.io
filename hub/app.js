@@ -82,6 +82,9 @@ const ICONS = {
   ChevronLeft:'<path d="m15 18-6-6 6-6"/>',
   ChevronRight:'<path d="m9 18 6-6-6-6"/>',
   Image:'<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  Bell:'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+  AtSign:'<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
+  FileDown:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
   Zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'
 };
 const ic = (n, cls) => `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -241,10 +244,10 @@ const SEED = {
 
 /* ── состояние ──────────────────────────────── */
 /* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
-const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], up:{}, E:null, loaded:new Set(), errs:{}};
+const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
 const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
 const PREFS_KEY = 'kyHubPrefs';
-const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[]}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
+const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
 
 const task = id => S.tasks.find(t=>t.id===id);
@@ -328,6 +331,7 @@ function toast(html, xp){
 /* ── маршрутизация ──────────────────────────── */
 function readHash(){
   const p = (location.hash||'').replace(/^#\/?/,'').split('/');
+  if (p[0]==='task' && p[1]) { UI.pendingTask = decodeURIComponent(p[1]); history.replaceState(null, '', '#/tasks'); p[0] = 'tasks'; }
   if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; }
   else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
   UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
@@ -379,6 +383,7 @@ function topbar(){
   ${f && f.claude ? `<button class="focus-pill" data-action="claude-focus" title="Открыть фокус-режим Claude">${ic('Bot')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">Claude</span></button>`
   : f ? `<button class="focus-pill" data-action="focus-stop" title="Остановить фокус">${ic('Headphones')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">${esc(clip(task(f.task)?.title||'Фокус',28))}</span> ${ic('X')}</button>`
       : `<button class="btn sm hide-sm" data-action="focus-start" data-id="${esc(me().last||'')}" title="25 минут фокуса — коллеги увидят, что вы работаете">${ic('Headphones')} Фокус 25 мин</button>`}
+  ${(n => `<button class="icon-btn bell${n?' on':''}" data-action="notifs" aria-label="Уведомления${n?': '+n:''}" title="Уведомления">${ic('Bell')}${n?`<span class="bdg">${n>99?'99+':n}</span>`:''}</button>`)(notifCount())}
   <a class="faces" href="#/people" title="Сейчас онлайн: ${online.length}">${online.slice(0,5).map(id=>av(id)).join('')}</a>
   <button class="icon-btn" data-action="settings" aria-label="Настройки и профиль" title="Настройки и профиль">${ic('Settings')}</button>`;
 }
@@ -394,7 +399,7 @@ function taskItem(t, opts={}){
     <div class="bd">
       <div class="tt" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.title)}</div>
       ${t.tldr ? `<div class="ds">${mdLine(t.tldr)}</div>`:''}
-      <div class="mt">${dchips(t)}<span class="size" title="${SIZES[t.size]||''}">${esc(t.size||'M')}</span>${opts.status?chip(colName(t.status), COL_TONE[t.status]):''}${sub.length?`<small style="color:var(--muted)">${ic('ListChecks')} ${sd}/${sub.length}</small>`:''}</div>
+      <div class="mt">${dchips(t)}<span class="size" title="${SIZES[t.size]||''}">${esc(t.size||'M')}</span>${dueChip(t)}${opts.status?chip(colName(t.status), COL_TONE[t.status]):''}${sub.length?`<small style="color:var(--muted)">${ic('ListChecks')} ${sd}/${sub.length}</small>`:''}</div>
     </div>
     ${av(t.who)}
   </div>`;
@@ -476,7 +481,7 @@ function card(t){
     <div class="tt">${esc(t.title)}</div>
     ${t.tldr?`<div class="tl">${mdLine(t.tldr)}</div>`:''}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
-    <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
+    <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${dueChip(t)}${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
   </div>`;
 }
 function board(dept){
@@ -843,6 +848,7 @@ function viewChats(){
     const msgs = S.msgs;
     main = `<div class="chat-h"><a class="icon-btn chat-back" href="#/chats" aria-label="К списку чатов">${ic('ArrowRight')}</a><div class="bd"><b>${esc(c.title)}</b>
       <small>${t ? (true ? `<span class="lnk" data-open="task:${esc(t.id)}">${ic('LayoutGrid')} Открыть задачу</span> · `:'')+dchips(t) : c.task ? (c.dept && !canSee(c.dept) ? 'Задача отдела '+dchip(c.dept) : 'Задача удалена') : 'Создал(а) '+esc(pname(c.by))}</small></div>
+      <button class="icon-btn" data-action="chat-md" data-id="${esc(c.id)}" title="Скачать переписку в .md" aria-label="Скачать переписку в .md">${ic('FileDown')}</button>
       ${c.by===S.me?`<button class="icon-btn" data-action="chat-del" data-id="${esc(c.id)}" title="Удалить чат" aria-label="Удалить чат">${ic('Trash2')}</button>`:''}</div>
       <div class="msgs" id="msgs">${!S.loaded.has('hub_msgs') ? '<div class="loading"><span class="spin"></span>Загружаем сообщения…</div>' : msgs.map((m,i)=>msgHtml(m, msgs[i-1])).join('') || '<div class="empty" style="margin:auto">Здесь пока тихо. Напиши первым.</div>'}</div>
       ${upBar('chat:'+c.id)}
@@ -1625,7 +1631,7 @@ function drawerTask(t){
     ${inText('tldr','Суть в одном предложении — зачем',t.tldr,'maxlength="240"')}
     ${deptsPick(tDepts(t))}
     ${inSelect('size','Размер',sizeOpts(),t.size)}
-    ${inSelect('who','Ответственный',peopleOpts(),t.who||'')}
+    <div class="fld-row">${inSelect('who','Ответственный',peopleOpts(),t.who||'')}${inText('due','Срок',isoDay(t.due),'type="date"')}</div>
     ${inArea('details','Подробности',t.details,6)}
     <div class="form-foot"><button class="btn primary">${ic('Save')} Сохранить</button><button type="button" class="btn ghost" data-action="edit-cancel">Отмена</button><span class="sp"></span><button type="button" class="btn danger" data-action="task-del" data-id="${esc(t.id)}">${ic('Trash2')} Удалить</button></div>
   </form>`;
@@ -1642,12 +1648,14 @@ function drawerTask(t){
     <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}" ${ro?'disabled':''}>${n}</button>`).join('')}</div>
     <dl class="kv"><dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
       <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me && !ro?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
+      <dt>Срок</dt><dd>${t.due ? dueChip(t)+` <small style="color:var(--muted)">${esc(dateFmt(t.due))}</small>` : '<span style="color:var(--muted)">не задан</span>'}</dd>
       <dt>Размер</dt><dd><span class="size">${esc(t.size||'M')}</span> <small style="color:var(--muted)">${SIZES[t.size]||''}</small></dd>
       ${t.createdBy?`<dt>Создал(а)</dt><dd style="color:var(--text-2)">${esc(pname(t.createdBy))} · ${ago(t.createdAt)}</dd>`:''}</dl>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm primary" data-action="focus-start" data-id="${esc(t.id)}">${ic('Headphones')} Фокус 25 мин</button>
       <button class="btn sm" data-action="toggle-top" data-id="${esc(t.id)}">${top?ic('Star','filled')+' В «Моём дне»':ic('Star')+' В день'}</button>
       <button class="btn sm" data-action="task-chat" data-id="${esc(t.id)}" title="Чат задачи доступен всей команде">${ic('MessagesSquare')} ${S.chats.some(c=>c.task===t.id)?'Открыть чат':'Создать чат'}</button>
+      ${S.chats.some(c=>c.task===t.id) || (t.comments||[]).length ? `<button class="btn sm" data-action="task-md" data-id="${esc(t.id)}" title="Скачать чат и обсуждение задачи одним файлом Markdown">${ic('FileDown')} Экспорт .md</button>` : ''}
     </div>
     <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${ro ? '' : attachBtn('task-attach', t.id, 'Прикрепить')}</div>
       ${upBar('task:'+t.id)}<div class="files">${files.map(f=>fileChip(f, true)).join('') || '<small style="color:var(--muted)">Макеты, логи, скриншоты — до '+fsize(FILE_MAX)+' на файл.</small>'}</div></div>
@@ -1658,7 +1666,7 @@ function drawerTask(t){
     <div><p class="sub-h" style="margin-bottom:8px">Связано</p><div class="links">${links.map(id=>linkChip(id, !ro && (t.links||[]).includes(id))).join('') || (ro ? '<small style="color:var(--muted)">Связей нет.</small>' : '')}</div>
       ${linkable.length && !ro?`<select class="input" data-action="link-add" data-id="${esc(t.id)}" aria-label="Связать" style="margin-top:8px"><option value="">${'＋ Связать с задачей или решением…'}</option>${linkable.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`:''}</div>
     <div><p class="sub-h" style="margin-bottom:8px">Обсуждение</p><div class="list">${(t.comments||[]).map(c=>`<div class="comment">${av(c.by,26)}<div class="bd"><b>${esc(pname(c.by))}</b> <small>${ago(c.at)}</small>${mdBlock(c.text)}</div></div>`).join('')}</div>
-    <form data-form="comment" data-id="${esc(t.id)}" style="display:flex;gap:8px;margin-top:8px"><input class="input" name="c" placeholder="Написать комментарий…" autocomplete="off" maxlength="2000"><button class="btn" aria-label="Отправить">${ic('ArrowRight')}</button></form></div>
+    <form data-form="comment" data-id="${esc(t.id)}" style="display:flex;gap:8px;margin-top:8px"><input class="input" name="c" placeholder="Написать комментарий… @логин — упомянуть" autocomplete="off" maxlength="2000"><button class="btn" aria-label="Отправить">${ic('ArrowRight')}</button></form></div>
   </div>`;
 }
 function regDecBlock(it){
@@ -1753,7 +1761,7 @@ function newTask(status, dept, title, fromInbox){
       <div class="seg" role="radiogroup" aria-label="Размер">${Object.entries(SIZES).map(([k,v])=>`<button type="button" data-action="pick-size" data-v="${k}" aria-pressed="${k==='M'}" title="${v}">${k} · ${v}</button>`).join('')}</div>
       <input type="hidden" name="size" value="M">
     </div>
-    <label class="check-row"><input type="checkbox" name="mine" checked> Я ответственный</label>
+    <div class="fld-row">${inSelect('who','Ответственный',peopleOpts(),S.me)}${inText('due','Срок (необязательно)','','type="date"')}</div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> создать · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Создать</button></div></div></form>`);
 }
 function newDecision(dept, pre){
@@ -1836,6 +1844,7 @@ function settings(){
       <div class="fld"><span style="font-size:12.5px;font-weight:700;color:var(--text-2)">Цвет аватарки</span><div class="colors">${PERSON_COLORS.map(c=>`<button type="button" data-action="my-color" data-c="${c}" style="background:${c}" aria-pressed="${safeColor(m.color)===c}" aria-label="Цвет ${c}"></button>`).join('')}</div></div>
       <div style="display:flex;justify-content:flex-end"><button class="btn primary">${ic('Save')} Сохранить профиль</button></div>
     </form>
+    ${notifSettings()}
     <h2 style="margin-top:8px">${ic('Settings')} Отображение</h2>
     <div class="set-row"><div>Тема</div>${seg('theme',[['auto','Авто'],['dark','Тёмная'],['light','Светлая']])}</div>
     <div class="set-row"><div>Размер текста</div>${seg('fs',[['s','S'],['m','M'],['l','L']])}</div>
@@ -1861,15 +1870,17 @@ function setStatus(id, s, x, y){
     if (!ok) return;
     if (s==='done') { log('закрыл(а) задачу', t.title, t.dept); confetti(x ?? innerWidth/2, y ?? innerHeight/2); gain(XP_BY_SIZE[t.size]||10, ic('CircleCheck')+' Готово: '+esc(t.title)); }
     else log('перевёл(а) в «'+colName(s)+'»', t.title, t.dept);
+    notify(watchers(t), 'status', t, '«'+colName(t.status)+'» → «'+colName(s)+'»');
   });
 }
 async function createTask(f){
   const title = clip(f.title.value,160); if (!title) return;
   const ref = col('hub_tasks').doc(), depts = formDepts(f), dept = depts[0]; if (!dept) return;
-  const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details:'', dept, depts, status:f.dataset.status||'todo', size:f.size.value, who:f.mine.checked?S.me:null, links:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
+  const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details:'', dept, depts, status:f.dataset.status||'todo', size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value), links:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
   if (!ok) return;
   if (f.dataset.inbox) col('hub_inbox').doc(f.dataset.inbox).delete().catch(()=>{});
   closeOverlay(); log('создал(а) задачу', title, dept);
+  notify(f.who.value, 'assign', {id:ref.id, title}, f.due.value ? 'Срок: '+dateFmt(parseDay(f.due.value)) : clip(f.tldr.value,240));
   if (!depts.some(canSee)) { gain(3, ic('Plus')+' Задача передана: '+depts.map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Менять её будут участники этих отделов.'); openDrawer('task:'+ref.id); return; }
   gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
 }
@@ -1903,7 +1914,16 @@ document.addEventListener('click', e => {
       case 'edit-cancel': UI.edit = false; paintDrawer(); break;
       case 'toggle-done': { const t = task(id); const r = a.getBoundingClientRect(); setStatus(id, t.status==='done'?'todo':'done', r.left+11, r.top+11); break; }
       case 'set-status': { const r = a.getBoundingClientRect(); setStatus(id, a.dataset.s, r.left+r.width/2, r.top); break; }
-      case 'take': { const t = task(id); updTask(id, {who:S.me}).then(ok => ok && log('взял(а) задачу', t.title, t.dept)); break; }
+      case 'take': { const t = task(id), old = t.who; updTask(id, {who:S.me}).then(ok => { if (!ok) return; log('взял(а) задачу', t.title, t.dept); notify(old, 'unassign', t, 'Теперь ответственный: '+pname(S.me)); }); break; }
+      case 'notifs': notifPanel(); break;
+      case 'notif-open': { const n = S.notifs.find(x=>x.id===id); closeOverlay(); if (n) { markNotifs([n]); openTask(n.task); } break; }
+      case 'notif-due': closeOverlay(); openTask(id); break;
+      case 'notif-all': markNotifs(S.notifs.filter(n=>!n.read)); break;
+      case 'notif-clear': clearNotifs(); break;
+      case 'notif-on': enableNotifs(); break;
+      case 'notif-off': disableNotifs(); break;
+      case 'chat-md': exportChat(id); break;
+      case 'task-md': exportTask(id); break;
       case 'toggle-top': { const top = (me().top3||[]).filter(x=>task(x)); const i = top.indexOf(id);
         if (i>=0) top.splice(i,1); else { if (top.filter(x=>task(x).status!=='done').length>=3) { toast('В «Моём дне» максимум 3 задачи. Сначала закрой или убери одну.'); break; } top.push(id); }
         patchMe({top3:top}); break; }
@@ -2019,12 +2039,18 @@ document.addEventListener('submit', async e => {
   if (k==='claude-book') { const s = Number(f.from.value); if (!s) return; const ok = await bookClaude(s, s+Number(f.dur.value), f.note.value);
     if (ok) { UI.cday = Number(f.day.value); closeOverlay(); paint(); } }
   if (k==='comment') { const t = clip(f.c.value,2000); if (!t) return; const tk = task(f.dataset.id); f.c.value = '';
-    updTask(tk.id, {comments:FV().arrayUnion({by:S.me, text:t, at:now()})}).then(ok => { if (ok) { log('прокомментировал(а)', tk.title, tk.dept); gain(3, ic('MessageSquare')+' Комментарий добавлен'); } }); }
+    updTask(tk.id, {comments:FV().arrayUnion({by:S.me, text:t, at:now()})}).then(ok => { if (!ok) return; log('прокомментировал(а)', tk.title, tk.dept); gain(3, ic('MessageSquare')+' Комментарий добавлен');
+      const ment = mentions(t); notify(ment, 'mention', tk, t);
+      notify([...watchers(tk), ...(tk.comments||[]).map(c=>c.by)].filter(u=>!ment.includes(u)), 'comment', tk, t); }); }
   if (k==='step-add') { const t = clip(f.s.value,160); if (!t) return; const tk = task(f.dataset.id); updTask(tk.id, {sub:[...(tk.sub||[]), {t, done:false}]}).then(ok => { if (ok) setTimeout(()=>{ const i = $('#drawer [data-form="step-add"] input'); if (i) i.focus(); }, 60); }); f.s.value = ''; }
   if (k==='task-edit') { const t = task(f.dataset.id); const title = clip(f.title.value,160); if (!title) return;
     const ds = formDepts(f); if (!ds.length) return;
-    const ok = await updTask(t.id, {title, tldr:clip(f.tldr.value,240), details:clip(f.details.value,8000), dept:ds[0], depts:ds, size:f.size.value, who:f.who.value||null});
-    if (ok) { log('изменил(а) задачу', title, ds[0]); UI.edit = false; paintDrawer(); } }
+    const ok = await updTask(t.id, {title, tldr:clip(f.tldr.value,240), details:clip(f.details.value,8000), dept:ds[0], depts:ds, size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value)});
+    if (ok) { log('изменил(а) задачу', title, ds[0]); UI.edit = false; paintDrawer();
+      const who = f.who.value||null, due = parseDay(f.due.value), nt = {id:t.id, title};
+      if (who && who!==t.who) notify(who, 'assign', nt, due ? 'Срок: '+dateFmt(due) : '');
+      if (t.who && who!==t.who) notify(t.who, 'unassign', nt, 'Теперь ответственный: '+pname(who));
+      if (who && who===t.who && dueDay(due)!==dueDay(t.due)) notify(who, 'due', nt, due ? 'Новый срок: '+dateFmt(due) : 'Срок снят'); } }
   if (k==='decision-new') {
     const q = clip(f.q.value,200), mode = f.mode.value==='react' ? 'react' : 'options'; let ref = null; try { ref = f.ref.value ? JSON.parse(f.ref.value) : null; } catch (e) {}
     const options = mode==='react' ? REACTS : f.options.value.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,8).map(l=>{ const m = l.split(/\s+[—–-]\s+/); return {t:clip(m[0],120), d:clip(m.slice(1).join(' — '),240)}; });
@@ -2147,7 +2173,7 @@ let queued = false;
 function schedule(){
   if (queued) return; queued = true;
   let done = false;
-  const run = () => { if (done) return; done = true; queued = false; paint(); refreshDrawer(); };
+  const run = () => { if (done) return; done = true; queued = false; paint(); refreshDrawer(); afterPaint(); };
   /* requestAnimationFrame стоит на паузе в скрытом или перекрытом окне — подстраховка таймером */
   setTimeout(run, document.hidden ? 0 : 60); requestAnimationFrame(run);
 }
@@ -2166,6 +2192,235 @@ setInterval(() => {
   const fl = $('#focus-left'); if (fl && f) fl.textContent = mmss(f.until-now());
   document.querySelectorAll('[data-until]').forEach(el => el.textContent = mmss(Number(el.dataset.until)-now()));
 }, 1000);
+
+/* ── сроки задач ────────────────────────────
+   due — полдень выбранного дня (мс), чтобы дата не съезжала между часовыми поясами */
+const DAY = 86400e3;
+const dueDay = t => { if (!t) return null; const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); };
+const parseDay = v => v ? new Date(v+'T12:00:00').getTime() : null;
+const isoDay = t => { if (!t) return ''; const d = new Date(t); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const dateFmt = t => new Date(t).toLocaleDateString('ru-RU', {day:'numeric', month:'short'});
+const dueLeft = t => t.due ? Math.round((dueDay(t.due) - dueDay(now()))/DAY) : null; // 0 — сегодня, < 0 — просрочено
+const dueText = t => { const n = dueLeft(t); return n===null ? '' : n<0 ? 'просрочено на '+plural(-n,'день','дня','дней') : n===0 ? 'сегодня' : n===1 ? 'завтра' : dateFmt(t.due); };
+const dueTone = t => { const n = dueLeft(t); return n===null || t.status==='done' ? 'muted' : n<0 ? 'red' : n<=1 ? 'warn' : 'info'; };
+const dueChip = t => t.due ? `<span class="due t-${dueTone(t)}" title="Срок: ${esc(dateFmt(t.due))}">${ic('Calendar')} ${esc(t.status==='done' ? dateFmt(t.due) : dueText(t))}</span>` : '';
+/* мои незакрытые задачи со сроком сегодня, завтра или уже просроченные */
+const myDue = () => S.tasks.filter(t => t.who===S.me && t.status!=='done' && t.due && dueLeft(t)<=1).sort((a,b)=>a.due-b.due);
+
+/* ── уведомления ────────────────────────────
+   hub_notifs/{id}: to — кому, by — от кого (или 'system'), kind, task, title, text, read.
+   На сайте — колокольчик и всплывашка. Вне сайта — системное уведомление браузера, пока хаб открыт хоть в одной вкладке,
+   а с включённым пушем (VAPID_KEY в index.html + функция из functions/) — даже когда сайт закрыт. */
+const NOTIF_KIND = {assign:['UserCheck','назначил(а) тебя ответственным'], unassign:['UserCheck','передал(а) задачу другому'], comment:['MessageSquare','прокомментировал(а)'],
+  mention:['AtSign','упомянул(а) тебя'], status:['CircleDot','сменил(а) статус'], due:['Calendar','срок задачи']};
+const notifBy = n => n.by==='system' ? 'Kentucky Hub' : pname(n.by);
+const notifHead = n => n.by==='system' ? 'Срок задачи' : notifBy(n)+' '+(NOTIF_KIND[n.kind]||['',''])[1];
+const watchers = t => [t.who, t.createdBy];
+function notify(to, kind, t, text){
+  if (!t || !t.id) return;
+  const list = [...new Set([].concat(to||[]))].filter(u => u && u!==S.me && S.people[u]);
+  for (const u of list) col('hub_notifs').add({to:u, by:S.me, at:now(), kind, task:t.id, title:clip(t.title,160), text:clip(text||'',300), read:false})
+    .catch(e => console.warn('уведомление не отправлено', e.code));
+}
+/* @логин или @Имя (первое слово имени) */
+function mentions(text){
+  const out = new Set(), re = /@([\p{L}\p{N}._-]{2,32})/gu; let m;
+  while ((m = re.exec(text))) { const k = m[1].toLowerCase();
+    for (const [id,p] of Object.entries(S.people)) if (String(p.login||'').toLowerCase()===k || String(p.name||'').split(/\s+/)[0].toLowerCase()===k) out.add(id); }
+  return [...out];
+}
+const unreadNotifs = () => S.notifs.filter(n=>!n.read);
+const notifCount = () => unreadNotifs().length + myDue().filter(t=>dueLeft(t)<=0).length;
+function titleBadge(n){
+  document.title = (n ? '('+n+') ' : '') + 'Kentucky Hub';
+  try { n ? navigator.setAppBadge && navigator.setAppBadge(n) : navigator.clearAppBadge && navigator.clearAppBadge(); } catch (e) {}
+}
+let notifStart = 0, notifFirst = true;
+function listenNotifs(){
+  notifStart = now(); notifFirst = true;
+  UNSUB.push(col('hub_notifs').where('to','==',S.me).onSnapshot(sn => {
+    S.notifs = sn.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>b.at-a.at);
+    const fresh = sn.docChanges().filter(ch => ch.type==='added').map(ch => Object.assign({id:ch.doc.id}, ch.doc.data())).filter(n => !n.read && n.at > notifStart-60e3);
+    /* первый снимок (в том числе из кэша браузера) — это старые уведомления, всплывают только новые */
+    if (!notifFirst) fresh.forEach(popNotif);
+    else if (!sn.metadata.fromCache) { notifFirst = false; cleanNotifs(); dueReminder(); }
+    S.notifErr = null;
+    schedule();
+  }, e => { console.warn('hub_notifs', e.code); S.notifErr = errText(e); schedule(); }));
+}
+/* прочитанные старше 30 дней удаляем — список не разрастается */
+function cleanNotifs(){
+  const old = S.notifs.filter(n => n.read && n.at < now()-30*DAY).slice(0, 200); if (!old.length) return;
+  const b = DB.batch(); old.forEach(n => b.delete(col('hub_notifs').doc(n.id))); b.commit().catch(()=>{});
+}
+function popNotif(n){
+  const k = NOTIF_KIND[n.kind] || ['Bell',''];
+  toast(ic(k[0])+' <b>'+esc(notifHead(n))+'</b>: '+esc(clip(n.title,60)));
+  if (document.hidden || !document.hasFocus()) sysNotify(notifHead(n), '«'+n.title+'»'+(n.text ? '\n'+clip(n.text,140) : ''), n.id, n.task);
+}
+/* напоминание о сроках — раз в день на устройстве, если пуш выключен (с пушем напоминает сервер) */
+function dueReminder(){
+  setTimeout(() => {
+    const list = myDue(); if (!list.length) return;
+    const key = 'kyHubDue:'+S.me, day = isoDay(now());
+    try { if (localStorage.getItem(key)===day) return; localStorage.setItem(key, day); } catch (e) {}
+    const over = list.filter(t=>dueLeft(t)<0).length, today = list.filter(t=>dueLeft(t)===0).length, tom = list.length-over-today;
+    const parts = [over && 'просрочено: '+over, today && 'на сегодня: '+today, tom && 'на завтра: '+tom].filter(Boolean).join(', ');
+    toast(ic('Calendar')+' Сроки по твоим задачам — '+esc(parts));
+    if (!localStorage.getItem('kyHubPush')) sysNotify('Сроки по задачам', parts.charAt(0).toUpperCase()+parts.slice(1), 'due-'+day, list[0].id);
+  }, 2500);
+}
+function markNotifs(list){
+  list = list.filter(n=>!n.read); if (!list.length) return;
+  list.forEach(n => n.read = true); schedule();
+  const b = DB.batch(); list.forEach(n => b.update(col('hub_notifs').doc(n.id), {read:true})); b.commit().catch(e => console.warn('прочитано', e.code));
+}
+function clearNotifs(){
+  const list = S.notifs.filter(n=>n.read).slice(0, 400); if (!list.length) return;
+  const b = DB.batch(); list.forEach(n => b.delete(col('hub_notifs').doc(n.id))); write(()=>b.commit());
+}
+/* открыть задачу по id: если задачи ещё не пришли из базы — после загрузки */
+function openTask(id){
+  if (!id) return;
+  if (!S.loaded.has('hub_tasks')) { UI.pendingTask = id; return; }
+  if (!task(id)) { toast(ic('CircleAlert')+' Задачу уже удалили'); return; }
+  openDrawer('task:'+id);
+}
+function afterPaint(){
+  titleBadge(notifCount());
+  if (UI.pendingTask && S.loaded.has('hub_tasks')) { const id = UI.pendingTask; UI.pendingTask = null; openTask(id); }
+  /* открытая шторка задачи — уведомления по ней считаем прочитанными */
+  if (UI.drawer && UI.drawer.startsWith('task:') && !document.hidden) { const id = UI.drawer.slice(5); markNotifs(S.notifs.filter(n=>n.task===id)); }
+  const cap = $('#notif-cap'); if (cap) cap.innerHTML = notifBody();
+}
+function notifItem(n){
+  const k = NOTIF_KIND[n.kind] || ['Bell',''], t = task(n.task), d = t && D[t.dept];
+  return `<button class="ntf${n.read?'':' new'}" data-action="notif-open" data-id="${esc(n.id)}" style="--dc:${d?d.color:'var(--acc)'}">
+    ${n.by==='system' ? `<span class="ntf-ic">${ic(k[0])}</span>` : av(n.by,30)}
+    <span class="bd"><span class="hd"><b>${esc(notifHead(n))}</b><small>${ago(n.at)}</small></span><span class="tt">${ic(k[0])} ${esc(n.title)}</span>${n.text?`<span class="tx">${esc(clip(n.text,180))}</span>`:''}</span></button>`;
+}
+function notifBody(){
+  const due = myDue(), list = S.notifs.slice(0, 80), un = unreadNotifs().length;
+  const perm = window.Notification ? Notification.permission : 'unsupported';
+  const hint = perm==='default' ? `<div class="tldr"><b>${ic('Bell')} Уведомления вне сайта</b>Разреши уведомления — браузер покажет их, даже когда вкладка свёрнута${pushReady()?' или сайт закрыт':''}. <button class="btn sm primary" data-action="notif-on" style="margin-top:8px">${ic('Bell')} Включить</button></div>`
+    : perm==='denied' ? `<small style="color:var(--muted)">${ic('Lock')} Уведомления заблокированы в настройках браузера для этого сайта — разреши их там (значок замка в адресной строке).</small>` : '';
+  return `<div style="display:flex;align-items:center;gap:8px"><h2 style="margin:0">${ic('Bell')} Уведомления</h2><span style="flex:1"></span>
+      ${un?`<button class="btn sm ghost" data-action="notif-all">${ic('Check')} Прочитать все</button>`:''}${S.notifs.some(n=>n.read)?`<button class="btn sm ghost" data-action="notif-clear" title="Удалить прочитанные">${ic('Trash2')}</button>`:''}
+      <button class="icon-btn" data-action="close-overlay" aria-label="Закрыть">${ic('X')}</button></div>
+    ${S.notifErr ? `<div class="banner err">${ic('CircleAlert')}<div><b>Уведомления не загружаются: ${esc(S.notifErr)}.</b><br><small>Руководителю: добавь правила hub_notifs и hub_push из firestore.rules в Firebase Console.</small></div></div>` : ''}
+    ${hint}
+    ${due.length ? `<div><p class="sub-h" style="margin:4px 0 8px">Сроки</p><div class="ntf-list">${due.map(t=>`<button class="ntf" data-action="notif-due" data-id="${esc(t.id)}" style="--dc:${(D[t.dept]||DEPTS[0]).color}"><span class="ntf-ic">${ic('Calendar')}</span><span class="bd"><span class="tt">${esc(t.title)}</span><span class="tx">${dueChip(t)}</span></span></button>`).join('')}</div></div>` : ''}
+    <div class="ntf-list">${list.map(notifItem).join('') || '<div class="empty">Пока тихо. Сюда придёт, когда тебя назначат на задачу, упомянут или ответят в обсуждении.</div>'}</div>`;
+}
+function notifPanel(){
+  overlay(`<div class="pal notifs" role="dialog" aria-label="Уведомления"><div class="cap" id="notif-cap">${notifBody()}</div></div>`);
+}
+
+/* системные уведомления и пуш — через service worker (sw.js рядом с хабом) */
+let SWR = null;
+const swReg = () => SWR || (SWR = 'serviceWorker' in navigator ? navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).catch(e => { console.warn('sw', e); SWR = null; return null; }) : Promise.resolve(null));
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { if (e.data && 'hubOpen' in e.data) { focus(); openTask(e.data.hubOpen); } });
+async function sysNotify(title, body, tag, taskId){
+  if (!P.sysNotif || !window.Notification || Notification.permission!=='granted') return;
+  const opts = {body, tag:tag||undefined, icon:'favicon.svg', badge:'favicon.svg', data:{task:taskId||''}};
+  try { const r = await swReg(); if (r) return r.showNotification(title, opts); } catch (e) {}
+  try { const n = new Notification(title, opts); n.onclick = () => { focus(); openTask(taskId); n.close(); }; } catch (e) {}
+}
+const VAPID = () => typeof VAPID_KEY==='string' ? VAPID_KEY : '';
+const pushReady = () => !!(VAPID() && firebase.messaging && 'serviceWorker' in navigator && 'PushManager' in window);
+/* токен пуша этого браузера хранится в hub_push/{uid}.tokens — по нему функция шлёт уведомления, когда сайт закрыт */
+async function pushToken(loud){
+  if (!pushReady() || Notification.permission!=='granted') return false;
+  try {
+    const reg = await swReg(); if (!reg) return false;
+    const token = await firebase.messaging().getToken({vapidKey:VAPID(), serviceWorkerRegistration:reg});
+    if (!token) return false;
+    const old = localStorage.getItem('kyHubPush');
+    if (old !== token) {
+      await col('hub_push').doc(S.me).set({tokens:FV().arrayUnion(token), at:now()}, {merge:true});
+      if (old) col('hub_push').doc(S.me).update({tokens:FV().arrayRemove(old)}).catch(()=>{});
+      localStorage.setItem('kyHubPush', token);
+    }
+    return true;
+  } catch (e) { console.warn('push', e); if (loud) toast(ic('CircleAlert')+' Пуш не включился: '+esc(e.code||e.message)); return false; }
+}
+async function enableNotifs(){
+  if (!window.Notification) { toast(ic('CircleAlert')+' Этот браузер не умеет уведомления. На iPhone добавь хаб на экран «Домой» и открой оттуда.'); return; }
+  const perm = await Notification.requestPermission();
+  if (perm!=='granted') { toast(ic('Lock')+' Уведомления не разрешены'); schedule(); return; }
+  P.sysNotif = true; savePrefs(); await swReg();
+  const push = await pushToken(true);
+  sysNotify('Уведомления включены', push ? 'Придут, даже когда сайт закрыт.' : 'Придут, пока хаб открыт хоть в одной вкладке.', 'hub-test');
+  if ($('#notif-cap')) $('#notif-cap').innerHTML = notifBody(); else settings();
+}
+async function disableNotifs(){
+  P.sysNotif = false; savePrefs();
+  const tok = localStorage.getItem('kyHubPush');
+  if (tok) { try { localStorage.removeItem('kyHubPush'); await col('hub_push').doc(S.me).update({tokens:FV().arrayRemove(tok)}); if (firebase.messaging) await firebase.messaging().deleteToken(); } catch (e) { console.warn('push off', e); } }
+  toast(ic('Bell')+' Уведомления вне сайта выключены на этом устройстве'); settings();
+}
+function notifSettings(){
+  const perm = window.Notification ? Notification.permission : 'unsupported', on = perm==='granted' && P.sysNotif, push = on && !!localStorage.getItem('kyHubPush');
+  const state = perm==='unsupported' ? 'Браузер не поддерживает' : perm==='denied' ? 'Заблокированы в браузере' : on ? (push ? 'Включены, в том числе когда сайт закрыт' : 'Включены, пока хаб открыт во вкладке'+(VAPID() ? '' : ' (пуш при закрытом сайте не настроен)')) : 'Выключены';
+  return `<h2 style="margin-top:8px">${ic('Bell')} Уведомления</h2>
+    <div class="set-row"><div>На этом устройстве<small>${esc(state)}. На сайте колокольчик работает всегда.</small></div>${on ? `<button class="btn sm" data-action="notif-off">Выключить</button>` : perm==='granted' || perm==='default' ? `<button class="btn sm primary" data-action="notif-on">${ic('Bell')} Включить</button>` : ''}</div>`;
+}
+
+/* ── экспорт переписки в Markdown ─────────── */
+function saveMd(name, text){
+  const url = URL.createObjectURL(new Blob([text], {type:'text/markdown;charset=utf-8'}));
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+const mdName = s => (String(s||'чат').replace(/[\\/:*?"<>|#\n\r]+/g,' ').replace(/\s+/g,' ').trim().slice(0,80) || 'чат') + '.md';
+const fullDt = new Intl.DateTimeFormat('ru-RU', {day:'numeric', month:'long', year:'numeric'});
+const quoteMd = s => String(s||'').replace(/\r\n?/g,'\n').trim();
+function msgsMd(msgs){
+  const L = []; let day = '';
+  for (const m of msgs) {
+    const d = fullDt.format(m.at); if (d!==day) { day = d; L.push('', '### '+d, ''); }
+    const files = (m.files||[]).map(id => S.files.find(f=>f.id===id)).filter(Boolean).map(f => '📎 '+f.name+' ('+fsize(f.size)+')');
+    L.push('**'+pname(m.by)+'** · '+hhmm(m.at), '');
+    if (m.text) L.push(quoteMd(m.text).replace(/\n/g, '  \n'), ''); // два пробела — перенос строки в Markdown
+    if (files.length) L.push(files.map(f=>'- '+f).join('\n'), '');
+  }
+  return L;
+}
+function taskMdHead(t){
+  const L = ['# '+t.title, ''];
+  if (t.tldr) L.push('> '+quoteMd(t.tldr).replace(/\n/g,'\n> '), '');
+  L.push('| | |', '|---|---|', '| Статус | '+colName(t.status)+' |', '| '+(tDepts(t).length>1?'Отделы':'Отдел')+' | '+tDepts(t).map(x=>D[x].name).join(', ')+' |',
+    '| Ответственный | '+pname(t.who)+' |', '| Срок | '+(t.due ? fullDt.format(t.due) : '—')+' |', '| Размер | '+(t.size||'M')+' |');
+  if (t.createdBy) L.push('| Создал(а) | '+pname(t.createdBy)+', '+fullDt.format(t.createdAt)+' |');
+  L.push('');
+  if ((t.sub||[]).length) L.push('## Шаги', '', ...t.sub.map(s => '- ['+(s.done?'x':' ')+'] '+s.t), '');
+  if (t.details) L.push('## Подробности', '', quoteMd(t.details), '');
+  return L;
+}
+const mdFoot = () => ['', '---', '_Экспорт из Kentucky Hub · '+fullDt.format(now())+', '+hhmm(now())+' · '+pname(S.me)+'_', ''];
+async function chatMsgs(chatId){
+  if (msgChat===chatId && S.loaded.has('hub_msgs')) return S.msgs;
+  const sn = await col('hub_msgs').where('chat','==',chatId).get();
+  return sn.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.at-b.at);
+}
+async function exportChat(chatId){
+  const c = chat(chatId); if (!c) return;
+  try {
+    const msgs = await chatMsgs(chatId), t = c.task && S.allTasks.find(x=>x.id===c.task);
+    const L = t ? [...taskMdHead(t), '## Чат задачи', ...msgsMd(msgs)] : ['# '+c.title, '', '_Чат создал(а) '+pname(c.by)+(c.createdAt ? ', '+fullDt.format(c.createdAt) : '')+'_', ...msgsMd(msgs)];
+    if (!msgs.length) L.push('', '_Сообщений нет._');
+    if (t && (t.comments||[]).length) L.push('', '## Обсуждение в карточке', ...msgsMd([...t.comments].sort((a,b)=>a.at-b.at)));
+    saveMd(mdName(c.title), L.concat(mdFoot()).join('\n'));
+    toast(ic('FileDown')+' Скачано: '+plural(msgs.length,'сообщение','сообщения','сообщений'));
+  } catch (e) { console.error(e); toast(ic('CircleAlert')+' Не выгрузилось: '+esc(errText(e))); }
+}
+async function exportTask(id){
+  const t = task(id); if (!t) return;
+  const c = S.chats.find(x=>x.task===id);
+  if (c) return exportChat(c.id);
+  saveMd(mdName(t.title), [...taskMdHead(t), '## Обсуждение в карточке', ...msgsMd([...(t.comments||[])].sort((a,b)=>a.at-b.at)), ...mdFoot()].join('\n'));
+  toast(ic('FileDown')+' Скачано: обсуждение задачи');
+}
 
 /* ── подписки на данные ─────────────────────── */
 function listen(){
@@ -2210,6 +2465,7 @@ function listen(){
   }, onErr('hub_people')));
   UNSUB.push(col('hub_log').where('at','>',now()-14*86400e3).orderBy('at','desc').limit(150).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
+  listenNotifs();
 }
 /* сообщения слушаем только у открытого чата */
 let MSG_UNSUB = null, msgChat = null;
@@ -2233,7 +2489,7 @@ function normalizeDepts(){
   }
 }
 function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; listenChat(null);
-  Object.values(TASK_UNSUB).forEach(u => { try { u(); } catch (e) {} }); TASK_UNSUB = {}; S.tdept = {}; S.allTasks = []; S.tasks = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
+  Object.values(TASK_UNSUB).forEach(u => { try { u(); } catch (e) {} }); TASK_UNSUB = {}; S.tdept = {}; S.allTasks = []; S.tasks = []; S.notifs = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
 
 /* стартовое наполнение — один раз на всю команду */
 async function seedIfEmpty(){
@@ -2347,9 +2603,10 @@ async function enter(user){
   gateBusy = false;
   document.body.classList.remove('locked');
   readHash(); listen(); paint();
+  if (window.Notification && Notification.permission==='granted') swReg().then(() => pushToken(false));
   clearInterval(presenceTimer); presenceTimer = setInterval(presence, PRESENCE_MS);
 }
-function lock(){ S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
+function lock(){ titleBadge(0); S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
 applyPrefs();
 try {
   if (!window.firebase || !firebase.auth || !firebase.firestore) throw new Error('sdk');
