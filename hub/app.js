@@ -110,14 +110,17 @@ const mmss = ms => { const s = Math.max(0, Math.round(ms/1000)); return String(M
 function plural(n, one, few, many){ const m10 = n%10, m100 = n%100; return n+' '+(m10===1&&m100!==11?one:m10>=2&&m10<=4&&(m100<10||m100>=20)?few:many); }
 
 /* ── справочники ────────────────────────────── */
-const COLS = [['inbox','Входящие','var(--muted)'],['todo','К работе','var(--info)'],['doing','В работе','var(--warn)'],['review','Ревью','var(--violet)'],['done','Готово','var(--ok)']];
-const COL_TONE = {inbox:'muted', todo:'info', doing:'warn', review:'violet', done:'ok'};
+/* «Новые» (id inbox), чтобы не путать с личными «Входящими» на Q. «Заблокировано» — с причиной (blockedWhy) */
+const COLS = [['inbox','Новые','var(--muted)'],['todo','К работе','var(--info)'],['doing','В работе','var(--warn)'],['review','Ревью','var(--violet)'],['blocked','Заблокировано','var(--red)'],['done','Готово','var(--ok)']];
+const COL_TONE = {inbox:'muted', todo:'info', doing:'warn', review:'violet', blocked:'red', done:'ok'};
 const colName = id => (COLS.find(c=>c[0]===id)||[,id])[1];
 const SIZES = {S:'≤ 15 мин', M:'≈ 1–2 ч', L:'полдня+'};
 const XP_BY_SIZE = {S:10, M:20, L:40};
-const WEEK_GOAL = 10;
-/* отметка «онлайн» раз в 4 минуты: каждая запись в hub_people стоит одно чтение у каждого открытого хаба */
-const PRESENCE_MS = 240e3, ONLINE_MS = 600e3;
+const WEEK_GOALS = [3, 5, 10];
+const weekGoal = () => WEEK_GOALS.includes(me().weekGoal) ? me().weekGoal : 10;
+/* отметка «онлайн» раз в 10 минут: каждая запись в hub_people стоит одно чтение у каждого открытого хаба
+   (при 20 людях раз в 4 минуты это почти весь бесплатный дневной лимит Firestore) */
+const PRESENCE_MS = 600e3, ONLINE_MS = 1500e3;
 const PERSON_COLORS = ['#7C5CE6','#4C6FB8','#A0558F','#A86A3C','#3F8466','#6B55B8','#8E7A2E','#3B7F95','#9C4D4D','#5E6AD2'];
 
 const DEPTS = [
@@ -130,13 +133,13 @@ const DEPTS = [
   {id:'gd', name:'Геймдизайн', icon:'Dice5', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mechanics','Механики'],['jobs','Работы'],['factions','Фракции']]},
   {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', has:['donate','analytics'], tldr:'Деньги сервера целиком: план, параметры, этапы, донат (позиции, акции, курс) и метрики. Баги, решения и журнал экономики — в общих разделах с фильтром «Экономика».',
-    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['stages','Этапы'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['tasks','Задачи']]},
+    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['stages','Этапы'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['finance','Финансы','analytics/finance'],['tasks','Задачи']]},
   {id:'qa', name:'QA и релизы', icon:'FlaskConical', color:'#F49A9A', has:['release'], tldr:'Все баги команды (с фильтром по отделу), тест-кейсы, чеклист релиза, версии с changelog и деплой. Релиз выходит, когда чеклист закрыт; критичный баг блокирует релиз, пока не исправлен или не принято решение.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза'],['versions','Версии','release/versions'],['deploy','Деплой','release/deploy']]},
   {id:'admin', name:'Администрация', icon:'Shield', color:'#B8DD8A', tldr:'Фидбек игроков: предложения голосуются и при поддержке становятся задачами. Правила сервера — в Вики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['feedback','Фидбек игроков']]},
   {id:'smm', name:'SMM', icon:'Megaphone', color:'#E3A6F0', tldr:'Публикации и анонсы в одном плане. Каждый анонс привязан к релизу, чтобы не анонсировать то, что ещё не готово.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Публикации']]}
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Публикации'],['bloggers','Блогеры']]}
 ];
 /* вкладки, которые переехали в общие разделы: старые ссылки ведут на новое место */
 const MOVED = {'econ/bugs':'d/qa/bugs/econ', 'econ/edec':'decisions/econ', 'econ/elog':'log/econ', 'admin/rules':'wiki', 'smm/posts':'d/smm/plan', 'qa/changelog':'d/qa/versions'};
@@ -158,18 +161,19 @@ const fDetails = {k:'details', l:'Подробности', t:'textarea'};
 const fText = (k, l, mono) => ({k, l, t:'text', mono});
 const fWho = l => ({k:'who', l:l||'Ответственный', t:'person'});
 const fStatus = o => ({k:'status', l:'Статус', t:'select', o});
+const CHANNELS = [['Telegram','info'],['VK','info'],['Discord','violet'],['YouTube','red'],['TikTok','warn'],['Twitch','violet'],['Сайт','ok'],['Другое','muted']];
 const S_CARD = [['Черновик','muted'],['Обсуждается','info'],['Принято','ok'],['Отменено','red']];
 const REGS = {
   'dev/events':   {type:'table', noun:'событие', fields:[fName('Событие'), {k:'dir', l:'Направление', t:'select', o:[['CEF → сервер','info'],['сервер → CEF','violet']]}, fText('args','Аргументы',true), fText('where','Где в коде',true), fStatus([['Планируется','muted'],['В работе','warn'],['Готово','ok'],['Переделать','red']]), fDetails]},
   'dev/configs':  {type:'table', noun:'конфиг', fields:[fName('Файл'), fText('what','Что внутри'), fWho('Владелец'), fStatus([['Стабильно','ok'],['Меняется','warn'],['Новый','info']]), fDetails]},
   'dev/db':       {type:'table', noun:'таблицу', fields:[fName('Таблица'), fText('what','Назначение'), fText('migration','Миграция',true), fStatus([['Стабильно','ok'],['Новая','info'],['Проблема','red']]), fDetails]},
   'dev/adr':      {type:'cards', noun:'решение', fields:[fName('Решение'), fTldr, fStatus(S_CARD), fDetails]},
-  'cef/screens':  {type:'table', noun:'экран', fields:[fName('Экран'), fText('path','Путь',true), fText('events','События',true), fText('mockup','Макет'), fStatus([['Ждёт макет','muted'],['Вёрстка','warn'],['Готово','ok'],['Переделать','red']]), fDetails]},
+  'cef/screens':  {type:'table', noun:'экран', fields:[fName('Экран'), fText('path','Путь',true), fText('events','События',true), {k:'mockup', l:'Макет', t:'mockup'}, fStatus([['Ждёт макет','muted'],['Вёрстка','warn'],['Готово','ok'],['Переделать','red']]), fDetails]},
   'cef/components':{type:'cards', noun:'компонент', fields:[fName('Компонент'), fTldr, fStatus([['Планируется','muted'],['В работе','warn'],['Готово','ok']]), fDetails]},
   'design/mockups':{type:'mockups', noun:'макет', fields:[fName('Макет'), fTldr, {k:'link', l:'Ссылка на макет (Figma и т.п.)', t:'url'}, fWho('Дизайнер'), fStatus([['Черновик','muted'],['В работе','warn'],['На ревью','violet'],['Утверждён','ok']]), fDetails]},
   'design/handoff':{type:'checklist', noun:'пункт', fields:[fName('Пункт')]},
   'art3d/assets': {type:'table', noun:'ассет', fields:[fName('Ассет'), {k:'kind', l:'Тип', t:'select', o:[['Машина','info'],['Одежда','violet'],['MLO','warn'],['Маппинг','ok'],['Другое','muted']]}, fWho('Автор'), fText('size','Стрим, МБ',true), fText('license','Лицензия'), fStatus([['Идея','muted'],['В работе','warn'],['Готово','ok'],['Превышен лимит','red']]), fDetails]},
-  'art3d/limits': {type:'metrics', noun:'лимит', fields:[fName('Показатель'), fText('value','Значение'), fText('note','Комментарий / цель'), {k:'series', l:'История (числа через запятую)', t:'text', mono:true}]},
+  'art3d/limits': {type:'metrics', noun:'лимит', fields:[fName('Показатель'), fText('value','Значение'), fText('target','Цель'), {k:'at', l:'Дата снимка', t:'date'}, fText('note','Комментарий'), {k:'series', l:'История (числа через запятую)', t:'text', mono:true}]},
   'gd/mechanics': {type:'cards', noun:'механику', fields:[fName('Механика'), fTldr, fStatus([['Черновик','muted'],['Обсуждается','info'],['Описано','ok'],['Переделать','red']]), fDetails]},
   'gd/jobs':      {type:'table', noun:'работу', fields:[fName('Работа'), fText('target','Цель, $/ч'), fText('now','Сейчас'), fStatus([['В норме','ok'],['Пересчитать','warn'],['Сломано','red']]), fDetails]},
   'gd/factions':  {type:'table', noun:'фракцию', fields:[fName('Фракция'), {k:'kind', l:'Тип', t:'select', o:[['Гос.','info'],['Банда','warn'],['Мафия','violet'],['Другое','muted']]}, fText('income','Доход'), fStatus([['Черновик','muted'],['Описано','ok']]), fDetails]},
@@ -181,11 +185,13 @@ const REGS = {
   'release/deploy':{type:'table', noun:'деплой', fields:[fName('Окружение'), fText('version','Версия',true), fText('when','Когда'), fWho('Кто'), fStatus([['Работает','ok'],['Тестируется','warn'],['Упал','red']]), fDetails]},
   'admin/rules':  {type:'cards', noun:'правило', fields:[fName('Правило'), fTldr, fStatus(S_CARD), fDetails]},
   'admin/feedback':{type:'table', noun:'предложение', fields:[fName('Предложение'), fText('source','Откуда'), fText('votes','Голоса игроков'), fStatus([['Новое','muted'],['Обсуждается','info'],['Взяли в работу','ok'],['Отклонено','red']]), fDetails]},
-  'smm/plan':     {type:'table', noun:'публикацию', fields:[fName('Тема'), fText('date','Дата'), fText('channel','Канал'), fText('release','Релиз'), fStatus([['Идея','muted'],['Готовится','warn'],['Готово','ok'],['Опубликовано','violet']]), fDetails]},
+  'smm/plan':     {type:'table', noun:'публикацию', fields:[fName('Тема'), {k:'date', l:'Дата', t:'date'}, {k:'channel', l:'Канал', t:'select', o:CHANNELS}, {k:'release', l:'Версия', t:'ver'}, fWho(), fStatus([['Идея','muted'],['Готовится','warn'],['Готово','ok'],['Опубликовано','violet']]), {k:'url', l:'Ссылка на пост', t:'url'}, fText('reach','Охват / клики'), fDetails]},
+  'smm/bloggers': {type:'table', noun:'блогера', fields:[fName('Блогер'), {k:'platform', l:'Площадка', t:'select', o:CHANNELS}, fText('audience','Аудитория'), fText('promo','Промокод',true), {k:'date', l:'Дата выхода', t:'date'}, {k:'link', l:'Ссылка на ролик', t:'url'}, fText('cost','Стоимость, ₽',true), fText('regs','Регистрации по коду',true), fText('d7','Остались на 7-й день',true), fStatus([['Договариваемся','info'],['Снимает','warn'],['Вышло','ok'],['Отказ','muted']]), fDetails]},
   'smm/posts':    {type:'cards', noun:'анонс', fields:[fName('Анонс'), fTldr, fStatus([['Идея','muted'],['Готовится','warn'],['Готово','ok']]), fDetails]},
-  'donate/items': {type:'table', noun:'позицию', fields:[fName('Позиция'), fText('price','Цена, RB',true), fText('rub','≈ ₽',true), fStatus([['Активна','ok'],['Пересчитать','warn'],['Ждёт решения','info'],['Снята','muted']]), fDetails]},
+  'donate/items': {type:'table', noun:'позицию', fields:[fName('Позиция'), fText('price','Цена, RB',true), fText('rub','≈ ₽',true), {k:'rules', l:'Правила FiveM / Tebex', t:'select', o:[['Разрешено','ok'],['Проверить','warn'],['Нарушает','red']]}, fStatus([['Активна','ok'],['Пересчитать','warn'],['Ждёт решения','info'],['Снята','muted']]), fDetails]},
   'donate/promos':{type:'cards', noun:'акцию', fields:[fName('Акция'), fTldr, fStatus([['Черновик','muted'],['Согласована','ok'],['Идёт','violet'],['Прошла','muted']]), fDetails]},
-  'analytics/metrics':{type:'metrics', noun:'метрику', fields:[fName('Метрика'), fText('value','Значение'), fText('note','Комментарий / цель'), {k:'series', l:'История (числа через запятую)', t:'text', mono:true}]},
+  'analytics/metrics':{type:'metrics', noun:'метрику', fields:[fName('Метрика'), fText('value','Значение'), fText('target','Цель'), {k:'at', l:'Дата снимка', t:'date'}, fText('note','Комментарий'), {k:'series', l:'История (числа через запятую)', t:'text', mono:true}]},
+  'analytics/finance':{type:'table', noun:'месяц', fields:[fName('Месяц'), fText('revenue','Выручка, ₽',true), fText('costs','Расходы, ₽',true), fText('sources','Откуда выручка'), fText('spend','На что расходы'), fDetails]},
   'analytics/reports':{type:'cards', noun:'отчёт', fields:[fName('Отчёт'), fTldr, fStatus([['Черновик','muted'],['Готов','ok']]), fDetails]}
 };
 const tableFields = r => r.fields.filter(f=>f.t!=='textarea');
@@ -251,7 +257,7 @@ const SEED = {
 /* ── состояние ──────────────────────────────── */
 /* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
 /* edec — решения экономики (коллекция decisions, общая со страницей /economy/): их видно в общем разделе «Решения» */
-const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
+const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], pending:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
 /* dfilt / lfilt / bfilt — фильтр по отделу в «Решениях», «Журнале» и «Багах»; приходит из адреса: #/decisions/econ */
 const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
 const PREFS_KEY = 'kyHubPrefs';
@@ -268,6 +274,8 @@ const canSee = dept => myDepts().includes(dept);
 const seesAll = () => DEPTS.every(d=>canSee(d.id));
 /* отделы назначает руководитель (поле admin в hub_people); сами участники их не меняют */
 const isAdmin = () => me().admin === true;
+/* участник команды: одобрен руководителем или уже в отделе (то же условие в firestore.rules → isMember) */
+const isMemberP = p => !!p && (p.approved === true || p.admin === true || (p.depts||[]).length > 0);
 const adminNames = () => Object.values(S.people).filter(p=>p.admin===true).map(p=>p.name).join(', ');
 /* задача может относиться к нескольким отделам: dept — основной, depts — все (с основным) */
 const tDepts = t => [...new Set([t.dept, ...(Array.isArray(t.depts)?t.depts:[])].map(hd).filter(Boolean))];
@@ -292,7 +300,8 @@ const chip = (label, tone) => `<span class="chip dot t-${tone||'muted'}">${esc(l
 const level = () => Math.floor((me().xp||0)/100)+1;
 function streak(){
   const set = new Set(me().days||[]); let n = 0;
-  for (let i=0;;i++) { const k = dayKey(now()-i*86400e3); if (set.has(k)) n++; else if (i>0) break; }
+  /* суббота и воскресенье без действий серию не обрывают — отдыхать можно */
+  for (let i=0;;i++) { const t = now()-i*86400e3, k = dayKey(t); if (set.has(k)) n++; else if (i>0 && ![0,6].includes(new Date(t).getDay())) break; if (i>400) break; }
   return n;
 }
 const weekDone = () => S.tasks.filter(t=>t.status==='done' && t.doneBy===S.me && (t.doneAt||0) > now()-7*86400e3).length;
@@ -312,7 +321,9 @@ async function write(fn){
   try { await fn(); return true; }
   catch (e) { console.error(e); toast(ic('CircleAlert')+' Не сохранилось: '+esc(errText(e))); return false; }
 }
-function log(act, title, dept){ col('hub_log').add({by:S.me, at:now(), act, title:clip(title,200), dept:dept||null}).catch(()=>{}); }
+/* expireAt — когда база сама удалит документ (TTL-политика Firestore по этому полю, включается один раз в консоли) */
+const expireIn = days => { const T = firebase.firestore.Timestamp; return T ? {expireAt:T.fromMillis(now()+days*86400e3)} : {}; };
+function log(act, title, dept){ col('hub_log').add(Object.assign({by:S.me, at:now(), act, title:clip(title,200), dept:dept||null}, expireIn(365))).catch(()=>{}); }
 function gain(xp, text){
   toast(text, P.calm ? '' : '+'+xp+' XP');
   col('hub_people').doc(S.me).update({xp:FV().increment(xp), days:FV().arrayUnion(dayKey(now()))}).catch(()=>{});
@@ -344,7 +355,7 @@ function readHash(){
   if (moved) { history.replaceState(null, '', '#/'+moved); return readHash(); }
   const filt = v => v && (D[v] ? hd(v) : 'all') || 'all';
   if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; if (UI.route==='d/qa' && UI.tab==='bugs') UI.bfilt = filt(p[3]); }
-  else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
+  else { UI.route = ['today','lead','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
   if (UI.route==='decisions') UI.dfilt = filt(p[1]);
   if (UI.route==='log') UI.lfilt = filt(p[1]);
   UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
@@ -353,6 +364,8 @@ const go = path => { location.hash = '#/'+path; };
 addEventListener('hashchange', () => { readHash(); if (UI.route==='d/econ') eSyncName(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); afterPaint(); scrollTo(0,0); });
 
 /* ── боковая панель ─────────────────────────── */
+/* в боковой панели — свои отделы (остальные по кнопке «все»); скрытые в настройках не показываются никогда */
+const sideDepts = () => DEPTS.filter(d=>!P.hidden.includes(d.id) && (UI.allDepts || seesAll() || !myDepts().length || canSee(d.id)));
 function sidebar(){
   const r = UI.route, m = me();
   const openDec = pendingDecs().length;
@@ -364,23 +377,24 @@ function sidebar(){
   <div class="brand"><span class="mark">KS</span><div><b>Kentucky Hub</b><small>рабочее место команды</small></div></div>
   <nav class="nav">
     ${link('today','Sun','Мой день', myTop, '#F5B971')}
+    ${isAdmin() ? (n => link('lead','Gauge','Обзор', n, '#F49A9A', n>0))(leadAlerts()) : ''}
     ${link('inbox','Inbox','Входящие', S.inbox.length, '#A9A8B6')}
     ${link('tasks','LayoutGrid','Задачи', S.tasks.filter(t=>canEdit(t) && t.status!=='done').length, '#8DB6F8')}
     ${link('decisions','Scale','Решения', openDec, '#B9A3FF', openDec>0)}
     ${link('log','ScrollText','Журнал', 0, '#A9A8B6')}
-    ${link('people','Users','Люди', Object.keys(S.people).filter(isOnline).length, '#86D9B0')}
+    ${isAdmin() && S.pending.length ? link('people','Users','Люди', S.pending.length, '#86D9B0', true) : link('people','Users','Люди', Object.keys(S.people).filter(isOnline).length, '#86D9B0')}
     ${link('chats','MessagesSquare','Чаты', unreadChats(), '#7DD3E8', unreadChats()>0)}
     ${link('wiki','BookOpen','Вики', 0, '#F5B98A')}
     ${(b => link('claude','Bot','Claude', b ? (b.by===S.me ? 'ты' : 'занят') : '', '#E8B07D', !!b && b.by!==S.me))(claudeAt(now()))}
   </nav>
-  <div class="nav-h">Отделы <button data-action="settings" title="Показать или скрыть отделы">настроить</button></div>
+  <div class="nav-h">${UI.allDepts || seesAll() || !myDepts().length ? 'Отделы' : 'Мои отделы'} ${seesAll() || !myDepts().length ? '' : `<button data-action="side-all" title="Показать или скрыть остальные отделы">${UI.allDepts ? 'только мои' : 'все'}</button>`}<button data-action="settings" title="Показать или скрыть отделы">настроить</button></div>
   <nav class="nav">
-    ${DEPTS.filter(d=>!P.hidden.includes(d.id)).map(d => link('d/'+d.id, d.icon, d.name, S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length || '', d.color)).join('')}
+    ${sideDepts().map(d => link('d/'+d.id, d.icon, d.name, S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length || '', d.color)).join('')}
   </nav>
   <div class="me-card">
     <div class="me-row">${av(S.me,30)}<div style="min-width:0;flex:1"><b style="font-size:14px">${esc(m.name||'')}</b><br><small>${esc(m.role || '@'+(m.login||''))}</small></div><span class="streak" title="Дней подряд с действием">${ic('Flame')} ${streak()}</span><button class="icon-btn" data-action="logout" title="Выйти" aria-label="Выйти" style="width:30px;height:30px">${ic('LogOut')}</button></div>
     <div class="me-row"><span class="lvl">Ур. ${level()}</span><div class="xpbar" style="flex:1"><i style="width:${xpIn}%"></i></div><small class="mono">${xpIn}/100</small></div>
-    <small>Неделя: ${weekDone()} из ${WEEK_GOAL} задач закрыто</small>
+    <small>Неделя: ${weekDone()} из ${weekGoal()} задач закрыто</small>
   </div>`;
 }
 
@@ -395,7 +409,7 @@ function topbar(){
   ${cb && cb.by!==S.me ? `<a class="claude-pill hide-sm" href="#/claude" title="${esc(cb.note||'')}">${ic('Bot')} Claude: ${esc(pname(cb.by).split(' ')[0])} до ${hhmm(cb.end)}</a>` : ''}
   ${f && f.claude ? `<button class="focus-pill" data-action="claude-focus" title="Открыть фокус-режим Claude">${ic('Bot')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">Claude</span></button>`
   : f ? `<button class="focus-pill" data-action="focus-stop" title="Остановить фокус">${ic('Headphones')} <span class="mono" id="focus-left">${mmss(f.until-now())}</span><span class="lbl">${esc(clip(task(f.task)?.title||'Фокус',28))}</span> ${ic('X')}</button>`
-      : `<button class="btn sm hide-sm" data-action="focus-start" data-id="${esc(me().last||'')}" title="25 минут фокуса — коллеги увидят, что вы работаете">${ic('Headphones')} Фокус 25 мин</button>`}
+      : `<button class="btn sm focus-btn" data-action="focus-start" data-id="${esc(me().last||'')}" title="25 минут фокуса — коллеги увидят, что вы работаете" aria-label="Фокус 25 минут">${ic('Headphones')}<span class="lbl"> Фокус 25 мин</span></button>`}
   ${(n => `<button class="icon-btn bell${n?' on':''}" data-action="notifs" aria-label="Уведомления${n?': '+n:''}" title="Уведомления">${ic('Bell')}${n?`<span class="bdg">${n>99?'99+':n}</span>`:''}</button>`)(notifCount())}
   <a class="faces" href="#/people" title="Сейчас онлайн: ${online.length}">${online.slice(0,5).map(id=>av(id)).join('')}</a>
   <button class="icon-btn" data-action="settings" aria-label="Настройки и профиль" title="Настройки и профиль">${ic('Settings')}</button>`;
@@ -411,12 +425,13 @@ function taskItem(t, opts={}){
     <button class="check${done?' on':''}" ${canEdit(t)?'':'disabled title="Только просмотр"'} data-action="toggle-done" data-id="${esc(t.id)}" aria-label="${done?'Вернуть в работу':'Готово'}">${ic('Check')}</button>
     <div class="bd">
       <div class="tt" style="${done?'text-decoration:line-through;color:var(--muted)':''}">${esc(t.title)}</div>
-      ${t.tldr ? `<div class="ds">${mdLine(t.tldr)}</div>`:''}
+      ${t.tldr ? `<div class="ds">${mdLine(t.tldr)}</div>`:''}${blockedNote(t)}
       <div class="mt">${dchips(t)}<span class="size" title="${SIZES[t.size]||''}">${esc(t.size||'M')}</span>${dueChip(t)}${opts.status?chip(colName(t.status), COL_TONE[t.status]):''}${sub.length?`<small style="color:var(--muted)">${ic('ListChecks')} ${sd}/${sub.length}</small>`:''}</div>
     </div>
     ${av(t.who)}
   </div>`;
 }
+const blockedNote = t => t.status==='blocked' ? `<div class="blk" title="Заблокировано ${t.blockedAt?ago(t.blockedAt):''}">${ic('CircleAlert')} ${esc(t.blockedWhy||'причина не указана')}</div>` : '';
 function heatmap(){
   const days = Array.from({length:14},(_,i)=>dayKey(now()-(13-i)*86400e3));
   const nums = Array.from({length:14},(_,i)=>new Date(now()-(13-i)*86400e3).getDate());
@@ -428,11 +443,23 @@ function heatmap(){
   <div class="legend"><span><i style="opacity:.3"></i>Тишина</span><span><i style="opacity:.55"></i>1–2</span><span><i style="opacity:.8"></i>3–5</span><span><i></i>6+ действий</span></div>
   <div class="heat">${rows.map(d=>`<span class="rl" title="${esc(d.name)}">${ic(d.icon)} ${esc(d.name)}</span>`+(counts[d.id]||Array(14).fill(0)).map((n,i)=>`<span class="cell l${lv(n)}" title="${esc(d.name)}: ${n} · ${nums[i]}"></span>`).join('')).join('')}<span></span>${nums.map(n=>`<span class="cl">${n}</span>`).join('')}</div></section>`;
 }
+/* первые шаги новичка: пропадают, когда всё сделано или скрыты */
+function onboarding(){
+  if (P.onbHide) return '';
+  const m = me(), steps = [
+    [!!(m.role||'').trim(), 'Заполни профиль: роль в команде', 'settings', 'Профиль'],
+    [myDepts().length > 0, 'Получи отдел — его назначает руководитель'+(adminNames()?' ('+adminNames()+')':''), '', ''],
+    [S.tasks.some(t=>t.who===S.me), 'Возьми первую задачу — лучше размера S, «≤ 15 мин»', 'go-small', 'Найти'],
+    [(m.xp||0) >= 10 || S.inbox.length > 0, 'Запиши любую мысль на клавишу Q — разберёшь потом', 'capture', 'Записать']];
+  const done = steps.filter(x=>x[0]).length; if (done===steps.length) return '';
+  return `<section class="panel glow"><div class="panel-h"><h2><span class="hi">${ic('Sparkles')}</span>Первые шаги · ${done} из ${steps.length}</h2><button class="btn sm ghost" data-action="onb-hide">Скрыть</button></div>
+    <div class="cl">${steps.map(([ok, t, act, b])=>`<div class="row"><label class="${ok?'done':''}"><input type="checkbox" disabled ${ok?'checked':''}><span>${esc(t)}</span></label>${!ok && act ? `<button class="btn sm" data-action="${act}">${b}</button>` : ''}</div>`).join('')}</div></section>`;
+}
 function viewToday(){
   const m = me();
   const top = (m.top3||[]).map(task).filter(Boolean);
   const left = top.filter(t=>t.status!=='done').length;
-  const wd = weekDone(), pct = Math.min(100, Math.round(wd/WEEK_GOAL*100));
+  const wd = weekDone(), pct = Math.min(100, Math.round(wd/weekGoal()*100));
   const last = m.last && task(m.last);
   const pendingVotes = pendingDecs();
   const quick = S.tasks.filter(t=>canEdit(t) && t.size==='S' && t.status!=='done' && (!t.who || t.who===S.me) && !(m.top3||[]).includes(t.id)).slice(0,3);
@@ -442,12 +469,13 @@ function viewToday(){
     <div><h1>${hello()}, ${esc((m.name||'').split(' ')[0])}! ${ic('Hand')}</h1><p>${top.length ? (left ? `На сегодня ${left} из ${top.length} главных задач. Начни с самой маленькой.` : 'Главные задачи закрыты. Можно выдохнуть.') : 'Выбери до трёх главных задач на сегодня — кнопка «В день» в карточке задачи.'}</p></div>
     <div class="hero-stats">
       <div class="ring" style="--p:${pct}" title="Цель недели"><span>${pct}%</span></div>
-      <div class="hs"><b>${wd}/${WEEK_GOAL}</b><small>задач за неделю</small></div>
+      <div class="hs"><b>${wd}/${weekGoal()}</b><small>задач за неделю</small></div>
       <div class="hs"><b>${ic('Flame')} ${streak()}</b><small>дней подряд</small></div>
       <div class="hs"><b>Ур. ${level()}</b><small>${m.xp||0} XP</small></div>
     </div>
   </section>
   ${last && last.status!=='done' ? `<div class="resume">${ic('MapPin')}<div class="bd"><small>Ты остановился здесь</small><b>${esc(last.title)}</b></div><button class="btn sm" data-open="task:${esc(last.id)}">Открыть</button><button class="btn sm primary" data-action="focus-start" data-id="${esc(last.id)}">${ic('Headphones')} Продолжить 25 мин</button></div>`:''}
+  ${onboarding()}
   <div class="today-grid">
     <div class="col">
       <section class="panel">
@@ -462,7 +490,7 @@ function viewToday(){
         <div class="panel-h"><h2><span class="hi">${ic('Zap')}</span>Если сил мало: задачи на 15 минут</h2></div>
         <div class="list">${quick.map(t=>taskItem(t)).join('') || '<div class="empty">Быстрых свободных задач нет.</div>'}</div>
       </section>
-      ${heatmap()}
+      ${isAdmin() ? heatmap() : ''}
     </div>
     <div class="col">
       <section class="panel glow">
@@ -492,7 +520,7 @@ function card(t){
   const d = D[t.dept] || DEPTS[0]; const sub = t.sub||[], sd = sub.filter(s=>s.done).length;
   return `<div class="card${canEdit(t)?'':' ro'}" tabindex="0" draggable="${canEdit(t)}" data-id="${esc(t.id)}" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
     <div class="tt">${esc(t.title)}</div>
-    ${t.tldr?`<div class="tl">${mdLine(t.tldr)}</div>`:''}
+    ${t.tldr?`<div class="tl">${mdLine(t.tldr)}</div>`:''}${blockedNote(t)}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
     <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${dueChip(t)}${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(n => n?`<small style="color:var(--muted)" title="Сообщений в обсуждении">${ic('MessageSquare')} ${n}</small>`:'')((t.comments||[]).length + ((threadChat('task', t.id)||{}).n||0))}${av(t.who,22)}</div>
   </div>`;
@@ -520,6 +548,81 @@ function viewTasks(){
   if (UI.filt.dept==='mine' && (!mine.length || seesAll())) UI.filt.dept = 'all';
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#8DB6F8">${ic('LayoutGrid')}</span><div><h1>Задачи</h1><p>${seesAll() ? 'У тебя все роли — можешь менять задачи всех отделов.' : 'Видны задачи всех отделов. Менять можно задачи своих'+(mine.length ? ': '+esc(mine.map(id=>D[id].name).join(', ')) : ' — отделы назначает руководитель')+', остальные — смотреть и комментировать.'}</p></div></div><button class="btn primary" data-action="new-task" data-status="todo">${ic('Plus')} Задача</button></div>
   ${filters(true) + board(null)}`;
+}
+
+/* ── обзор руководителя ───────────────────────
+   Где горит за одну минуту: просрочки, задачи без ответственного, застрявшие, заблокированные,
+   решения без итога, критичные баги, заявки. Плюс нагрузка по людям, отделы, текущая версия и метрики. */
+const STUCK_DAYS = 3, DEC_DAYS = 7, SIZE_W = {S:1, M:3, L:8};
+const isLate = t => dueLeft(t)!==null && dueLeft(t)<0;
+function leadData(){
+  const open = S.tasks.filter(t=>t.status!=='done'), idle = t => (t.updatedAt||t.createdAt||0) < now()-STUCK_DAYS*DAY;
+  return {open,
+    overdue: open.filter(isLate).sort((a,b)=>a.due-b.due),
+    noOwner: open.filter(t=>!t.who),
+    stuck: open.filter(t=>(t.status==='doing'||t.status==='review') && idle(t)),
+    blocked: open.filter(t=>t.status==='blocked'),
+    decs: allDecs().filter(d=>decOpen(d) && decAt(d) && decAt(d) < now()-DEC_DAYS*DAY),
+    crit: allBugs().filter(b=>b.open && b.sev==='critical')};
+}
+function leadAlerts(){ const L = leadData(); return L.overdue.length + L.blocked.length + L.crit.length + S.pending.length; }
+function viewLead(){
+  const L = leadData();
+  const tile = (n, k, sub, tone) => `<div class="tile" style="cursor:default"><span class="k">${k}</span><span class="v"${n&&tone?` style="color:var(--${tone})"`:''}>${n}</span><span class="s">${sub}</span></div>`;
+  const box = (icon, title, list, empty, html) => `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic(icon)}</span>${title} · ${list.length}</h2></div><div class="list">${list.length ? list.slice(0,8).map(html).join('') + (list.length>8?`<small style="color:var(--muted)">и ещё ${list.length-8}</small>`:'') : `<div class="empty">${empty}</div>`}</div></section>`;
+  /* нагрузка: открытые задачи по размеру (S=1, M=3, L=8) и просрочки */
+  const load = Object.keys(S.people).map(id => { const ts = L.open.filter(t=>t.who===id);
+    return {id, n:ts.length, w:ts.reduce((a,t)=>a+(SIZE_W[t.size]||3),0), over:ts.filter(isLate).length, blk:ts.filter(t=>t.status==='blocked').length}; })
+    .sort((a,b)=>b.w-a.w);
+  const maxW = Math.max(1, ...load.map(x=>x.w));
+  const depts = DEPTS.map(d => { const ts = L.open.filter(t=>inDept(t,d.id));
+    return {d, n:ts.length, over:ts.filter(isLate).length, rev:ts.filter(t=>t.status==='review').length, blk:ts.filter(t=>t.status==='blocked').length, none:ts.filter(t=>!t.who).length}; });
+  const cur = S.reg.filter(x=>x.key==='release/versions' && x.status==='Готовится').sort(byOrder);
+  const red = n => n ? ' style="color:var(--red)"' : '';
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F49A9A">${ic('Gauge')}</span><div><h1>Обзор руководителя</h1><p>Где горит, кто перегружен и что застряло. Застрявшие — в работе или на ревью без изменений больше ${STUCK_DAYS} дней.</p></div></div>
+    <button class="btn" data-action="week-report">${ic('FileDown')} Отчёт за неделю</button></div>
+  <div class="tiles">
+    ${tile(L.overdue.length, 'Просрочено', 'задач со сроком в прошлом', 'red')}${tile(L.blocked.length, 'Заблокировано', 'ждут чего-то', 'red')}
+    ${tile(L.stuck.length, 'Застряли', 'больше '+STUCK_DAYS+' дн. без движения', 'warn')}${tile(L.noOwner.length, 'Без ответственного', 'открытых задач', 'warn')}
+    ${tile(L.decs.length, 'Решения висят', 'без итога больше '+DEC_DAYS+' дн.', 'warn')}${tile(L.crit.length, 'Критичные баги', 'открыты', 'red')}
+    ${S.pending.length ? `<a class="tile" href="#/people"><span class="k">Заявки в хаб</span><span class="v" style="color:var(--warn)">${S.pending.length}</span><span class="s">ждут одобрения</span></a>` : ''}
+  </div>
+  ${metricTiles()}
+  <div class="g2">
+    ${box('Calendar', 'Просрочено', L.overdue, 'Просрочек нет.', t=>taskItem(t,{status:true}))}
+    ${box('CircleAlert', 'Заблокировано', L.blocked, 'Ничего не заблокировано.', t=>taskItem(t))}
+    ${box('Clock', 'Застряли', L.stuck, 'Всё движется.', t=>taskItem(t,{status:true}))}
+    ${box('User', 'Без ответственного', L.noOwner, 'У всех задач есть ответственный.', t=>taskItem(t,{status:true}))}
+    ${box('Scale', 'Решения без итога', L.decs, 'Все решения приняты вовремя.', d=>`<div class="item" tabindex="0" data-action="open-dec" data-id="${esc(d.id)}"><div class="bd"><div class="tt">${esc(decQ(d))}</div><div class="mt">${dchip(decDept(d))}<small style="color:var(--muted)">${plural(decVoters(d),'голос','голоса','голосов')} · ${ago(decAt(d))}</small></div></div></div>`)}
+    ${box('Bug', 'Критичные баги', L.crit, 'Критичных багов нет.', b=>`<div class="item" tabindex="0" data-open="${esc(b.ref)}"><div class="bd"><div class="tt">${esc(b.name)}</div><div class="mt">${dchip(b.dept)}${b.where?`<small class="mono" style="color:var(--muted)">${esc(b.where)}</small>`:''}</div></div>${b.who?eav(b.who):''}</div>`)}
+  </div>
+  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Нагрузка по людям</h2><span class="sub">вес: S = 1, M = 3, L = 8</span></div>
+    <div class="tbl-wrap"><table class="grid"><thead><tr><th>Кто</th><th>Открыто</th><th>Нагрузка</th><th>Просрочено</th><th>Заблокировано</th></tr></thead><tbody>${load.map(x=>`<tr><td><span class="who-pick">${av(x.id,22)} ${esc(pname(x.id))}</span></td><td class="m">${x.n}</td><td><div class="mini-bar" style="min-width:90px"><i style="width:${Math.round(x.w/maxW*100)}%"></i></div><small class="mono" style="color:var(--muted)">${x.w}</small></td><td class="m"${red(x.over)}>${x.over}</td><td class="m">${x.blk}</td></tr>`).join('')}</tbody></table></div></section>
+  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('LayoutGrid')}</span>Отделы</h2></div>
+    <div class="tbl-wrap"><table class="grid"><thead><tr><th>Отдел</th><th>Открыто</th><th>Просрочено</th><th>На ревью</th><th>Заблокировано</th><th>Без ответственного</th></tr></thead><tbody>${depts.map(x=>`<tr tabindex="0" data-go="d/${x.d.id}/tasks"><td>${dchip(x.d.id)}</td><td class="m">${x.n}</td><td class="m"${red(x.over)}>${x.over}</td><td class="m">${x.rev}</td><td class="m"${red(x.blk)}>${x.blk}</td><td class="m">${x.none}</td></tr>`).join('')}</tbody></table></div></section>
+  ${cur.length ? `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Rocket')}</span>Готовятся к выходу</h2><a class="btn sm ghost" href="#/d/qa/versions">Все версии</a></div>${cur.map(v=>`<div><b>${esc(v.name)}</b>${v.tldr?` <small style="color:var(--text-2)">${esc(v.tldr)}</small>`:''}${verProgress(v) || '<div><small style="color:var(--muted)">К версии пока не привязано ни одной задачи — укажи версию в карточке задачи.</small></div>'}</div>`).join('')}</section>` : ''}`;
+}
+/* отчёт за неделю в Markdown: что закрыто, что просрочено и заблокировано, какие решения приняты, что вышло */
+function weekReport(){
+  const from = now()-7*DAY, L = leadData(), line = t => '- '+t.title+' — '+tDepts(t).map(x=>D[x].name).join(', ')+(t.who?' · '+pname(t.who):'');
+  const done = S.tasks.filter(t=>t.status==='done' && (t.doneAt||0) >= from);
+  const made = S.tasks.filter(t=>(t.createdAt||0) >= from);
+  const decs = allDecs().filter(d=>!decOpen(d) && ((isEdec(d) ? d.updatedAt : d.chosenAt)||0) >= from);
+  const vers = S.reg.filter(x=>x.key==='release/versions' && x.status==='Вышла' && (x.updatedAt||0) >= from);
+  const out = ['# Отчёт за неделю', '', '_'+fullDt.format(from)+' — '+fullDt.format(now())+'_', '',
+    '| | |', '|---|---|', '| Закрыто задач | '+done.length+' |', '| Создано задач | '+made.length+' |', '| Просрочено сейчас | '+L.overdue.length+' |',
+    '| Заблокировано | '+L.blocked.length+' |', '| Без ответственного | '+L.noOwner.length+' |', '| Критичных багов | '+L.crit.length+' |', ''];
+  const sec = (h, list, f) => { if (list.length) out.push('## '+h, '', ...list.map(f), ''); };
+  sec('Закрыто', done, line);
+  sec('Вышли версии', vers, v => '- **'+v.name+'**'+(v.tldr?' — '+v.tldr:''));
+  sec('Приняты решения', decs, d => '- '+decQ(d)+' → **'+decChoice(d)+'**');
+  sec('Просрочено', L.overdue, t => line(t)+' · срок '+dateFmt(t.due));
+  sec('Заблокировано', L.blocked, t => line(t)+' · '+(t.blockedWhy||''));
+  sec('Застряли (больше '+STUCK_DAYS+' дн. без движения)', L.stuck, line);
+  sec('Критичные баги', L.crit, b => '- '+b.name+' — '+D[b.dept].name);
+  sec('Метрики', S.reg.filter(x=>x.key==='analytics/metrics'), m => '- '+m.name+': **'+(m.value||'—')+'**'+(m.target?' (цель: '+m.target+')':'')+(m.at?' · снимок '+m.at:''));
+  saveMd('Отчёт за неделю '+isoDay(now())+'.md', out.concat(mdFoot()).join('\n'));
+  toast(ic('FileDown')+' Отчёт за неделю скачан');
 }
 
 /* ── решения ────────────────────────────────── */
@@ -550,7 +653,7 @@ function decisionCard(d){
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Реакции','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
     ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}
     ${reactRow(d)}
-    ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">Итог: <b style="color:var(--text)">${esc((d.options[d.chosen]||{}).t||'')}</b> · зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
+    ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">${decTaskBtn(d)}Итог: <b style="color:var(--text)">${esc((d.options[d.chosen]||{}).t||'')}</b> · зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
   </article>`;
   return `<article class="decision" id="dec-${esc(d.id)}">
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
@@ -560,7 +663,7 @@ function decisionCard(d){
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes">${Object.entries(votes).filter(([,v])=>v===i).map(([u])=>av(u,24)).join('')}</span>
       ${d.chosen==null ? `<button class="btn sm${mine===i?' primary':''}" data-action="vote" data-id="${esc(d.id)}" data-i="${i}">${mine===i?ic('Check')+' Мой голос':'Голосовать'}</button>
       <button class="btn sm ghost" data-action="accept" data-id="${esc(d.id)}" data-i="${i}" title="Зафиксировать итог">Принять</button>`:''}</div></div>`).join('')}</div>
-    ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center">Итог зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
+    ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">${decTaskBtn(d)}Итог зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
   </article>`;
 }
 /* общий список решений: решения хаба и вопросы экономики (у них свои поля: question, options[{label,desc}], recommended с 1) */
@@ -573,6 +676,9 @@ const decDept = d => isEdec(d) ? 'econ' : hd(d.dept);
 const decVoters = d => Object.values(d.votes||{}).filter(v=>v!=null).length;
 const decAt = d => d.createdAt || d.updatedAt || 0;
 function pendingDecs(){ return allDecs().filter(d=>decOpen(d) && (d.votes||{})[S.me]==null); }
+/* принятое решение превращается в задачу: в задаче остаётся ссылка на решение */
+const decChoice = d => isEdec(d) ? ((d.options||[])[Number(d.chosen)]||{}).label||'' : ((d.options||[])[d.chosen]||{}).t||'';
+const decTaskBtn = d => `<button class="btn sm" data-action="dec-task" data-id="${esc(d.id)}" data-e="${isEdec(d)?1:''}">${ic('Plus')} Задача из итога</button>`;
 const decCard = d => isEdec(d) ? eDecCard(d) : decisionCard(d);
 /* ряд кнопок «Все / отдел / отдел…» над общими списками; ссылки меняют адрес, поэтому фильтр переживает обновление страницы */
 function deptSeg(base, cur, counts){
@@ -632,6 +738,9 @@ function viewPeople(){
       <button class="btn sm${p.admin===true?' primary':''}" data-action="set-admin" data-uid="${esc(id)}" title="Руководитель назначает отделы">${ic('Shield')} ${p.admin===true?'Руководитель':'Сделать руководителем'}</button></div>`
     : `<div class="links">${[...new Set((p.depts||[]).map(hd).filter(Boolean))].map(dchip).join('') || '<small style="color:var(--muted)">Отделы не назначены</small>'}</div>`;
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#86D9B0">${ic('Users')}</span><div><h1>Люди</h1><p>${adm ? 'Ты руководитель: отмечай каждому его отделы — человек сразу увидит задачи этих отделов.' : 'Кто за что отвечает и кто сейчас онлайн. Отделы назначает руководитель'+(adminNames()?' ('+esc(adminNames())+')':'')+'.'}</p></div></div><button class="btn" data-action="settings">${ic('Pencil')} Мой профиль</button></div>
+  ${adm && S.pending.length ? `<section class="panel glow"><div class="panel-h"><h2><span class="hi">${ic('UserPlus')}</span>Ждут одобрения · ${S.pending.length}</h2><span class="sub">пока не одобришь, человек ничего в хабе не видит</span></div>
+    <div class="list">${S.pending.map(p=>`<div class="item" style="cursor:default"><span class="av" style="background:${safeColor(p.color)}">${esc(initials(p.name))}</span><div class="bd"><div class="tt">${esc(p.name||'Без имени')}</div><div class="mt"><small style="color:var(--muted)">@${esc(p.login||'')} · заявка ${ago(p.createdAt)}</small></div></div>
+      <button class="btn sm primary" data-action="approve" data-uid="${esc(p.id)}">${ic('UserCheck')} Одобрить</button><button class="btn sm ghost" data-action="reject" data-uid="${esc(p.id)}">${ic('X')} Отклонить</button></div>`).join('')}</div></section>` : ''}
   <div class="g3">${ids.map(id => { const p = S.people[id]; const f = focusOf(id); const open = S.tasks.filter(t=>t.who===id && t.status!=='done').length;
     return `<section class="panel"><div class="person">${av(id,40)}<div class="bd"><div class="nm">${esc(p.name)}${id===S.me?' <small style="color:var(--muted)">(вы)</small>':''}${p.admin===true?` <span class="chip t-violet" title="Назначает отделы">${ic('Shield')} руководитель</span>`:''}</div><div class="st">${esc(p.role || '@'+(p.login||''))}</div></div></div>
     <div class="st" style="font-size:13px;color:${f?'var(--acc)':'var(--text-2)'}">${f?`${ic('Headphones')} В фокусе ещё <span class="mono" data-until="${f.until}">${mmss(f.until-now())}</span>`: isOnline(id)?`${ic('CircleDot')} Онлайн`:'Был(а) '+ago(p.seen)}</div>
@@ -675,7 +784,9 @@ async function uploadFiles(list, target){
     try {
       const data = b64(await file.arrayBuffer()), ref = col('hub_files').doc(), parts = Math.max(1, Math.ceil(data.length/PART));
       for (let i=0;i<parts;i++) { await col('hub_fileparts').doc(ref.id+'_'+i).set({file:ref.id, i, data:data.slice(i*PART, (i+1)*PART)}); S.up[key].pct = Math.round((i+1)/parts*100); schedule(); }
-      await ref.set(Object.assign({name:clip(file.name,160), type:clip(file.type,100), size:file.size, parts, by:S.me, at:now()}, await mkThumb(file) || {}, target));
+      const tb = await mkThumb(file);
+      if (tb) await col('hub_thumbs').doc(ref.id).set({th:tb.th, by:S.me});
+      await ref.set(Object.assign({name:clip(file.name,160), type:clip(file.type,100), size:file.size, parts, by:S.me, at:now()}, tb ? {thumb:true, w:tb.w, h:tb.h} : {}, target));
       ids.push(ref.id);
     } catch (e) { console.error(e); toast(ic('CircleAlert')+' «'+esc(file.name)+'» не загрузился: '+esc(errText(e))); }
   }
@@ -693,20 +804,25 @@ async function downloadFile(id){
 async function deleteFiles(ids){
   for (const id of ids) {
     const sn = await col('hub_fileparts').where('file','==',id).get();
-    const b = DB.batch(); sn.docs.forEach(d=>b.delete(d.ref)); b.delete(col('hub_files').doc(id)); await b.commit();
+    const f = S.files.find(x=>x.id===id);
+    const b = DB.batch(); sn.docs.forEach(d=>b.delete(d.ref)); if (f && f.thumb) b.delete(col('hub_thumbs').doc(id)); b.delete(col('hub_files').doc(id)); await b.commit();
   }
 }
+/* превью приходит из базы: пропускаем только data:image/… и blob:, иначе через него можно вставить код в страницу */
+const safeImg = u => /^(data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+\/=]+|blob:[^\s"'<>]+)$/.test(u||'') ? u : '';
+/* старые файлы хранят превью в самом документе (th), новые — в hub_thumbs/{id}: его читаем, только когда картинку показывают */
 function thumb(f){
-  if (f.th) return f.th;
+  if (safeImg(f.th)) return f.th;
   if (THUMBS[f.id]) return THUMBS[f.id]==='…' ? '' : THUMBS[f.id];
   THUMBS[f.id] = '…';
+  if (f.thumb) { col('hub_thumbs').doc(f.id).get().then(d => { THUMBS[f.id] = safeImg(d.exists && d.data().th); schedule(); }).catch(() => { THUMBS[f.id] = ''; }); return ''; }
   fileBlob(f).then(b => { THUMBS[f.id] = URL.createObjectURL(b); schedule(); }).catch(() => { THUMBS[f.id] = ''; });
   return '';
 }
 function fileChip(f, big){
   if (!f) return '';
   const del = f.by===S.me ? `<button class="mini-x" data-action="file-del" data-id="${esc(f.id)}" aria-label="Удалить файл" title="Удалить файл">${ic('X')}</button>` : '';
-  const src = big && isImg(f) && (f.th || f.size <= THUMB_MAX) ? thumb(f) : '';
+  const src = big && isImg(f) && (f.th || f.thumb || f.size <= THUMB_MAX) ? thumb(f) : '';
   if (src) return `<span class="fimg"><img src="${src}" alt="${esc(f.name)}" data-action="img-view" data-id="${esc(f.id)}" title="${esc(f.name)} · открыть">${del}</span>`;
   if (isMd(f)) return `<span class="file"><button class="file-b" data-action="file-md" data-id="${esc(f.id)}" title="Открыть в читалке">${ic('BookOpen')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button><button class="mini-x" data-action="file-get" data-id="${esc(f.id)}" aria-label="Скачать" title="Скачать">${ic('Download')}</button>${del}</span>`;
   return `<span class="file"><button class="file-b" data-action="file-get" data-id="${esc(f.id)}" title="Скачать">${ic(isImg(f)?'Eye':'Paperclip')}<span class="nm">${esc(f.name)}</span><small>${fsize(f.size)}</small></button>${del}</span>`;
@@ -720,12 +836,15 @@ function mdInline(s){
   s = String(s).replace(/`+([^`]+?)`+/g, (_,c) => { code.push(c); return '\u0000'+(code.length-1)+'\u0000'; });
   s = esc(s);
   const url = u => safeUrl(u.replace(/&amp;/g,'&'));
-  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m,a,u) => url(u) ? '<img src="'+esc(url(u))+'" alt="'+a+'" loading="lazy">' : a);
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m,t,u) => url(u) ? '<a href="'+esc(url(u))+'" target="_blank" rel="noopener noreferrer">'+t+'</a>' : t);
-  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,:;!?)])/g, (m,p,u) => p+'<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>');
+  /* готовые теги прячем в tags: следующие замены (автоссылки, курсив) не должны попадать внутрь атрибутов */
+  const tags = [], keep = h => { tags.push(h); return '\u0001'+(tags.length-1)+'\u0001'; };
+  s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m,a,u) => url(u) ? keep('<img src="'+esc(url(u))+'" alt="'+a+'" loading="lazy">') : a);
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;.*?&quot;)?\)/g, (m,t,u) => url(u) ? keep('<a href="'+esc(url(u))+'" target="_blank" rel="noopener noreferrer">')+t+keep('</a>') : t);
+  s = s.replace(/(^|[\s(])(https?:\/\/[^\s<\u0001]+[^\s<\u0001.,:;!?)])/g, (m,p,u) => p+keep('<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+u+'</a>'));
   s = s.replace(/\*\*(.+?)\*\*|__(.+?)__/g, (m,a,b) => '<b>'+(a||b)+'</b>');
   s = s.replace(/(^|[^*\w])\*(?!\s)(.+?)\*(?!\w)/g, '$1<i>$2</i>').replace(/(^|[^_\wа-яё])_(?!\s)(.+?)_(?![\wа-яё])/gi, '$1<i>$2</i>');
   s = s.replace(/~~(.+?)~~/g, '<s>$1</s>');
+  s = s.replace(/\u0001(\d+)\u0001/g, (_,i) => tags[i]);
   return s.replace(/\u0000(\d+)\u0000/g, (_,i) => '<code>'+esc(code[i])+'</code>');
 }
 function mdList(L, i){
@@ -820,8 +939,8 @@ function lightbox(){
   const id = LB.ids[LB.i], f = S.files.find(x=>x.id===id); if (!f) { closeOverlay(); return; }
   if (!FULL[id] && THUMBS[id] && THUMBS[id]!=='…') FULL[id] = THUMBS[id];
   if (!FULL[id]) { FULL[id] = '…'; fileBlob(f).then(b => { FULL[id] = URL.createObjectURL(b); if (LB && LB.ids[LB.i]===id) lightbox(); }).catch(() => { FULL[id] = ''; }); }
-  const full = FULL[id] && FULL[id]!=='…' ? FULL[id] : '', src = full || f.th || '', n = LB.ids.length;
-  overlay('<div class="lb" role="dialog" aria-label="'+esc(f.name)+'"><div class="lb-h"><b>'+esc(f.name)+'</b><small>'+fsize(f.size)+(f.w?' · '+f.w+'×'+f.h:'')+(n>1?' · '+(LB.i+1)+' из '+n:'')+'</small><span class="sp"></span>'
+  const full = FULL[id] && FULL[id]!=='…' ? FULL[id] : '', src = full || safeImg(f.th), n = LB.ids.length;
+  overlay('<div class="lb" role="dialog" aria-label="'+esc(f.name)+'"><div class="lb-h"><b>'+esc(f.name)+'</b><small>'+fsize(f.size)+(f.w?' · '+Number(f.w)+'×'+Number(f.h):'')+(n>1?' · '+(LB.i+1)+' из '+n:'')+'</small><span class="sp"></span>'
     +'<button class="icon-btn" data-action="file-dl" data-id="'+esc(id)+'" title="Скачать" aria-label="Скачать">'+ic('Download')+'</button>'
     +'<button class="icon-btn" data-action="close-overlay" aria-label="Закрыть">'+ic('X')+'</button></div>'
     +'<div class="lb-b" data-action="lb-bg">'+(n>1?'<button class="icon-btn lb-nav prev" data-action="lb-go" data-v="-1" aria-label="Предыдущее">'+ic('ChevronLeft')+'</button>':'')
@@ -1141,15 +1260,46 @@ function cell(f, v){
   if (f.t==='person') return v ? `<span class="who-pick">${av(v,22)} ${esc(pname(v))}</span>` : '<span style="color:var(--muted)">—</span>';
   if (f.t==='url') return safeUrl(v) ? `<a class="ext" href="${esc(v)}" target="_blank" rel="noopener">${ic('ExternalLink')} открыть</a>` : '';
   if (f.t==='dept') return dchip(hd(v));
+  if (f.t==='date') return /^\d{4}-\d\d-\d\d$/.test(v||'') ? esc(dateFmt(parseDay(v))) : esc(v||'');
   return esc(v||'');
 }
 const regKeys = key => [key, ...(REG_ALSO[key]||[])];
+/* метрика: значение, цель и дата снимка; снимок старше 14 дней подсвечивается — по устаревшим цифрам решений не принимают */
+const METRIC_STALE = 14;
+function metricTile(it, color){
+  const age = /^\d{4}-\d\d-\d\d$/.test(it.at||'') ? Math.round((dueDay(now()) - dueDay(parseDay(it.at)))/DAY) : null;
+  return `<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), color)}
+    ${it.target?`<span class="s">Цель: <b>${esc(it.target)}</b></span>`:''}
+    <span class="s"${age===null||age>METRIC_STALE?' style="color:var(--warn)"':''}>${age===null ? 'дата снимка не указана' : 'снимок '+(age<=0?'сегодня':plural(age,'день','дня','дней')+' назад')}</span>
+    ${it.note?`<span class="s">${mdLine(it.note)}</span>`:''}</button>`;
+}
+/* метрики проекта в «Обзоре руководителя» */
+function metricTiles(){
+  const items = S.reg.filter(x=>x.key==='analytics/metrics').sort(byOrder);
+  return `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('ChartColumn')}</span>Метрики проекта</h2><a class="btn sm ghost" href="#/d/econ/metrics">Все метрики</a></div>
+    ${items.length ? `<div class="tiles">${items.map(it=>metricTile(it, D.econ.color)).join('')}</div>` : '<div class="empty">Метрик пока нет. Добавь онлайн-пик, удержание D1/D7/D30, выручку за неделю — с целью и датой снимка.</div>'}</section>`;
+}
+/* финансы: выручка, расходы и итог по месяцам */
+function financeSummary(){
+  const items = S.reg.filter(x=>x.key==='analytics/finance'); if (!items.length) return '';
+  const num = v => parseMoney(v) || 0, rev = items.reduce((a,x)=>a+num(x.revenue),0), cost = items.reduce((a,x)=>a+num(x.costs),0);
+  const last = [...items].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0))[0], lp = num(last.revenue)-num(last.costs);
+  return `<div class="tiles"><div class="tile" style="cursor:default"><span class="k">Выручка всего</span><span class="v mono">${nfmt.format(rev)} ₽</span></div>
+    <div class="tile" style="cursor:default"><span class="k">Расходы всего</span><span class="v mono">${nfmt.format(cost)} ₽</span></div>
+    <div class="tile" style="cursor:default"><span class="k">Итог</span><span class="v mono" style="color:var(--${rev-cost>=0?'ok':'red'})">${nfmt.format(rev-cost)} ₽</span><span class="s">последний месяц «${esc(last.name)}»: ${nfmt.format(lp)} ₽</span></div></div>`;
+}
 function registry(key, d){
   if (key==='design/kit') return kit();
   if (key==='qa/bugs') return bugsView();
-  return regList(key, d) + (key==='release/versions' ? oldChangelog(d) : '');
+  return (key==='analytics/finance' ? financeSummary() : '') + regList(key, d) + (key==='release/versions' ? oldChangelog(d) : '');
 }
 /* changelog теперь живёт в карточке версии; старые отдельные записи видны под версиями, пока их не перенесут */
+/* что входит в версию: задачи с этой версией, сколько готово, что заблокировано */
+function verProgress(it){
+  const ts = S.allTasks.filter(t=>t.ver===it.name); if (!ts.length) return '';
+  const done = ts.filter(t=>t.status==='done').length, bl = ts.filter(t=>t.status==='blocked').length;
+  return `<div class="ver-p"><div class="mini-bar"><i style="width:${Math.round(done/ts.length*100)}%"></i></div><small>Задачи: ${done} из ${ts.length} готовы${bl?` · <span style="color:var(--red)">заблокировано ${bl}</span>`:''}</small></div>`;
+}
 function oldChangelog(d){
   const items = S.reg.filter(x=>x.key==='release/changelog').sort(byOrder); if (!items.length) return '';
   const stF = REGS['release/changelog'].fields.find(f=>f.k==='status');
@@ -1158,7 +1308,7 @@ function oldChangelog(d){
 }
 function regList(key, d){
   const r = REGS[key]; if (!r) return '<div class="empty">Скоро.</div>';
-  const items = S.reg.filter(x=>regKeys(key).includes(x.key)).sort(byOrder);
+  const items = S.reg.filter(x=>regKeys(key).includes(x.key)).sort(key==='smm/plan' ? (a,b)=>String(a.date||'9').localeCompare(String(b.date||'9')) || byOrder(a,b) : byOrder);
   const tools = `<div class="reg-tools"><small>${plural(items.length,'запись','записи','записей')}</small><span class="sp"></span><button class="btn sm primary" data-open="regnew:${key}">${ic('Plus')} Добавить ${esc(r.noun)}</button></div>`;
   if (!items.length) return tools + `<div class="empty"><b>Пока пусто</b>Добавь первую запись — её увидит вся команда.</div>`;
   if (r.type==='table') { const fs = tableFields(r);
@@ -1168,8 +1318,8 @@ function regList(key, d){
   const cover = it => (f => f && thumb(f) ? `<div class="tile-img"><img src="${thumb(f)}" alt="" loading="lazy"></div>` : '')(regCover(it.id));
   if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}${decMark(it.id)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
   if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb">${(f => f && thumb(f) ? `<img src="${thumb(f)}" alt="" loading="lazy">` : '<div class="ui"></div>')(regCover(it.id))}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
-  if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), d.color)}<span class="s">${mdLine(it.note)}</span></button>`).join('')}</div>`;
-  if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}${it.changes?`<div class="md md-c">${md(it.changes, true)}</div>`:''}</div>`).join('')}</div></section>`;
+  if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>metricTile(it, d.color)).join('')}</div>`;
+  if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}${verProgress(it)}${it.changes?`<div class="md md-c">${md(it.changes, true)}</div>`:''}</div>`).join('')}</div></section>`;
   if (r.type==='checklist') { const n = items.filter(i=>i.done).length;
     return tools + `<section class="panel"><div class="panel-h"><h2>Готово ${n} из ${items.length}</h2>${n===items.length?chip('Всё готово','ok'):`<button class="btn sm ghost" data-action="check-reset" data-key="${key}">${ic('RotateCcw')} Сбросить</button>`}</div><div class="mini-bar"><i style="width:${Math.round(n/items.length*100)}%"></i></div>
     <div class="cl">${items.map(it=>`<div class="row"><label class="${it.done?'done':''}"><input type="checkbox" data-action="check" data-id="${esc(it.id)}" ${it.done?'checked':''}><span>${esc(it.name)}</span></label><button class="mini-x" data-open="reg:${esc(it.id)}" aria-label="Изменить пункт" title="Изменить">${ic('Pencil')}</button></div>`).join('')}</div></section>`; }
@@ -1430,7 +1580,7 @@ function eDecCard(x){
         ${chosen==null ? `<button class="btn sm${mine?' primary':''}" data-action="e-vote" data-id="${esc(x.id)}" data-i="${i}">${mine?ic('Check')+' Мой голос':'Голосовать'}</button>
         <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="${i}" title="Зафиксировать итог">Принять</button>` : ''}</div></div>`; }).join('')}</div>
     ${x.note?`<div class="txt"><b>Заметка:</b>${mdBlock(x.note)}</div>`:''}
-    ${chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">Итог: <b style="color:var(--text)">${esc((opts[chosen]||{}).label||'')}</b>${x.updatedBy?' · '+esc(epname(x.updatedBy))+' · '+ago(x.updatedAt):''} <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="">${ic('RotateCcw')} Переоткрыть</button></div>`:eMeta(x)}
+    ${chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">${decTaskBtn(x)}Итог: <b style="color:var(--text)">${esc((opts[chosen]||{}).label||'')}</b>${x.updatedBy?' · '+esc(epname(x.updatedBy))+' · '+ago(x.updatedAt):''} <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="">${ic('RotateCcw')} Переоткрыть</button></div>`:eMeta(x)}
   </article>`;
 }
 function eLogText(l){
@@ -1778,6 +1928,10 @@ const deptOpts = () => DEPTS.map(d=>[d.id, d.name]);
 const deptsPick = ds => `<div class="fld"><span>Отделы — можно несколько</span><div class="dpick roles" role="group" aria-label="Отделы задачи">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="pick-depts" data-d="${d.id}" aria-pressed="${ds.includes(d.id)}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
   <input type="hidden" name="depts" value="${esc(ds.join(','))}"></div>`;
 const formDepts = f => f.depts.value.split(',').filter(x=>D[x]);
+/* версии из «QA → Версии», кроме отменённых; текущая версия задачи остаётся в списке, даже если её отменили */
+const verOpts = cur => [['','— без версии'], ...[...new Set([...S.reg.filter(x=>x.key==='release/versions' && x.status!=='Отменена').sort(byOrder).map(x=>x.name), ...(cur?[cur]:[])])].map(v=>[v,v])];
+/* макеты для поля «Макет» у экрана CEF: значение — название макета, рядом его статус */
+const mockOpts = cur => [['','— нет макета'], ...[...new Set([...S.reg.filter(x=>x.key==='design/mockups').sort(byOrder).map(x=>x.name), ...(cur?[cur]:[])])].map(n=>{ const m = S.reg.find(x=>x.key==='design/mockups' && x.name===n); return [n, n+(m&&m.status?' · '+m.status:'')]; })];
 const sizeOpts = () => Object.entries(SIZES).map(([k,v])=>[k, k+' · '+v]);
 
 /* ── шторка ─────────────────────────────────── */
@@ -1803,6 +1957,7 @@ function drawerTask(t){
     ${inText('tldr','Суть в одном предложении — зачем',t.tldr,'maxlength="240"')}
     ${deptsPick(tDepts(t))}
     ${inSelect('size','Размер',sizeOpts(),t.size)}
+    ${verOpts(t.ver).length>1 ? inSelect('ver','Версия',verOpts(t.ver),t.ver||'') : '<input type="hidden" name="ver" value="">'}
     <div class="fld-row">${inSelect('who','Ответственный',peopleOpts(),t.who||'')}${inText('due','Срок',isoDay(t.due),'type="date"')}</div>
     ${inArea('details','Подробности',t.details,6)}
     <div class="form-foot"><button class="btn primary">${ic('Save')} Сохранить</button><button type="button" class="btn ghost" data-action="edit-cancel">Отмена</button><span class="sp"></span><button type="button" class="btn danger" data-action="task-del" data-id="${esc(t.id)}">${ic('Trash2')} Удалить</button></div>
@@ -1820,6 +1975,9 @@ function drawerTask(t){
     <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}" ${ro?'disabled':''}>${n}</button>`).join('')}</div>
     <dl class="kv"><dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
       <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me && !ro?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
+      ${t.status==='blocked'?`<dt>Заблокировано</dt><dd>${blockedNote(t)}</dd>`:''}
+      ${t.ver?`<dt>Версия</dt><dd><span class="link" data-go="d/qa/versions">${ic('Rocket')} ${esc(t.ver)}</span></dd>`:''}
+      ${t.reg && regItem(t.reg)?`<dt>Из записи</dt><dd><span class="link" data-action="open-reg" data-id="${esc(t.reg)}" style="cursor:pointer">${ic('BookOpen')} ${esc(clip(regItem(t.reg).name,60))}</span></dd>`:''}
       <dt>Срок</dt><dd>${t.due ? dueChip(t)+` <small style="color:var(--muted)">${esc(dateFmt(t.due))}</small>` : '<span style="color:var(--muted)">не задан</span>'}</dd>
       <dt>Размер</dt><dd><span class="size">${esc(t.size||'M')}</span> <small style="color:var(--muted)">${SIZES[t.size]||''}</small></dd>
       ${t.createdBy?`<dt>Создал(а)</dt><dd style="color:var(--text-2)">${esc(pname(t.createdBy))} · ${ago(t.createdAt)}</dd>`:''}</dl>
@@ -1845,6 +2003,18 @@ function regDecBlock(it){
     ${ds.map(d => { const lead = d.chosen!=null ? (d.options[d.chosen]||{}).t : null, n = Object.keys(d.votes||{}).length;
       return `<button type="button" class="dec-line" data-action="open-dec" data-id="${esc(d.id)}">${d.chosen!=null?chip('Принято','ok'):chip(d.mode==='react'?'Реакции':'Голосуем','info')}<span class="q">${esc(d.q)}</span><small>${lead ? esc(lead) : plural(n,'голос','голоса','голосов')}</small></button>`; }).join('') || '<small style="color:var(--muted)">Спорный момент по записи? Вынеси его на решение — запись останется здесь.</small>'}</div>`;
 }
+/* передача макета в разработку: свой чеклист у каждого макета (отметки в поле hand), пункты — общий список «Передача» */
+function mockHandoff(it){
+  const items = S.reg.filter(x=>x.key==='design/handoff').sort(byOrder); if (!items.length) return '';
+  const hand = it.hand || {}, n = items.filter(x=>hand[x.id]).length;
+  return `<div><p class="sub-h" style="margin:0 0 6px">Передача в разработку · ${n} из ${items.length}</p><div class="cl">${items.map(x=>`<div class="row"><label class="${hand[x.id]?'done':''}"><input type="checkbox" data-action="mock-hand" data-id="${esc(it.id)}" data-h="${esc(x.id)}" ${hand[x.id]?'checked':''}><span>${esc(x.name)}</span></label></div>`).join('')}</div>
+    ${n<items.length && it.status==='Утверждён' ? '<small style="color:var(--warn)">Макет утверждён, но чеклист передачи не закрыт.</small>' : ''}</div>`;
+}
+/* задачи, сделанные из записи (поле reg у задачи) */
+function regTasks(it){
+  const ts = S.allTasks.filter(t=>t.reg===it.id); if (!ts.length) return '';
+  return `<div><p class="sub-h" style="margin:0 0 6px">Задачи по записи · ${ts.length}</p><div class="list">${ts.map(t=>taskItem(t,{status:true})).join('')}</div></div>`;
+}
 function regForm(key, it){
   const r = REGS[key], d = D[key.split('/')[0]];
   const field = f => {
@@ -1854,12 +2024,17 @@ function regForm(key, it){
     if (f.t==='person') return inSelect(f.k, f.l, peopleOpts(), v||'');
     if (f.t==='dept') return inSelect(f.k, f.l, deptOpts(), hd(v) || (UI.bfilt!=='all' ? UI.bfilt : d.id));
     if (f.t==='url') return inText(f.k, f.l, v, 'type="url" placeholder="https://"');
+    /* старые даты свободным текстом («01.11») не стираем: показываем как текст, пока их не заменят */
+    if (f.t==='date') return !v || /^\d{4}-\d\d-\d\d$/.test(v) ? inText(f.k, f.l, v, 'type="date"') : inText(f.k, f.l+' — замени на ГГГГ-ММ-ДД', v, 'maxlength="40"');
+    if (f.t==='ver') return inSelect(f.k, f.l, verOpts(v), v||'');
+    if (f.t==='mockup') return inSelect(f.k, f.l, mockOpts(v), v||'');
     return inText(f.k, f.l, v, (f.req?'required ':'')+'maxlength="300"'+(f.mono?' style="font-family:var(--f-mono);font-size:13px"':''));
   };
-  return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun, it && r.type!=='checklist' ? `<button type="button" class="btn sm" data-action="reg-decide" data-id="${esc(it.id)}" title="Вынести запись на решение — она останется на месте">${ic('Scale')} На решение</button>` : '') + `<div class="dr-b"><form class="form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
+  return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun, it && r.type!=='checklist' ? `<button type="button" class="btn sm" data-action="reg-task" data-id="${esc(it.id)}" title="Сделать задачу по этой записи — связь сохранится">${ic('Plus')} В задачу</button><button type="button" class="btn sm" data-action="reg-decide" data-id="${esc(it.id)}" title="Вынести запись на решение — она останется на месте">${ic('Scale')} На решение</button>` : '') + `<div class="dr-b"><form class="form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
     ${r.fields.map(field).join('')}
     ${it && safeUrl(it.link) ? `<a class="btn" href="${esc(it.link)}" target="_blank" rel="noopener">${ic('ExternalLink')} Открыть макет</a>`:''}
-    ${it && r.type!=='checklist' ? regDecBlock(it) : ''}
+    ${it && key==='design/mockups' ? mockHandoff(it) : ''}
+    ${it && r.type!=='checklist' ? regDecBlock(it) + regTasks(it) : ''}
     ${r.type==='checklist' ? '' : `<div class="reg-gal" id="reg-gal" data-id="${it?esc(it.id):''}">${regGallery(it&&it.id)}</div>`}
     <div class="form-foot"><button class="btn primary">${ic('Save')} ${it?'Сохранить':'Добавить'}</button><button type="button" class="btn ghost" data-action="close-drawer">Отмена</button><span class="sp"></span>${it?`<button type="button" class="btn danger" data-action="reg-del" data-id="${esc(it.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
     ${it&&it.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(it.updatedBy))}, ${ago(it.updatedAt)}</small>`:''}
@@ -1924,17 +2099,21 @@ function capture(){
     <input type="hidden" name="d" value="${cur}">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> сохранить · <kbd>Shift</kbd>+<kbd>Enter</kbd> новая строка · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Во «Входящие»</button></div></div></form>`);
 }
-function newTask(status, dept, title, fromInbox){
+/* from — откуда задача: {reg} запись отдела (фидбек, баг, механика), {dec} принятое решение; tldr — готовая суть */
+function newTask(status, dept, title, fromInbox, from){
+  from = from || {};
   dept = dept || (UI.route.startsWith('d/') ? UI.route.slice(2) : (D[UI.filt.dept] && UI.filt.dept) || myDepts()[0] || 'dev');
-  overlay(`<form class="pal" data-form="task-new" data-status="${status||'todo'}" data-inbox="${esc(fromInbox||'')}"><div class="cap"><h2>${ic('Plus')} Новая задача</h2>
+  overlay(`<form class="pal" data-form="task-new" data-status="${status||'todo'}" data-inbox="${esc(fromInbox||'')}" data-reg="${esc(from.reg||'')}" data-dec="${esc(from.dec||'')}"><div class="cap"><h2>${ic('Plus')} Новая задача</h2>
+    ${from.label ? `<div class="ref-chip" style="cursor:default">${ic('Paperclip')} ${esc(from.label)}</div>` : ''}
     <input class="input" name="title" placeholder="Что сделать? Начни с глагола: «Починить…», «Добавить…»" value="${esc(title||'')}" required maxlength="160" autocomplete="off">
-    <input class="input" name="tldr" placeholder="Суть в одном предложении — зачем это нужно" maxlength="240" autocomplete="off">
+    <input class="input" name="tldr" placeholder="Суть в одном предложении — зачем это нужно" maxlength="240" autocomplete="off" value="${esc(from.tldr||'')}">
     ${deptsPick([dept])}
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <div class="seg" role="radiogroup" aria-label="Размер">${Object.entries(SIZES).map(([k,v])=>`<button type="button" data-action="pick-size" data-v="${k}" aria-pressed="${k==='M'}" title="${v}">${k} · ${v}</button>`).join('')}</div>
       <input type="hidden" name="size" value="M">
     </div>
     <div class="fld-row">${inSelect('who','Ответственный',peopleOpts(),S.me)}${inText('due','Срок (необязательно)','','type="date"')}</div>
+    ${verOpts().length>1 ? inSelect('ver','Версия (необязательно)',verOpts(),'') : '<input type="hidden" name="ver" value="">'}
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> создать · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Создать</button></div></div></form>`);
 }
 function newDecision(dept, pre){
@@ -2019,6 +2198,7 @@ function settings(){
       <div style="display:flex;justify-content:flex-end"><button class="btn primary">${ic('Save')} Сохранить профиль</button></div>
     </form>
     ${notifSettings()}
+    <div class="set-row"><div>Цель недели<small>Сколько задач закрывать за неделю. Волонтёру хватит трёх.</small></div><div class="seg">${WEEK_GOALS.map(n=>`<button data-action="week-goal" data-v="${n}" aria-pressed="${weekGoal()===n}">${n}</button>`).join('')}</div></div>
     <h2 style="margin-top:8px">${ic('Settings')} Отображение</h2>
     <div class="set-row"><div>Тема</div>${seg('theme',[['auto','Авто'],['dark','Тёмная'],['light','Светлая']])}</div>
     <div class="set-row"><div>Размер текста</div>${seg('fs',[['s','S'],['m','M'],['l','L']])}</div>
@@ -2040,20 +2220,26 @@ function setStatus(id, s, x, y){
   const patch = Object.assign({status:s}, stamp());
   if (s==='done') { patch.doneAt = now(); patch.doneBy = S.me; }
   else if (t.status==='done') { patch.doneAt = FV().delete(); patch.doneBy = FV().delete(); }
+  /* заблокировано — только с причиной: руководитель видит, кто и что держит */
+  if (s==='blocked') { const why = prompt('Чем заблокирована задача? Например: «ждём макет», «нет доступа к серверу».', t.blockedWhy||''); if (why===null) return; patch.blockedWhy = clip(why,200) || 'причина не указана'; patch.blockedAt = now(); }
+  else if (t.status==='blocked') { patch.blockedWhy = FV().delete(); patch.blockedAt = FV().delete(); }
   write(()=>col('hub_tasks').doc(id).update(patch)).then(ok => {
     if (!ok) return;
     if (s==='done') { log('закрыл(а) задачу', t.title, t.dept); confetti(x ?? innerWidth/2, y ?? innerHeight/2); gain(XP_BY_SIZE[t.size]||10, ic('CircleCheck')+' Готово: '+esc(t.title)); }
-    else log('перевёл(а) в «'+colName(s)+'»', t.title, t.dept);
+    else log('перевёл(а) в «'+colName(s)+'»'+(s==='blocked' ? ': '+patch.blockedWhy : ''), t.title, t.dept);
     notify(watchers(t), 'status', t, '«'+colName(t.status)+'» → «'+colName(s)+'»');
   });
 }
 async function createTask(f){
   const title = clip(f.title.value,160); if (!title) return;
   const ref = col('hub_tasks').doc(), depts = formDepts(f), dept = depts[0]; if (!dept) return;
-  const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details:'', dept, depts, status:f.dataset.status||'todo', size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value), links:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
+  const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details:'', dept, depts, status:f.dataset.status||'todo', size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value), ver:f.ver.value||null, reg:f.dataset.reg||null, links:f.dataset.dec?[f.dataset.dec]:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
   if (!ok) return;
   if (f.dataset.inbox) col('hub_inbox').doc(f.dataset.inbox).delete().catch(()=>{});
-  closeOverlay(); log('создал(а) задачу', title, dept);
+  /* предложение игрока взяли в работу — статус записи меняется сам */
+  const src = f.dataset.reg && regItem(f.dataset.reg);
+  if (src && src.key==='admin/feedback' && src.status!=='Взяли в работу') write(()=>col('hub_reg').doc(src.id).update(Object.assign({status:'Взяли в работу'}, stamp())));
+  closeOverlay(); log(src ? 'сделал(а) задачу из записи «'+clip(src.name,60)+'»' : 'создал(а) задачу', title, dept);
   notify(f.who.value, 'assign', {id:ref.id, title}, f.due.value ? 'Срок: '+dateFmt(parseDay(f.due.value)) : clip(f.tldr.value,240));
   if (!depts.some(canSee)) { gain(3, ic('Plus')+' Задача передана: '+depts.map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Менять её будут участники этих отделов.'); openDrawer('task:'+ref.id); return; }
   gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
@@ -2113,6 +2299,10 @@ document.addEventListener('click', e => {
       case 'new-task': newTask(a.dataset.status, a.dataset.dept); break;
       case 'new-decision': newDecision(a.dataset.dept); break;
       case 'filt-small': UI.filt.small = !UI.filt.small; paint(); break;
+      case 'side-all': UI.allDepts = !UI.allDepts; paint(); break;
+      case 'onb-hide': P.onbHide = true; savePrefs(); paint(); break;
+      case 'week-goal': patchMe({weekGoal:Number(a.dataset.v)}).then(ok => ok && toast(ic('Target')+' Цель недели: '+a.dataset.v+' задач')); a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); break;
+      case 'go-small': UI.filt.small = true; go('tasks'); break;
       case 'bugs-hide': UI.bhide = !UI.bhide; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
       case 'inbox-del': write(()=>col('hub_inbox').doc(id).delete()); break;
@@ -2133,6 +2323,15 @@ document.addEventListener('click', e => {
         if (!on && Object.values(S.people).filter(x=>x.admin===true).length<=1) { toast(ic('CircleAlert')+' Это последний руководитель — сначала назначь другого'); break; }
         if (on && !confirm('Сделать '+p.name+' руководителем? Он(а) сможет назначать отделы всем.')) break;
         write(()=>col('hub_people').doc(uid).update({admin:on})).then(ok => ok && log(on?'сделал(а) руководителем':'снял(а) роль руководителя', p.name)); break; }
+      case 'approve': { if (!isAdmin()) break; const p = S.pending.find(x=>x.id===a.dataset.uid); if (!p) break;
+        write(()=>col('hub_people').doc(p.id).update({approved:true})).then(ok => { if (ok) { log('одобрил(а) вход в хаб', p.name); toast(ic('UserCheck')+' '+esc(p.name)+' теперь в команде. Назначь отделы ниже.'); } }); break; }
+      case 'reject': { if (!isAdmin()) break; const p = S.pending.find(x=>x.id===a.dataset.uid); if (!p || !confirm('Отклонить заявку '+(p.name||'')+'? Профиль удалится; если человек войдёт снова, заявка появится опять.')) break;
+        write(()=>col('hub_people').doc(p.id).delete()).then(ok => ok && log('отклонил(а) заявку в хаб', p.name)); break; }
+      case 'reg-task': { const it = regItem(id); if (!it) break; const dd = hd(it.key.split('/')[0]) || hd(it.dept) || 'dev';
+        newTask('todo', it.key==='qa/bugs' ? (hd(it.dept)||'qa') : dd, clip(it.name,160), null, {reg:it.id, label:'Запись: '+clip(it.name,80), tldr:clip(it.tldr||it.what||'',240)}); break; }
+      case 'dec-task': { const d = a.dataset.e ? Object.assign({_e:true}, S.edec.find(x=>x.id===id)) : dec(id); if (!d || decOpen(d)) break;
+        newTask('todo', decDept(d), clip(decQ(d)+': '+decChoice(d),160), null, {dec:isEdec(d)?'':d.id, label:'Решение: '+clip(decQ(d),80), tldr:clip('Итог решения: '+decChoice(d),240)}); break; }
+      case 'week-report': weekReport(); break;
       case 'my-color': { a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); patchMe({color:a.dataset.c}); break; }
       case 'focus-start': startFocus(id); break;
       case 'focus-stop': patchMe({focus:null}).then(ok => ok && toast('Фокус остановлен')); break;
@@ -2197,6 +2396,7 @@ document.addEventListener('change', e => {
   if (a.dataset.action==='chat-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
     chatFiles(id, list); }
   if (a.name==='day' && a.form && a.form.dataset.form==='claude-book') { a.form.from.innerHTML = claudeTimes(Number(a.value)).map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join(''); }
+  if (a.dataset.action==='mock-hand') { const it = regItem(a.dataset.id); if (it) write(()=>col('hub_reg').doc(it.id).update(Object.assign({['hand.'+a.dataset.h]:a.checked}, stamp()))); }
   if (a.dataset.action==='check') { const it = regItem(a.dataset.id); write(()=>col('hub_reg').doc(a.dataset.id).update({done:a.checked, updatedAt:now(), updatedBy:S.me})).then(ok => { if (ok && a.checked) { log('отметил(а) пункт', it.name, it.key.split('/')[0]); gain(2, ic('ListChecks')+' Отмечено'); } }); }
   if (a.dataset.action==='step') { const t = task(a.dataset.id); const sub = (t.sub||[]).map((s,i)=>i===Number(a.dataset.i)?{t:s.t, done:a.checked}:s); updTask(t.id, {sub}).then(ok => ok && a.checked && gain(2, ic('ListChecks')+' Шаг выполнен')); }
   if (a.dataset.action==='link-add' && a.value) { const t = task(a.dataset.id); updTask(t.id, {links:[...new Set([...(t.links||[]), a.value])]}); }
@@ -2219,7 +2419,7 @@ document.addEventListener('submit', async e => {
   if (k==='step-add') { const t = clip(f.s.value,160); if (!t) return; const tk = task(f.dataset.id); updTask(tk.id, {sub:[...(tk.sub||[]), {t, done:false}]}).then(ok => { if (ok) setTimeout(()=>{ const i = $('#drawer [data-form="step-add"] input'); if (i) i.focus(); }, 60); }); f.s.value = ''; }
   if (k==='task-edit') { const t = task(f.dataset.id); const title = clip(f.title.value,160); if (!title) return;
     const ds = formDepts(f); if (!ds.length) return;
-    const ok = await updTask(t.id, {title, tldr:clip(f.tldr.value,240), details:clip(f.details.value,8000), dept:ds[0], depts:ds, size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value)});
+    const ok = await updTask(t.id, {title, tldr:clip(f.tldr.value,240), details:clip(f.details.value,8000), dept:ds[0], depts:ds, size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value), ver:f.ver.value||null});
     if (ok) { log('изменил(а) задачу', title, ds[0]); UI.edit = false; paintDrawer();
       const who = f.who.value||null, due = parseDay(f.due.value), nt = {id:t.id, title};
       if (who && who!==t.who) notify(who, 'assign', nt, due ? 'Срок: '+dateFmt(due) : '');
@@ -2236,6 +2436,8 @@ document.addEventListener('submit', async e => {
     const key = f.dataset.key, r = REGS[key], id = f.dataset.id; const data = {};
     for (const fl of r.fields) data[fl.k] = fl.t==='textarea' ? clip(f[fl.k].value,8000) : fl.t==='url' ? (safeUrl(f[fl.k].value.trim()) || '') : clip(f[fl.k].value,300);
     if (!data.name) return;
+    if (key==='cef/screens' && data.status==='Вёрстка') { const m = S.reg.find(x=>x.key==='design/mockups' && x.name===data.mockup);
+      if (!m || m.status!=='Утверждён') { if (!confirm(m ? 'Макет «'+m.name+'» ещё не утверждён ('+(m.status||'без статуса')+'). Всё равно начать вёрстку?' : 'У экрана нет макета. Всё равно начать вёрстку?')) return; } }
     const dept = key.split('/')[0];
     const ref = id ? col('hub_reg').doc(id) : col('hub_reg').doc(), pend = REG_PENDING.map(p=>p.file);
     const ok = id ? await write(()=>ref.update(Object.assign(data, stamp())))
@@ -2315,6 +2517,7 @@ function viewRoute(){
   if (!S.loaded.has('hub_tasks') || !S.loaded.has('hub_people')) return '<div class="loading"><span class="spin"></span>Загружаем данные команды…</div>';
   const r = UI.route;
   if (r==='tasks') return viewTasks();
+  if (r==='lead') return viewLead();
   if (r==='decisions') return viewDecisions();
   if (r==='inbox') return viewInbox();
   if (r==='log') return viewLog();
@@ -2335,7 +2538,7 @@ function focusKey(el){
 function paint(){
   if (document.body.classList.contains('locked')) return;
   /* данные экономики грузим, только когда их открыли: сама экономика, общий список багов и журнал */
-  if (UI.route.startsWith('d/econ') || UI.route==='log' || (UI.route==='d/qa' && UI.tab==='bugs')) econListen();
+  if (UI.route.startsWith('d/econ') || UI.route==='log' || UI.route==='lead' || (UI.route==='d/qa' && UI.tab==='bugs')) econListen();
   const ae = document.activeElement, fk = focusKey(ae), sy = scrollY, sel = ae && ae.id && 'selectionStart' in ae ? [ae.selectionStart, ae.selectionEnd] : null;
   const ms = $('#msgs'), mst = ms ? {top:ms.scrollTop, end:ms.scrollHeight-ms.scrollTop-ms.clientHeight < 60, chat:UI.chat} : null;
   $('#side').innerHTML = sidebar();
@@ -2396,7 +2599,7 @@ const watchers = t => [t.who, t.createdBy];
 function notify(to, kind, t, text){
   if (!t || !t.id) return;
   const list = [...new Set([].concat(to||[]))].filter(u => u && u!==S.me && S.people[u]);
-  for (const u of list) col('hub_notifs').add({to:u, by:S.me, at:now(), kind, task:t.id, title:clip(t.title,160), text:clip(text||'',300), read:false})
+  for (const u of list) col('hub_notifs').add(Object.assign({to:u, by:S.me, at:now(), kind, task:t.id, title:clip(t.title,160), text:clip(text||'',300), read:false}, expireIn(60)))
     .catch(e => console.warn('уведомление не отправлено', e.code));
 }
 /* @логин или @Имя (первое слово имени) */
@@ -2638,7 +2841,9 @@ function listen(){
   UNSUB.push(col('hub_claude').where('end','>',now()-14*86400e3).onSnapshot(sn => { S.claude = docs(sn); schedule(); }, onErr('hub_claude')));
   let lastLevel = null;
   UNSUB.push(col('hub_people').onSnapshot(sn => {
-    const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); S.people = p; S.loaded.add('hub_people'); normalizeDepts(); listenTasks();
+    /* в «Людях» только участники; новые аккаунты ждут одобрения руководителя в S.pending */
+    const p = {}, wait = []; sn.docs.forEach(d => { const x = d.data(); if (isMemberP(x)) p[d.id] = x; else wait.push(Object.assign({id:d.id}, x)); });
+    S.people = p; S.pending = wait.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)); S.loaded.add('hub_people'); normalizeDepts(); listenTasks();
     const lv = level(); if (lastLevel!==null && lv>lastLevel && !P.calm) { toast(ic('PartyPopper')+' Новый уровень: '+lv); confetti(innerWidth/2, innerHeight/2, 60); } lastLevel = lv;
     schedule();
   }, onErr('hub_people')));
@@ -2688,7 +2893,7 @@ async function ensureMe(user, nameHint){
   const ref = col('hub_people').doc(user.uid); const d = await ref.get();
   if (!d.exists) {
     let h = 0; for (const c of user.uid) h = (h*31 + c.charCodeAt(0)) >>> 0;
-    await ref.set({name:nameHint || user.displayName || login, login, role:'', depts:[], color:PERSON_COLORS[h % PERSON_COLORS.length], xp:0, days:[], top3:[], last:null, focus:null, seen:now(), createdAt:now()});
+    await ref.set({name:nameHint || user.displayName || login, login, role:'', depts:[], approved:false, color:PERSON_COLORS[h % PERSON_COLORS.length], xp:0, days:[], top3:[], last:null, focus:null, seen:now(), createdAt:now()});
   } else await ref.update({seen:now(), login});
 }
 let presenceTimer = null;
@@ -2773,6 +2978,8 @@ async function enter(user){
   try {
     await ensureMe(user, pendingName);
     if (pendingName) { await col('hub_people').doc(S.me).update({name:pendingName}); pendingName = null; }
+    const mine = await col('hub_people').doc(S.me).get();
+    if (!isMemberP(mine.data())) { gateBusy = false; return waitApproval(user); }
     seedIfEmpty().catch(e => console.error('seed', e));
   } catch (e) {
     console.error(e); gateBusy = false;
@@ -2785,7 +2992,18 @@ async function enter(user){
   if (window.Notification && Notification.permission==='granted') swReg().then(() => pushToken(false));
   clearInterval(presenceTimer); presenceTimer = setInterval(presence, PRESENCE_MS);
 }
-function lock(){ titleBadge(0); S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
+/* новый аккаунт ждёт, пока руководитель одобрит его в «Людях»; как только одобрили — входим сами */
+let WAIT_UNSUB = null;
+function waitApproval(user){
+  $('#gate-card').innerHTML = BRAND + `<div class="gate-wait"><b>${ic('Clock')} Заявка отправлена</b><p>Руководитель увидит её в разделе «Люди» и одобрит — хаб откроется сам, обновлять страницу не нужно. Можно написать руководителю, чтобы ускорить.</p></div><button class="btn" id="g-out">${ic('LogOut')} Выйти</button>`;
+  $('#g-out').onclick = () => AUTH.signOut();
+  if (WAIT_UNSUB) WAIT_UNSUB();
+  WAIT_UNSUB = col('hub_people').doc(user.uid).onSnapshot(d => {
+    if (!isMemberP(d.data())) return;
+    WAIT_UNSUB(); WAIT_UNSUB = null; enter(user);
+  }, e => console.warn('ожидание одобрения', e.code));
+}
+function lock(){ if (WAIT_UNSUB) { WAIT_UNSUB(); WAIT_UNSUB = null; } titleBadge(0); S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
 applyPrefs();
 try {
   if (!window.firebase || !firebase.auth || !firebase.firestore) throw new Error('sdk');

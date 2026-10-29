@@ -1,28 +1,43 @@
 rules_version = '2';
-// Правила для проекта kentucky-economy: Firebase Console → Firestore Database → Rules.
-// Хаб (/hub/) доступен только вошедшим. Экономика (/economy/) работает без входа, как раньше.
+// Правила для проекта kentucky-economy: Firebase Console → Firestore Database → Rules
+// (или firebase deploy --only firestore:rules).
+// Хаб (/hub/) открыт только участникам команды. Экономику (/economy/) читать может кто угодно, менять — только участники.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     // ── Kentucky Hub ──
-    // Отделы (depts) и отметку руководителя (admin) меняет только руководитель.
+    // Отделы (depts), отметку руководителя (admin) и одобрение (approved) меняет только руководитель.
     // Первого руководителя назначают вручную: hub_people → свой документ → поле admin (boolean) = true.
+    function signedIn() { return request.auth != null; }
     function meDoc() { return get(/databases/$(database)/documents/hub_people/$(request.auth.uid)).data; }
-    function isAdmin() { return request.auth != null && meDoc().get('admin', false) == true; }
+    function hasMe() { return signedIn() && exists(/databases/$(database)/documents/hub_people/$(request.auth.uid)); }
+    function isAdmin() { return hasMe() && meDoc().get('admin', false) == true; }
     function myDepts() { return meDoc().get('depts', []); }
+    // Участник команды: одобрен руководителем или уже состоит в отделе. Аккаунт, созданный в обход кода команды,
+    // попадает в очередь «ждёт одобрения» и ничего, кроме своего профиля, не видит.
+    function isMember() {
+      return hasMe() && (meDoc().get('approved', false) == true || meDoc().get('admin', false) == true || meDoc().get('depts', []).size() > 0);
+    }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function setsMe(f) { return request.resource.data.get(f, null) == request.auth.uid; }
+    function isMine(f) { return resource.data.get(f, null) == request.auth.uid; }
+    function short(f, n) { return !(f in request.resource.data) || (request.resource.data[f] is string && request.resource.data[f].size() <= n); }
+    function dpath(c, id) { return /databases/$(database)/documents/$(c)/$(id); }
 
     match /hub_people/{uid} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null && request.auth.uid == uid
+      allow read: if isMember() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.get('depts', []).size() == 0
-        && request.resource.data.get('admin', false) == false;
-      allow update: if request.auth != null && (
-        (request.auth.uid == uid && !changed().hasAny(['depts', 'admin']))
-        || (isAdmin() && changed().hasOnly(['depts', 'admin'])));
+        && request.resource.data.get('admin', false) == false
+        && request.resource.data.get('approved', false) == false;
+      allow update: if signedIn() && (
+        (request.auth.uid == uid && !changed().hasAny(['depts', 'admin', 'approved']))
+        || (isAdmin() && changed().hasOnly(['depts', 'admin', 'approved'])));
+      // отклонить заявку: руководитель удаляет профиль, который ещё не стал участником
+      allow delete: if isAdmin() && request.auth.uid != uid;
     }
-    // Задачи видят все. Меняют и удаляют участники отделов задачи, остальные могут только дописать комментарий.
-    // Создать задачу для любого отдела может каждый.
+    // Задачи видят все участники. Меняют и удаляют участники отделов задачи и руководитель.
+    // Создать задачу для любого отдела может каждый участник.
     // dept — основной отдел, depts — все отделы задачи. Отделы перечислены явно: так база
     // может проверить запрос where('depts', 'array-contains', отдел).
     function shares(d) { return d in myDepts() && d in resource.data.get('depts', []); }
@@ -31,44 +46,110 @@ service cloud.firestore {
         || shares('dev') || shares('cef') || shares('design') || shares('art3d') || shares('gd') || shares('econ')
         || shares('qa') || shares('release') || shares('admin') || shares('smm') || shares('donate') || shares('analytics');
     }
+    // старые клиенты дописывают комментарий в поле comments: только в конец, прежние не трогая
     function isComment() {
       let before = resource.data.get('comments', []);
       let after = request.resource.data.get('comments', []);
       return changed().hasOnly(['comments', 'updatedAt', 'updatedBy'])
         && after.size() == before.size() + 1
+        && after[0:before.size()] == before
         && after[after.size() - 1].by == request.auth.uid;
     }
     match /hub_tasks/{id} {
-      allow read, create: if request.auth != null;
-      allow update: if request.auth != null && (seesTask() || isComment());
-      allow delete: if request.auth != null && seesTask();
+      allow read, create: if isMember();
+      allow update: if isMember() && (seesTask() || isAdmin() || isComment());
+      allow delete: if isMember() && (seesTask() || isAdmin());
     }
     // Входящие личные: каждый видит и удаляет только свои
     match /hub_inbox/{id} {
-      allow read, delete: if request.auth != null && resource.data.by == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.by == request.auth.uid;
+      allow read, delete: if isMember() && isMine('by');
+      allow create: if isMember() && setsMe('by');
     }
-    // Уведомления: пишет тот, кто сделал действие (by — он сам, адресат — другой), читает и отмечает прочитанным только адресат
+    // Уведомления: пишет тот, кто сделал действие (by — он сам, адресат — другой), читает и отмечает прочитанным только адресат.
+    // Вид и длина текста ограничены: уведомление уходит в пуш.
     match /hub_notifs/{id} {
-      allow read, delete: if request.auth != null && resource.data.to == request.auth.uid;
-      allow update: if request.auth != null && resource.data.to == request.auth.uid && changed().hasOnly(['read']);
-      allow create: if request.auth != null && request.resource.data.by == request.auth.uid
+      allow read, delete: if signedIn() && isMine('to');
+      allow update: if signedIn() && isMine('to') && changed().hasOnly(['read']);
+      allow create: if isMember() && setsMe('by')
         && request.resource.data.to is string && request.resource.data.to != request.auth.uid
-        && request.resource.data.get('read', false) == false;
+        && request.resource.data.get('read', false) == false
+        && request.resource.data.kind in ['assign', 'unassign', 'comment', 'mention', 'status', 'due']
+        && short('title', 160) && short('text', 300);
     }
     // Токены пуша браузеров: только свои. Функция hubPush читает их с правами сервера
     match /hub_push/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if signedIn() && request.auth.uid == uid;
     }
-    match /{coll}/{id} {
-      allow read, write: if request.auth != null
-        && coll in ['hub_decisions', 'hub_reg', 'hub_wiki', 'hub_log', 'hub_meta', 'hub_files', 'hub_fileparts', 'hub_chats', 'hub_msgs', 'hub_claude'];
+    // Решения: голосовать и фиксировать итог может любой участник, удалить — автор или руководитель
+    match /hub_decisions/{id} {
+      allow read, create, update: if isMember();
+      allow delete: if isMember() && (isMine('createdBy') || isAdmin());
+    }
+    // Записи отделов: удалить — автор, участник этого отдела или руководитель
+    match /hub_reg/{id} {
+      allow read, create, update: if isMember();
+      allow delete: if isMember() && (isMine('createdBy') || isAdmin() || resource.data.key.split('/')[0] in myDepts());
+    }
+    match /hub_wiki/{id} {
+      allow read, create, update: if isMember();
+      allow delete: if isMember() && (isMine('createdBy') || isAdmin());
+    }
+    // Журнал только дописывается, и только от своего имени
+    match /hub_log/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by');
+    }
+    // seed создаёт первый вошедший (стартовое наполнение), дальше служебные документы меняет только руководитель
+    match /hub_meta/{id} {
+      allow read, create: if isMember();
+      allow update, delete: if isAdmin();
+    }
+    // Чаты: создать от своего имени; последнее сообщение обновляет любой участник; удалить — создатель или руководитель
+    match /hub_chats/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by');
+      allow update: if isMember() && (isMine('by') || isAdmin() || changed().hasOnly(['lastAt', 'lastBy', 'lastText', 'n']));
+      allow delete: if isMember() && (isMine('by') || isAdmin());
+    }
+    match /hub_msgs/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by') && short('text', 4000);
+      allow delete: if isMember() && (isMine('by') || isAdmin()
+        || get(dpath('hub_chats', resource.data.chat)).data.get('by', null) == request.auth.uid);
+    }
+    // Файл удаляет автор, руководитель, создатель чата (вместе с чатом) или кто угодно, если задача или запись уже удалена
+    function dropFile(f) {
+      return f.get('by', null) == request.auth.uid || isAdmin()
+        || (f.get('chat', null) is string && get(dpath('hub_chats', f.chat)).data.get('by', null) == request.auth.uid)
+        || (f.get('task', null) is string && !exists(dpath('hub_tasks', f.task)))
+        || (f.get('reg', null) is string && !exists(dpath('hub_reg', f.reg)));
+    }
+    match /hub_files/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by');
+      allow delete: if isMember() && dropFile(resource.data);
+    }
+    match /hub_fileparts/{id} {
+      allow read, create: if isMember();
+      allow delete: if isMember() && (!exists(dpath('hub_files', resource.data.file)) || dropFile(get(dpath('hub_files', resource.data.file)).data));
+    }
+    // Маленькие превью картинок: отдельно от hub_files, чтобы список файлов не тянул их целиком
+    match /hub_thumbs/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by') && short('th', 400000);
+      allow delete: if isMember() && (!exists(dpath('hub_files', id)) || dropFile(get(dpath('hub_files', id)).data));
+    }
+    match /hub_claude/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by');
+      allow update, delete: if isMember() && (isMine('by') || isAdmin());
     }
 
-    // ── Экономика (/economy/) — без входа, только её коллекции ──
-    // Если раньше здесь было условие (например, срок действия тестового режима), оставь его.
+    // ── Экономика (/economy/): читать может кто угодно, менять — только участники хаба ──
+    // Старая страница /economy/ без входа теперь только показывает данные; править — в хабе.
     match /{coll}/{id} {
-      allow read, write: if coll in ['sections', 'params', 'bugs', 'stages', 'decisions', 'log', 'people', 'meta'];
+      allow read: if coll in ['sections', 'params', 'bugs', 'stages', 'decisions', 'log', 'people', 'meta'];
+      allow write: if coll in ['sections', 'params', 'bugs', 'stages', 'decisions', 'log', 'people', 'meta'] && isMember();
     }
   }
 }

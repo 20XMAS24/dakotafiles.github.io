@@ -5,7 +5,7 @@
   --bg:#0C0D11; --bg-2:#101116;
   --panel:#14151B; --panel-2:#1A1B22; --panel-3:#22232B;
   --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.12);
-  --text:#ECEDF3; --text-2:#A2A4B2; --muted:#6E7080;
+  --text:#ECEDF3; --text-2:#A2A4B2; --muted:#8B8D9D;
   /* выбранное: пункт меню, вкладка, сегмент — светлее фона, с рамкой */
   --sel:#252632; --sel-line:rgba(255,255,255,.14); --sel-fg:#FFFFFF;
   /* главная кнопка — светлая */
@@ -35,7 +35,7 @@
   --bg:#EEF0F4; --bg-2:#F5F6F9;
   --panel:#FFFFFF; --panel-2:#F5F6F9; --panel-3:#EBEDF2;
   --line:rgba(20,22,40,.08); --line-2:rgba(20,22,40,.14);
-  --text:#14151B; --text-2:#525566; --muted:#868999;
+  --text:#14151B; --text-2:#525566; --muted:#64677A;
   --sel:#E6E8F0; --sel-line:rgba(20,22,40,.14); --sel-fg:#0C0D11;
   --btn:#14151B; --btn-hover:#262833; --on-btn:#FFFFFF;
   --acc:#6F5CE0; --acc-2:#6F5CE0; --acc-deep:#5541C4; --on-acc:#FFFFFF;
@@ -140,6 +140,7 @@ body:not(.locked) .gate{display:none}
 .brand small{color:var(--muted);font-size:12px}
 .nav-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:16px 10px 6px;display:flex;justify-content:space-between;align-items:center;font-weight:700}
 .nav-h button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:11.5px;padding:2px 6px;border-radius:6px;text-transform:none;letter-spacing:0;font-weight:600}
+.nav-h button:first-of-type{margin-left:auto}
 .nav-h button:hover{color:var(--text);background:var(--panel-2)}
 .nav{display:flex;flex-direction:column;gap:2px}
 .nav a{display:flex;align-items:center;gap:10px;min-height:calc(36px*var(--pad));padding:calc(5px*var(--pad)) 10px;border-radius:10px;border:1px solid transparent;color:var(--text-2);text-decoration:none;font-size:14px;font-weight:600;position:relative;transition:background .12s,color .12s}
@@ -186,7 +187,7 @@ body:not(.locked) .gate{display:none}
 .faces .av:first-child{margin-left:0}
 .focus-pill{display:flex;align-items:center;gap:8px;border-radius:12px;padding:8px 13px;background:var(--acc-bg);color:var(--acc-2);font-size:13px;font-weight:700;border:1px solid var(--acc-line);cursor:pointer;white-space:nowrap}
 .focus-pill .mono{font-size:12.5px}
-@media (max-width:700px){.focus-pill .lbl,.btn.hide-sm{display:none}}
+@media (max-width:700px){.focus-pill .lbl,.btn.hide-sm,.focus-btn .lbl{display:none}}
 @media (max-width:480px){.faces .av:nth-child(n+3){display:none}}
 
 /* ── кнопки ── */
@@ -331,7 +332,7 @@ details.more .body{padding:0 0 14px;color:var(--text-2);font-size:14px;white-spa
 body:has(.board) .topbar .in{max-width:none}
 .board{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;padding-bottom:10px;align-items:start}
 /* на телефоне колонки листаются по одной и встают ровно */
-@media (max-width:640px){.board{grid-template-columns:repeat(5,82%);overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:-16px;padding-inline:16px;scroll-padding-inline:16px}.colm{scroll-snap-align:start}}
+@media (max-width:640px){.board{grid-template-columns:repeat(6,82%);overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:-16px;padding-inline:16px;scroll-padding-inline:16px}.colm{scroll-snap-align:start}}
 .colm{background:var(--muted-bg);border:1px solid var(--line);border-radius:var(--r);padding:8px;display:flex;flex-direction:column;gap:8px;min-height:150px}
 .colm.drop{border-color:var(--acc-line);background:var(--acc-bg)}
 .colm-h{display:flex;align-items:center;gap:8px;padding:6px 8px 4px;font-weight:700;font-size:13.5px}
@@ -830,3 +831,14 @@ details.mdp>.md{margin-top:8px;padding:10px 12px;border:1px dashed var(--line-2)
 .due{display:inline-flex;align-items:center;gap:4px;font:700 11px var(--f-display);padding:2px 7px;border-radius:6px;white-space:nowrap}
 .due .ic{width:12px;height:12px}
 .due.t-muted{color:var(--muted);background:var(--muted-bg)}
+
+/* ── ожидание одобрения руководителем ── */
+.gate-wait{display:flex;flex-direction:column;gap:6px;padding:4px 0 8px}
+.gate-wait b{display:flex;gap:8px;align-items:center;font-size:15px}
+.gate-wait p{margin:0;color:var(--text-2);font-size:13.5px;line-height:1.5}
+
+/* ── причина блокировки задачи ── */
+.blk{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;color:var(--red);line-height:1.35}
+.blk .ic{width:14px;height:14px;flex:none;margin-top:1px}
+.ver-p{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.ver-p small{color:var(--text-2);font-size:12.5px}
