@@ -872,16 +872,25 @@ const attachBtn = (action, id, label) => `<label class="btn sm" title="До ${fs
    Общие для всей команды. Чат задачи создаётся кнопкой в карточке задачи и доступен всем. */
 const chat = id => S.chats.find(c=>c.id===id);
 const READ_AT = {};
-const chatUnread = c => !!c.lastAt && c.lastBy!==S.me && c.lastAt > Math.max((me().reads||{})[c.id]||0, READ_AT[c.id]||0);
+const chatUnread = c => !c.stub && !!c.lastAt && c.lastBy!==S.me && c.lastAt > Math.max((me().reads||{})[c.id]||0, READ_AT[c.id]||0);
 function markRead(id){
   const c = chat(id); if (!c || !chatUnread(c) || document.hidden) return;
   READ_AT[id] = c.lastAt; col('hub_people').doc(S.me).update({['reads.'+id]:c.lastAt}).catch(()=>{});
 }
-const unreadChats = () => S.chats.filter(c=>!isThread(c) && chatUnread(c)).length;
+const unreadChats = () => S.chats.filter(chatUnread).length;
+/* обсуждение задачи — это её чат: тот же, что в карточке. У задачи со старыми комментариями чата ещё может не быть —
+   в списке она всё равно есть (id «task:…»), а настоящий чат заводится первым сообщением */
+function taskChatStubs(){
+  return S.allTasks.filter(t=>(t.comments||[]).length && !threadChat('task', t.id)).map(t => { const l = [...t.comments].sort((a,b)=>a.at-b.at).pop();
+    return {id:'task:'+t.id, stub:true, title:t.title, task:t.id, dept:t.dept, by:t.createdBy, createdAt:t.createdAt, lastAt:l.at, lastBy:l.by, lastText:l.text}; });
+}
+const chatOrStub = id => chat(id) || (String(id||'').startsWith('task:') ? taskChatStubs().find(c=>c.id===id) : null);
 function chatItem(c){
-  const t = c.task && S.allTasks.find(x=>x.id===c.task), d = D[t ? t.dept : c.dept] || null;
+  const t = c.task && S.allTasks.find(x=>x.id===c.task), it = c.reg && regItem(c.reg);
+  const d = D[t ? t.dept : it ? it.key.split('/')[0] : c.dept] || null;
+  const kind = c.task ? 'Задача' : c.reg ? 'Запись' : '';
   return `<a class="chat-i${UI.chat===c.id?' on':''}" href="#/chats/${esc(c.id)}" style="--dc:${d?d.color:'var(--acc)'}">
-    <span class="ph-ico">${ic(c.task ? (d?d.icon:'LayoutGrid') : 'MessagesSquare')}</span>
+    <span class="ph-ico" title="${kind ? kind+(d?': '+esc(d.name):'') : 'Общий чат'}">${ic(kind ? (d?d.icon:'LayoutGrid') : 'MessagesSquare')}</span>
     <span class="bd"><b>${esc(c.title)}</b><small>${c.lastText ? esc(pname(c.lastBy).split(' ')[0])+': '+esc(clip(c.lastText,60)) : 'Пока без сообщений'}</small></span>
     <span class="r"><small>${c.lastAt?ago(c.lastAt).replace(' назад',''):''}</small>${chatUnread(c)?'<i class="udot" aria-label="Есть новые"></i>':''}</span></a>`;
 }
@@ -895,29 +904,46 @@ function msgHtml(m, prev, thread){
     ${m.by===S.me && !m.old?`<button class="mini-x" data-action="msg-del" data-id="${esc(m.id)}" aria-label="Удалить сообщение" title="Удалить">${ic('Trash2')}</button>`:''}</div>`;
 }
 function viewChats(){
-  const list = S.chats.filter(c=>!isThread(c)).sort((a,b)=>(b.lastAt||b.createdAt||0)-(a.lastAt||a.createdAt||0));
-  let c = UI.chat && chat(UI.chat);
-  /* старая ссылка на чат задачи или записи: обсуждение теперь в карточке — открываем её */
-  if (c && isThread(c)) { const th = c; c = null; setTimeout(() => th.task ? go('task/'+encodeURIComponent(th.task)) : openReg(th.reg), 0); }
-  listenChat(c ? c.id : null);
-  if (c) markRead(c.id);
-  const t = c && c.task && S.allTasks.find(x=>x.id===c.task);
-  let main = `<div class="empty" style="margin:auto"><b>${ic('MessagesSquare')} Выбери чат слева</b>Или создай новый — его увидит вся команда. Обсуждать задачу или запись отдела удобнее прямо в её карточке.</div>`;
+  const list = [...S.chats, ...taskChatStubs()].sort((a,b)=>(b.lastAt||b.createdAt||0)-(a.lastAt||a.createdAt||0));
+  const c = UI.chat && chatOrStub(UI.chat);
+  listenChat(c && !c.stub ? c.id : null);
+  if (c && !c.stub) markRead(c.id);
+  const t = c && c.task && S.allTasks.find(x=>x.id===c.task), it = c && c.reg && regItem(c.reg);
+  let main = `<div class="empty" style="margin:auto"><b>${ic('MessagesSquare')} Выбери чат слева</b>Или создай новый — его увидит вся команда. Чат задачи появляется, как только в ней кто-то напишет.</div>`;
   if (UI.chat && !c && S.loaded.has('hub_chats')) main = `<div class="empty" style="margin:auto"><b>Чат не найден</b>Возможно, его удалили.<a class="btn sm" href="#/chats">К списку</a></div>`;
   if (c) {
-    const msgs = S.msgs;
-    main = `<div class="chat-h"><a class="icon-btn chat-back" href="#/chats" aria-label="К списку чатов">${ic('ArrowRight')}</a><div class="bd"><b>${esc(c.title)}</b>
-      <small>${t ? (true ? `<span class="lnk" data-open="task:${esc(t.id)}">${ic('LayoutGrid')} Открыть задачу</span> · `:'')+dchips(t) : c.task ? (c.dept && !canSee(c.dept) ? 'Задача отдела '+dchip(c.dept) : 'Задача удалена') : 'Создал(а) '+esc(pname(c.by))}</small></div>
-      <button class="icon-btn" data-action="chat-md" data-id="${esc(c.id)}" title="Скачать переписку в .md" aria-label="Скачать переписку в .md">${ic('FileDown')}</button>
-      ${c.by===S.me?`<button class="icon-btn" data-action="chat-del" data-id="${esc(c.id)}" title="Удалить чат" aria-label="Удалить чат">${ic('Trash2')}</button>`:''}</div>
-      <div class="msgs" id="msgs">${!S.loaded.has('hub_msgs') ? '<div class="loading"><span class="spin"></span>Загружаем сообщения…</div>' : msgs.map((m,i)=>msgHtml(m, msgs[i-1])).join('') || '<div class="empty" style="margin:auto">Здесь пока тихо. Напиши первым.</div>'}</div>
-      ${upBar('chat:'+c.id)}
+    /* в чате задачи видны и старые комментарии из карточки */
+    const old = ((t && t.comments) || []).map(x => Object.assign({files:[]}, x, {old:true}));
+    const msgs = [...old, ...(c.stub ? [] : S.msgs)].sort((a,b)=>a.at-b.at);
+    const loading = !c.stub && !S.loaded.has('hub_msgs');
+    const sub = t ? `<span class="lnk" data-open="task:${esc(t.id)}">${ic('LayoutGrid')} Открыть задачу</span> · `+dchips(t)
+      : it ? `<span class="lnk" data-action="open-reg" data-id="${esc(it.id)}">${ic('BookOpen')} Открыть запись</span> · `+dchip(it.key.split('/')[0])
+      : c.task ? (c.dept && !canSee(c.dept) ? 'Задача отдела '+dchip(c.dept) : 'Задача удалена') : c.reg ? 'Запись удалена' : 'Создал(а) '+esc(pname(c.by));
+    main = `<div class="chat-h"><a class="icon-btn chat-back" href="#/chats" aria-label="К списку чатов">${ic('ArrowRight')}</a><div class="bd"><b>${esc(c.title)}</b><small>${sub}</small></div>
+      ${c.stub ? `<button class="icon-btn" data-action="task-md" data-id="${esc(c.task)}" title="Скачать переписку в .md" aria-label="Скачать переписку в .md">${ic('FileDown')}</button>`
+        : `<button class="icon-btn" data-action="chat-md" data-id="${esc(c.id)}" title="Скачать переписку в .md" aria-label="Скачать переписку в .md">${ic('FileDown')}</button>`}
+      ${c.by===S.me && !c.stub && !isThread(c)?`<button class="icon-btn" data-action="chat-del" data-id="${esc(c.id)}" title="Удалить чат" aria-label="Удалить чат">${ic('Trash2')}</button>`:''}</div>
+      <div class="msgs" id="msgs">${loading ? '<div class="loading"><span class="spin"></span>Загружаем сообщения…</div>' : msgs.map((m,i)=>msgHtml(m, msgs[i-1])).join('') || '<div class="empty" style="margin:auto">Здесь пока тихо. Напиши первым.</div>'}</div>
+      ${c.stub ? '' : upBar('chat:'+c.id)}
       <form class="composer" data-form="msg" data-id="${esc(c.id)}">${attachBtn('chat-attach', c.id)}
         <textarea class="input" id="chat-in" name="m" rows="1" maxlength="4000" placeholder="Сообщение… Enter — отправить, Shift+Enter — новая строка. Картинку можно вставить из буфера.">${esc(UI.chatDraft[c.id]||'')}</textarea>
         <button class="btn primary" aria-label="Отправить">${ic('Send')}</button></form>`;
   }
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#7DD3E8">${ic('MessagesSquare')}</span><div><h1>Чаты</h1><p>Общие каналы команды. Обсуждение задачи или записи отдела — прямо в её карточке.</p></div></div><button class="btn primary" data-action="chat-new">${ic('Plus')} Чат</button></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#7DD3E8">${ic('MessagesSquare')}</span><div><h1>Чаты</h1><p>Общие каналы и обсуждения задач и записей. Чат задачи — тот же, что в её карточке: пишите где удобнее.</p></div></div><button class="btn primary" data-action="chat-new">${ic('Plus')} Чат</button></div>
   <div class="chats${c?' open':''}"><aside class="chat-list">${list.map(chatItem).join('') || '<div class="empty">Чатов пока нет.</div>'}</aside><section class="chat-main">${main}</section></div>`;
+}
+/* сообщение в чат задачи или записи идёт через обсуждение: те же уведомления и запись в журнал */
+async function chatSend(id, text, files){
+  const c = chatOrStub(id); if (!c) return false;
+  if (!c.task && !c.reg) return sendMsg(id, text, files);
+  const ok = await threadSend(c.task ? 'task' : 'reg', c.task || c.reg, text, files);
+  if (ok && c.stub) { const r = threadChat('task', c.task); if (r) go('chats/'+r.id); }
+  return ok;
+}
+async function chatFiles(id, list){
+  const c = chatOrStub(id); if (!c) return;
+  if (c.stub) { const cid = await threadChatId('task', c.task); if (!cid) return; id = cid; }
+  const ids = await uploadFiles(list, {chat:id}); if (ids.length) chatSend(id, '', ids);
 }
 /* ── обсуждение в карточке ──────────────────────
    У задачи и у записи отдела одна лента прямо в карточке: старые комментарии задачи (поле comments)
@@ -943,12 +969,13 @@ function threadMsgs(k, id){
 function threadList(k, id){
   const msgs = threadMsgs(k, id);
   if (!TH.loaded) return '<div class="loading"><span class="spin"></span>Загружаем обсуждение…</div>';
+  const c = threadChat(k, id); if (c) markRead(c.id); // прочитано в карточке — в «Чатах» не горит как новое
   return msgs.map((m,i)=>msgHtml(m, msgs[i-1], true)).join('') || '<small style="color:var(--muted)">Пока никто не писал. Вопрос, ответ, скриншот — всё сюда. @логин позовёт человека.</small>';
 }
 const threadCount = (k, id) => threadMsgs(k, id).length;
 function threadBlock(k, id){
   const c = threadChat(k, id), n = threadCount(k, id);
-  return `<div class="thread" id="thread" data-k="${k}" data-id="${esc(id)}"><p class="sub-h" style="margin:0">Обсуждение<span id="thread-n">${n?' · '+n:''}</span></p>
+  return `<div class="thread" id="thread" data-k="${k}" data-id="${esc(id)}"><div style="display:flex;align-items:center;gap:8px"><p class="sub-h" style="margin:0">Чат${k==='task'?' задачи':''}<span id="thread-n">${n?' · '+n:''}</span></p><span style="flex:1"></span><a class="btn sm ghost" id="thread-go" href="#/chats/${esc(c ? c.id : 'task:'+id)}" ${c || n ? '' : 'hidden'} title="Тот же чат в разделе «Чаты»">${ic('MessagesSquare')} В «Чатах»</a></div>
     <div class="msgs" id="thread-list">${threadList(k, id)}</div><div id="thread-up">${c ? upBar('chat:'+c.id) : ''}</div>
     <form class="composer" data-form="thread" data-k="${k}" data-id="${esc(id)}">${attachBtn('thread-attach', k+':'+id)}
       <textarea class="input" id="thread-in" name="m" rows="1" maxlength="4000" placeholder="Написать… Enter — отправить, Shift+Enter — новая строка. Картинку можно вставить из буфера."></textarea>
@@ -960,6 +987,7 @@ function paintThread(){
   const k = el.dataset.k, id = el.dataset.id, c = threadChat(k, id), n = threadCount(k, id);
   $('#thread-list').innerHTML = threadList(k, id);
   $('#thread-n').textContent = n ? ' · '+n : '';
+  const g = $('#thread-go'); g.hidden = !(c || n); g.setAttribute('href', '#/chats/'+(c ? c.id : 'task:'+id));
   $('#thread-up').innerHTML = c ? upBar('chat:'+c.id) : '';
 }
 async function threadChatId(k, id){
@@ -1950,7 +1978,7 @@ function palItems(q){
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:(D[t.dept]||DEPTS[0]).icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
   const decs = S.decisions.map(d=>({g:'Решения', ico:'Scale', t:d.q, extra:d.tldr, run:()=>openDec(d.id)}));
   const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>openReg(r.id)}));
-  const chats = S.chats.filter(c=>!isThread(c)).map(c=>({g:'Чаты', ico:'MessagesSquare', t:c.title, extra:c.lastText, run:()=>go('chats/'+c.id)}));
+  const chats = S.chats.map(c=>({g:'Чаты', ico:'MessagesSquare', t:c.title, extra:c.lastText, run:()=>go('chats/'+c.id)}));
   const wiki = S.wiki.map(w=>({g:'Вики', ico:'BookOpen', t:w.title, extra:w.tldr, run:()=>openDrawer('wiki:'+w.id)}));
   const people = Object.entries(S.people).map(([id,p])=>({g:'Люди', ico:'User', t:p.name, extra:p.role, run:()=>go('people')}));
   const eco = !S.E ? [] : [
@@ -2167,7 +2195,7 @@ document.addEventListener('change', e => {
   if (a.dataset.action==='reg-attach' && a.files.length) { const list = [...a.files]; a.value = ''; addRegFiles(a.dataset.id, list); }
   if (a.dataset.action==='thread-attach' && a.files.length) { const [tk, tid] = a.dataset.id.split(':'), list = [...a.files]; a.value = ''; threadFiles(tk, tid, list); }
   if (a.dataset.action==='chat-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
-    uploadFiles(list, {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); }); }
+    chatFiles(id, list); }
   if (a.name==='day' && a.form && a.form.dataset.form==='claude-book') { a.form.from.innerHTML = claudeTimes(Number(a.value)).map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join(''); }
   if (a.dataset.action==='check') { const it = regItem(a.dataset.id); write(()=>col('hub_reg').doc(a.dataset.id).update({done:a.checked, updatedAt:now(), updatedBy:S.me})).then(ok => { if (ok && a.checked) { log('отметил(а) пункт', it.name, it.key.split('/')[0]); gain(2, ic('ListChecks')+' Отмечено'); } }); }
   if (a.dataset.action==='step') { const t = task(a.dataset.id); const sub = (t.sub||[]).map((s,i)=>i===Number(a.dataset.i)?{t:s.t, done:a.checked}:s); updTask(t.id, {sub}).then(ok => ok && a.checked && gain(2, ic('ListChecks')+' Шаг выполнен')); }
@@ -2182,7 +2210,7 @@ document.addEventListener('submit', async e => {
     const ok = await write(()=>ref.set({title, task:null, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''}));
     if (ok) { closeOverlay(); log('создал(а) чат', title); go('chats/'+ref.id); } }
   if (k==='msg') { const id = f.dataset.id, text = f.m.value; if (!text.trim()) return; f.m.value = ''; UI.chatDraft[id] = '';
-    const ok = await sendMsg(id, text.trim()); if (!ok) { f.m.value = text; UI.chatDraft[id] = text; } const i = $('#chat-in'); if (i) i.focus(); }
+    const ok = await chatSend(id, clip(text.trim(),4000), []); if (!ok) { f.m.value = text; UI.chatDraft[id] = text; } const i = $('#chat-in'); if (i) i.focus(); }
   if (k==='claude-book') { const s = Number(f.from.value); if (!s) return; const ok = await bookClaude(s, s+Number(f.dur.value), f.note.value);
     if (ok) { UI.cday = Number(f.day.value); closeOverlay(); paint(); } }
   if (k==='thread') { const text = f.m.value.trim(); if (!text) return; f.m.value = '';
@@ -2243,7 +2271,7 @@ document.addEventListener('paste', e => {
   if (e.target.id!=='chat-in') return;
   const files = [...(e.clipboardData && e.clipboardData.files || [])]; if (!files.length) return;
   e.preventDefault(); const id = e.target.form.dataset.id;
-  uploadFiles(files.map(shotName), {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); });
+  chatFiles(id, files.map(shotName));
 });
 const dragFiles = e => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
 document.addEventListener('dragover', e => { const g = e.target.closest && e.target.closest('#reg-gal'); if (!g || !dragFiles(e)) return; e.preventDefault(); g.classList.add('drag'); });
