@@ -224,6 +224,11 @@ input.input:not([type=checkbox]):not([type=radio]),select.input{height:40px}
 .seg button{height:28px;border:1px solid transparent;background:transparent;border-radius:8px;padding:0 12px;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer;display:flex;gap:6px;align-items:center}
 .seg button:hover{color:var(--text)}
 .seg button[aria-pressed="true"]{background:var(--sel);border-color:var(--sel-line);color:var(--sel-fg)}
+/* фильтр по отделу — ссылки, чтобы фильтр жил в адресе */
+.seg a{height:28px;border:1px solid transparent;border-radius:8px;padding:0 12px;font-size:13px;font-weight:600;color:var(--text-2);text-decoration:none;display:flex;gap:6px;align-items:center}
+.seg a:hover{color:var(--text)}
+.seg a[aria-pressed="true"]{background:var(--sel);border-color:var(--sel-line);color:var(--sel-fg)}
+.seg a .ic{width:14px;height:14px;color:var(--dc,currentColor)}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 
 /* ── заголовок страницы ── */
@@ -645,6 +650,11 @@ table.te thead th.te-corner{left:0;z-index:2}
 .msg:hover .mini-x,.msg .mini-x:focus-visible{opacity:1}
 .composer{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line)}
 .composer textarea{flex:1;resize:none;min-height:40px;max-height:160px;field-sizing:content}
+/* обсуждение в карточке задачи или записи: та же лента, что в чатах, без своей прокрутки */
+.thread{display:flex;flex-direction:column;gap:8px}
+.thread .msgs{padding:0;overflow:visible;flex:none}
+.thread .msg .bd{max-width:100%;flex:1}
+.thread .composer{padding:0;border-top:0}
 @media (max-width:820px){
   .chats{grid-template-columns:minmax(0,1fr);height:calc(100vh - 200px)}
   .chats.open .chat-list{display:none}

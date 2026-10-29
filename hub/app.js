@@ -129,15 +129,21 @@ const DEPTS = [
     tabs:[['overview','Обзор'],['tasks','Задачи'],['assets','Ассеты'],['limits','Лимиты']]},
   {id:'gd', name:'Геймдизайн', icon:'Dice5', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mechanics','Механики'],['jobs','Работы'],['factions','Фракции']]},
-  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', has:['donate','analytics'], tldr:'Деньги сервера целиком: план, параметры, баги, этапы, решения и журнал экономики, донат (позиции, акции, курс) и метрики. Экономические данные те же, что на странице /economy/ — правки видны в обеих.',
-    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['bugs','Баги'],['stages','Этапы'],['edec','Решения'],['elog','Журнал'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['tasks','Задачи']]},
-  {id:'qa', name:'QA и релизы', icon:'FlaskConical', color:'#F49A9A', has:['release'], tldr:'Баги, тест-кейсы, чеклист релиза, версии, changelog и деплой. Релиз выходит, когда чеклист закрыт; критичный баг блокирует релиз, пока не исправлен или не принято решение.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза'],['versions','Версии','release/versions'],['changelog','Changelog','release/changelog'],['deploy','Деплой','release/deploy']]},
-  {id:'admin', name:'Администрация', icon:'Shield', color:'#B8DD8A', tldr:'Правила сервера и фидбек игроков. Предложения игроков голосуются и при поддержке становятся задачами.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['rules','Правила'],['feedback','Фидбек игроков']]},
-  {id:'smm', name:'SMM', icon:'Megaphone', color:'#E3A6F0', tldr:'Контент-план и анонсы. Каждый анонс привязан к релизу, чтобы не анонсировать то, что ещё не готово.',
-    tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Контент-план'],['posts','Анонсы']]}
+  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', has:['donate','analytics'], tldr:'Деньги сервера целиком: план, параметры, этапы, донат (позиции, акции, курс) и метрики. Баги, решения и журнал экономики — в общих разделах с фильтром «Экономика».',
+    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['stages','Этапы'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['tasks','Задачи']]},
+  {id:'qa', name:'QA и релизы', icon:'FlaskConical', color:'#F49A9A', has:['release'], tldr:'Все баги команды (с фильтром по отделу), тест-кейсы, чеклист релиза, версии с changelog и деплой. Релиз выходит, когда чеклист закрыт; критичный баг блокирует релиз, пока не исправлен или не принято решение.',
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза'],['versions','Версии','release/versions'],['deploy','Деплой','release/deploy']]},
+  {id:'admin', name:'Администрация', icon:'Shield', color:'#B8DD8A', tldr:'Фидбек игроков: предложения голосуются и при поддержке становятся задачами. Правила сервера — в Вики.',
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['feedback','Фидбек игроков']]},
+  {id:'smm', name:'SMM', icon:'Megaphone', color:'#E3A6F0', tldr:'Публикации и анонсы в одном плане. Каждый анонс привязан к релизу, чтобы не анонсировать то, что ещё не готово.',
+    tabs:[['overview','Обзор'],['tasks','Задачи'],['plan','Публикации']]}
 ];
+/* вкладки, которые переехали в общие разделы: старые ссылки ведут на новое место */
+const MOVED = {'econ/bugs':'d/qa/bugs/econ', 'econ/edec':'decisions/econ', 'econ/elog':'log/econ', 'admin/rules':'wiki', 'smm/posts':'d/smm/plan', 'qa/changelog':'d/qa/versions'};
+/* записи реестров, которые показываются в другом месте (ключ записи → путь) */
+const REG_HOME = {'admin/rules':'wiki', 'smm/posts':'d/smm/plan', 'release/changelog':'d/qa/versions'};
+/* реестр показывает и записи старых ключей: SMM-анонсы теперь в «Публикациях» */
+const REG_ALSO = {'smm/plan':['smm/posts']};
 /* объединённые отделы: старые id (cef, release, donate, analytics) остаются в базе и ведут в новый отдел */
 const D = Object.fromEntries(DEPTS.flatMap(d=>[[d.id,d], ...(d.has||[]).map(x=>[x,d])]));
 const hd = id => (D[id]||{}).id;                              // старый id → id отдела
@@ -167,10 +173,10 @@ const REGS = {
   'gd/mechanics': {type:'cards', noun:'механику', fields:[fName('Механика'), fTldr, fStatus([['Черновик','muted'],['Обсуждается','info'],['Описано','ok'],['Переделать','red']]), fDetails]},
   'gd/jobs':      {type:'table', noun:'работу', fields:[fName('Работа'), fText('target','Цель, $/ч'), fText('now','Сейчас'), fStatus([['В норме','ok'],['Пересчитать','warn'],['Сломано','red']]), fDetails]},
   'gd/factions':  {type:'table', noun:'фракцию', fields:[fName('Фракция'), {k:'kind', l:'Тип', t:'select', o:[['Гос.','info'],['Банда','warn'],['Мафия','violet'],['Другое','muted']]}, fText('income','Доход'), fStatus([['Черновик','muted'],['Описано','ok']]), fDetails]},
-  'qa/bugs':      {type:'table', noun:'баг', fields:[fName('Баг'), {k:'sev', l:'Важность', t:'select', o:[['Критично','red'],['Высокая','warn'],['Средняя','info'],['Низкая','muted']]}, fText('where','Где',true), fWho(), fStatus([['Открыт','red'],['В работе','warn'],['На ревью','violet'],['Исправлен','ok'],['Не будем','muted']]), fDetails]},
+  'qa/bugs':      {type:'table', noun:'баг', fields:[fName('Баг'), {k:'dept', l:'Отдел', t:'dept'}, {k:'sev', l:'Важность', t:'select', o:[['Критично','red'],['Высокая','warn'],['Средняя','info'],['Низкая','muted']]}, fText('where','Где',true), fWho(), fStatus([['Открыт','red'],['В работе','warn'],['На ревью','violet'],['Исправлен','ok'],['Не будем','muted']]), fDetails]},
   'qa/cases':     {type:'table', noun:'тест-кейс', fields:[fName('Кейс'), fText('steps','Шаги'), fText('expected','Ожидаемо'), fStatus([['Не проверен','muted'],['Проходит','ok'],['Падает','red']]), fDetails]},
   'qa/checklist': {type:'checklist', noun:'пункт', fields:[fName('Пункт')]},
-  'release/versions':{type:'timeline', noun:'версию', fields:[fName('Версия'), fTldr, fStatus([['Готовится','warn'],['Вышла','ok'],['Отменена','muted']]), fDetails]},
+  'release/versions':{type:'timeline', noun:'версию', fields:[fName('Версия'), fTldr, fStatus([['Готовится','warn'],['Вышла','ok'],['Отменена','muted']]), {k:'changes', l:'Changelog — что нового для игроков', t:'textarea'}, fDetails]},
   'release/changelog':{type:'cards', noun:'changelog', fields:[fName('Заголовок'), fTldr, fStatus([['Черновик','muted'],['Опубликован','ok']]), fDetails]},
   'release/deploy':{type:'table', noun:'деплой', fields:[fName('Окружение'), fText('version','Версия',true), fText('when','Когда'), fWho('Кто'), fStatus([['Работает','ok'],['Тестируется','warn'],['Упал','red']]), fDetails]},
   'admin/rules':  {type:'cards', noun:'правило', fields:[fName('Правило'), fTldr, fStatus(S_CARD), fDetails]},
@@ -244,8 +250,10 @@ const SEED = {
 
 /* ── состояние ──────────────────────────────── */
 /* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
-const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
-const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:''};
+/* edec — решения экономики (коллекция decisions, общая со страницей /economy/): их видно в общем разделе «Решения» */
+const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
+/* dfilt / lfilt / bfilt — фильтр по отделу в «Решениях», «Журнале» и «Багах»; приходит из адреса: #/decisions/econ */
+const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
 const PREFS_KEY = 'kyHubPrefs';
 const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
@@ -265,7 +273,7 @@ const adminNames = () => Object.values(S.people).filter(p=>p.admin===true).map(p
 const tDepts = t => [...new Set([t.dept, ...(Array.isArray(t.depts)?t.depts:[])].map(hd).filter(Boolean))];
 const inDept = (t, d) => tDepts(t).includes(d);
 const canEdit = t => tDepts(t).some(canSee); // задачи видят все, меняют участники их отделов
-const roMsg = t => ic('Lock')+' Менять задачу могут участники отдела '+tDepts(t).map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Комментировать можно всем.';
+const roMsg = t => ic('Lock')+' Менять задачу могут участники отдела '+tDepts(t).map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Писать в обсуждении можно всем.';
 const dchips = t => tDepts(t).map(dchip).join('');
 function applyVis(){ S.tasks = S.allTasks; }
 const pname = id => !id ? 'Не назначен' : (S.people[id] && S.people[id].name) || 'Участник';
@@ -332,17 +340,22 @@ function toast(html, xp){
 function readHash(){
   const p = (location.hash||'').replace(/^#\/?/,'').split('/');
   if (p[0]==='task' && p[1]) { UI.pendingTask = decodeURIComponent(p[1]); history.replaceState(null, '', '#/tasks'); p[0] = 'tasks'; }
-  if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; }
+  const moved = p[0]==='d' && D[p[1]] && MOVED[hd(p[1])+'/'+p[2]];
+  if (moved) { history.replaceState(null, '', '#/'+moved); return readHash(); }
+  const filt = v => v && (D[v] ? hd(v) : 'all') || 'all';
+  if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; if (UI.route==='d/qa' && UI.tab==='bugs') UI.bfilt = filt(p[3]); }
   else { UI.route = ['today','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
+  if (UI.route==='decisions') UI.dfilt = filt(p[1]);
+  if (UI.route==='log') UI.lfilt = filt(p[1]);
   UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
 }
 const go = path => { location.hash = '#/'+path; };
-addEventListener('hashchange', () => { readHash(); if (UI.route==='d/econ') eSyncName(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); scrollTo(0,0); });
+addEventListener('hashchange', () => { readHash(); if (UI.route==='d/econ') eSyncName(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); afterPaint(); scrollTo(0,0); });
 
 /* ── боковая панель ─────────────────────────── */
 function sidebar(){
   const r = UI.route, m = me();
-  const openDec = S.decisions.filter(d=>d.chosen==null && (d.votes||{})[S.me]==null).length;
+  const openDec = pendingDecs().length;
   const myTop = (m.top3||[]).map(task).filter(t=>t && t.status!=='done').length;
   const link = (path, icon, name, n, color, hot) =>
     `<a href="#/${path}" ${r===path?'aria-current="page"':''} style="--dc:${color}"><span class="ico">${ic(icon)}</span>${esc(name)}${n?`<span class="n${hot?' hot':''}">${n}</span>`:''}</a>`;
@@ -421,7 +434,7 @@ function viewToday(){
   const left = top.filter(t=>t.status!=='done').length;
   const wd = weekDone(), pct = Math.min(100, Math.round(wd/WEEK_GOAL*100));
   const last = m.last && task(m.last);
-  const pendingVotes = S.decisions.filter(d=>d.chosen==null && (d.votes||{})[S.me]==null);
+  const pendingVotes = pendingDecs();
   const quick = S.tasks.filter(t=>canEdit(t) && t.size==='S' && t.status!=='done' && (!t.who || t.who===S.me) && !(m.top3||[]).includes(t.id)).slice(0,3);
   const online = Object.keys(S.people).filter(id=>id!==S.me && isOnline(id));
   return `
@@ -443,7 +456,7 @@ function viewToday(){
       </section>
       ${pendingVotes.length ? `<section class="panel">
         <div class="panel-h"><h2><span class="hi">${ic('Scale')}</span>Ждут твоего голоса</h2><a class="btn sm ghost" href="#/decisions">Все решения</a></div>
-        <div class="list">${pendingVotes.map(d=>`<div class="item" tabindex="0" data-go="decisions"><div class="bd"><div class="tt">${esc(d.q)}</div><div class="ds">${mdLine(d.tldr)}</div><div class="mt">${dchip(d.dept)}<small style="color:var(--muted)">${plural(Object.keys(d.votes||{}).length,'голос','голоса','голосов')}</small></div></div></div>`).join('')}</div>
+        <div class="list">${pendingVotes.map(d=>`<div class="item" tabindex="0" data-action="open-dec" data-id="${esc(d.id)}"><div class="bd"><div class="tt">${esc(decQ(d))}</div>${decTldr(d)?`<div class="ds">${mdLine(decTldr(d))}</div>`:''}<div class="mt">${dchip(decDept(d))}<small style="color:var(--muted)">${plural(decVoters(d),'голос','голоса','голосов')}</small></div></div></div>`).join('')}</div>
       </section>`:''}
       <section class="panel">
         <div class="panel-h"><h2><span class="hi">${ic('Zap')}</span>Если сил мало: задачи на 15 минут</h2></div>
@@ -481,7 +494,7 @@ function card(t){
     <div class="tt">${esc(t.title)}</div>
     ${t.tldr?`<div class="tl">${mdLine(t.tldr)}</div>`:''}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
-    <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${dueChip(t)}${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(t.comments||[]).length?`<small style="color:var(--muted)">${ic('MessageSquare')} ${t.comments.length}</small>`:''}${av(t.who,22)}</div>
+    <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${dueChip(t)}${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(n => n?`<small style="color:var(--muted)" title="Сообщений в обсуждении">${ic('MessageSquare')} ${n}</small>`:'')((t.comments||[]).length + ((threadChat('task', t.id)||{}).n||0))}${av(t.who,22)}</div>
   </div>`;
 }
 function board(dept){
@@ -501,7 +514,7 @@ function filters(withDept){
 /* задачи отдела видят только те, у кого этот отдел отмечен в профиле */
 const askAdmin = () => isAdmin() ? `<a class="btn sm" href="#/people">${ic('Users')} Назначить отделы</a>`
   : `<small style="color:var(--muted)">Отделы назначает руководитель${adminNames() ? ': '+esc(adminNames()) : ''}.</small>`;
-const roHint = d => `<div class="tldr"><b>${ic('Eye')} Только просмотр</b>Задачи отдела «${esc(d.name)}» меняют его участники. Ты можешь смотреть, комментировать и обсуждать в чате задачи. ${askAdmin()}</div>`;
+const roHint = d => `<div class="tldr"><b>${ic('Eye')} Только просмотр</b>Задачи отдела «${esc(d.name)}» меняют его участники. Ты можешь смотреть и писать в обсуждении задачи. ${askAdmin()}</div>`;
 function viewTasks(){
   const mine = myDepts();
   if (UI.filt.dept==='mine' && (!mine.length || seesAll())) UI.filt.dept = 'all';
@@ -514,7 +527,8 @@ function viewTasks(){
    Решать — вариантами или реакцией (за / против / есть вопросы) */
 const REACTS = [{t:'👍 За', d:''}, {t:'👎 Против', d:''}, {t:'🤔 Есть вопросы', d:''}];
 const regTab = it => { const dd = D[it.key.split('/')[0]]; return dd ? dd.id+'/'+((dd.tabs.find(x=>tabKey(dd, x[0])===it.key)||[])[0]||'overview') : it.key; };
-function openReg(id){ const it = regItem(id); if (!it) { toast(ic('CircleAlert')+' Запись уже удалили'); return; } go('d/'+regTab(it)); setTimeout(()=>openDrawer('reg:'+id), 120); }
+const regPath = it => REG_HOME[it.key] || 'd/'+regTab(it);
+function openReg(id){ const it = regItem(id); if (!it) { toast(ic('CircleAlert')+' Запись уже удалили'); return; } go(regPath(it)); setTimeout(()=>openDrawer('reg:'+id), 120); }
 function openDec(id){ go('decisions'); setTimeout(() => { const el = document.getElementById('dec-'+id); if (el) { el.scrollIntoView({block:'center', behavior:'smooth'}); el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 1600); } }, 150); }
 const regDecs = id => S.decisions.filter(d=>d.ref && d.ref.id===id).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
 const decMark = id => { const ds = regDecs(id); if (!ds.length) return ''; const open = ds.some(d=>d.chosen==null);
@@ -549,13 +563,34 @@ function decisionCard(d){
     ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center">Итог зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
   </article>`;
 }
+/* общий список решений: решения хаба и вопросы экономики (у них свои поля: question, options[{label,desc}], recommended с 1) */
+const isEdec = d => d._e === true;
+const allDecs = () => [...S.decisions, ...S.edec.map(x => Object.assign({}, x, {_e:true}))];
+const decOpen = d => isEdec(d) ? (d.chosen==null || d.chosen==='') : d.chosen==null;
+const decQ = d => isEdec(d) ? d.question||'' : d.q||'';
+const decTldr = d => isEdec(d) ? '' : d.tldr||'';
+const decDept = d => isEdec(d) ? 'econ' : hd(d.dept);
+const decVoters = d => Object.values(d.votes||{}).filter(v=>v!=null).length;
+const decAt = d => d.createdAt || d.updatedAt || 0;
+function pendingDecs(){ return allDecs().filter(d=>decOpen(d) && (d.votes||{})[S.me]==null); }
+const decCard = d => isEdec(d) ? eDecCard(d) : decisionCard(d);
+/* ряд кнопок «Все / отдел / отдел…» над общими списками; ссылки меняют адрес, поэтому фильтр переживает обновление страницы */
+function deptSeg(base, cur, counts){
+  const ids = DEPTS.map(d=>d.id).filter(id=>counts[id]);
+  if (cur!=='all' && !ids.includes(cur)) ids.push(cur);
+  const all = Object.values(counts).reduce((a,b)=>a+b, 0);
+  return `<div class="seg dseg" role="group" aria-label="Отдел"><a href="#/${base}" role="button" aria-pressed="${cur==='all'}">Все <span class="mono" style="color:var(--muted)">${all}</span></a>${ids.map(id=>`<a href="#/${base}/${id}" role="button" aria-pressed="${cur===id}" style="--dc:${D[id].color}">${ic(D[id].icon)} ${esc(D[id].name)} <span class="mono" style="color:var(--muted)">${counts[id]||0}</span></a>`).join('')}</div>`;
+}
 function viewDecisions(dept){
-  const list = S.decisions.filter(d=>!dept||hd(d.dept)===dept).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  const open = list.filter(d=>d.chosen==null), closed = list.filter(d=>d.chosen!=null);
-  return `${dept?'':`<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#B9A3FF">${ic('Scale')}</span><div><h1>Решения</h1><p>Спорные вопросы: варианты, голоса, итог. Принятое не теряется в чатах.</p></div></div><button class="btn primary" data-action="new-decision">${ic('Plus')} Решение</button></div>`}
-  ${open.length?`<h2 class="sub-h">Голосуем · ${open.length}</h2>${open.map(decisionCard).join('')}`:''}
-  ${closed.length?`<h2 class="sub-h">Принято · ${closed.length}</h2>${closed.map(decisionCard).join('')}`:''}
-  ${!list.length?`<div class="empty"><b>Решений пока нет</b>Спорный вопрос? Вынеси его на голосование.<button class="btn sm" data-action="new-decision" data-dept="${dept||''}">${ic('Plus')} Решение</button></div>`:''}`;
+  const f = dept || UI.dfilt, every = allDecs();
+  const list = every.filter(d=>f==='all'||decDept(d)===f).sort((a,b)=>decAt(b)-decAt(a));
+  const open = list.filter(decOpen), closed = list.filter(d=>!decOpen(d));
+  const counts = {}; every.forEach(d => { const k = decDept(d); if (k) counts[k] = (counts[k]||0)+1; });
+  return `${dept?'':`<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#B9A3FF">${ic('Scale')}</span><div><h1>Решения</h1><p>Все спорные вопросы команды, включая экономику: варианты, голоса, итог. Принятое не теряется в чатах.</p></div></div><button class="btn primary" data-action="new-decision" data-dept="${f==='all'?'':f}">${ic('Plus')} Решение</button></div>
+  <div class="toolbar">${deptSeg('decisions', f, counts)}</div>`}
+  ${open.length?`<h2 class="sub-h">Голосуем · ${open.length}</h2>${open.map(decCard).join('')}`:''}
+  ${closed.length?`<h2 class="sub-h">Принято · ${closed.length}</h2>${closed.map(decCard).join('')}`:''}
+  ${!list.length?`<div class="empty"><b>Решений пока нет</b>Спорный вопрос? Вынеси его на голосование.<button class="btn sm" data-action="new-decision" data-dept="${f==='all'?'':f}">${ic('Plus')} Решение</button></div>`:''}`;
 }
 
 /* ── входящие ───────────────────────────────── */
@@ -568,9 +603,23 @@ function viewInbox(){
 
 /* ── журнал ─────────────────────────────────── */
 function logEntry(l){ return `<div class="entry">${av(l.by,24)}<div><b>${esc(pname(l.by))}</b> ${esc(l.act)} ${l.title?`<q>${esc(l.title)}</q>`:''} ${l.dept?dchip(l.dept):''}</div><span class="when">${ago(l.at)}</span></div>`; }
+/* правки экономики пишутся и в журнал хаба (короткой строкой), и в журнал экономики (с изменениями полей).
+   В общем журнале показываем подробную запись, а короткую копию прячем */
+const ELOG_ACTS = new Set(['добавил(а) в экономику','изменил(а) в экономике','удалил(а) из экономики','восстановил(а) в экономике','сменил(а) статус в экономике',
+  'проголосовал(а) в экономике','зафиксировал(а) итог в экономике','оставил(а) заметку в экономике','изменил(а) якорь экономики','добавил(а) таблицу в план','изменил(а) таблицу плана']);
 function viewLog(){
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A9A8B6">${ic('ScrollText')}</span><div><h1>Журнал</h1><p>Последние 300 изменений команды.</p></div></div></div>
-  <section class="panel"><div class="log">${S.log.map(logEntry).join('') || '<div style="color:var(--text-2)">Пока пусто.</div>'}</div></section>`;
+  const f = UI.lfilt, ready = S.E && S.E.loaded.has('log');
+  const hub = S.log.filter(l => !(ready && ELOG_ACTS.has(l.act))).map(l => ({at:l.at||0, dept:hd(l.dept)||'', html:logEntry(l)}));
+  const eco = ready ? S.E.log.map(l => ({at:l.at||0, dept:'econ', html:eLogEntry(l)})) : [];
+  const every = [...hub, ...eco];
+  const counts = {}; every.forEach(x => { if (x.dept) counts[x.dept] = (counts[x.dept]||0)+1; });
+  const list = every.filter(x => f==='all' || x.dept===f).sort((a,b)=>b.at-a.at);
+  let out = '', day = '';
+  for (const x of list) { const d = dayf.format(new Date(x.at)); if (d!==day) { out += `<div class="day">${esc(d)}</div>`; day = d; } out += x.html; }
+  const note = f==='econ' ? `<section class="panel"><form class="form" data-form="e-note"><label class="fld"><span>Заметка в журнал экономики</span><textarea class="input" name="t" rows="3" placeholder="Что обсудили, что проверили в игре, какие цифры получили" maxlength="4000">${esc(UI.eDraft||'')}</textarea></label><div style="display:flex;justify-content:flex-end"><button class="btn primary">${ic('Plus')} Добавить заметку</button></div></form></section>` : '';
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A9A8B6">${ic('ScrollText')}</span><div><h1>Журнал</h1><p>Изменения команды за две недели. Правки экономики — подробно: что было, что стало, и удалённое можно вернуть.</p></div></div></div>
+  <div class="toolbar">${deptSeg('log', f, counts)}${ready?'':'<small style="color:var(--muted)"><span class="spin"></span> загружаем журнал экономики…</small>'}</div>
+  ${note}<section class="panel"><div class="log">${out || '<div style="color:var(--text-2)">Пока пусто.</div>'}</div></section>`;
 }
 
 /* ── люди ───────────────────────────────────── */
@@ -592,8 +641,16 @@ function viewPeople(){
 /* ── вики ───────────────────────────────────── */
 function viewWiki(){
   const list = [...S.wiki].sort(byOrder);
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено. Суть сверху — подробности по клику. Текст статей понимает Markdown.</p></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" title="Открыть файл .md с компьютера в читалке">${ic('BookOpen')} Открыть .md<input type="file" hidden accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" data-action="md-local"></label><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div></div>
-  <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${mdLine(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body md">${md(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>`;
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено и правила сервера. Суть сверху — подробности по клику. Текст статей понимает Markdown.</p></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" title="Открыть файл .md с компьютера в читалке">${ic('BookOpen')} Открыть .md<input type="file" hidden accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" data-action="md-local"></label><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div></div>
+  <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${mdLine(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body md">${md(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>
+  ${wikiRules()}`;
+}
+/* правила сервера (реестр admin/rules) — справочник, поэтому живут в вики */
+function wikiRules(){
+  const items = S.reg.filter(x=>x.key==='admin/rules').sort(byOrder), stF = REGS['admin/rules'].fields.find(f=>f.k==='status'), d = D.admin;
+  return `<div class="panel-h" style="margin-top:8px"><h2 class="sub-h" style="margin:0">${ic('Shield')} Правила сервера${items.length?' · '+items.length:''}</h2><button class="btn sm" data-open="regnew:admin/rules">${ic('Plus')} Правило</button></div>
+  ${items.length ? `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}${decMark(it.id)}</h3>${it.status?chip(it.status, toneOf(stF, it.status)):''}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}</button>`).join('')}</div>`
+    : '<div class="empty">Правил пока нет. Добавь первое — его увидит вся команда.</div>'}`;
 }
 
 /* ── вложения ───────────────────────────────────
@@ -820,7 +877,7 @@ function markRead(id){
   const c = chat(id); if (!c || !chatUnread(c) || document.hidden) return;
   READ_AT[id] = c.lastAt; col('hub_people').doc(S.me).update({['reads.'+id]:c.lastAt}).catch(()=>{});
 }
-const unreadChats = () => S.chats.filter(chatUnread).length;
+const unreadChats = () => S.chats.filter(c=>!isThread(c) && chatUnread(c)).length;
 function chatItem(c){
   const t = c.task && S.allTasks.find(x=>x.id===c.task), d = D[t ? t.dept : c.dept] || null;
   return `<a class="chat-i${UI.chat===c.id?' on':''}" href="#/chats/${esc(c.id)}" style="--dc:${d?d.color:'var(--acc)'}">
@@ -828,21 +885,24 @@ function chatItem(c){
     <span class="bd"><b>${esc(c.title)}</b><small>${c.lastText ? esc(pname(c.lastBy).split(' ')[0])+': '+esc(clip(c.lastText,60)) : 'Пока без сообщений'}</small></span>
     <span class="r"><small>${c.lastAt?ago(c.lastAt).replace(' назад',''):''}</small>${chatUnread(c)?'<i class="udot" aria-label="Есть новые"></i>':''}</span></a>`;
 }
-function msgHtml(m, prev){
+/* m.old — старый комментарий задачи: хранится в самой задаче, удалить его нельзя. В ленте карточки (thread) время — «N мин назад» */
+function msgHtml(m, prev, thread){
   const same = prev && prev.by===m.by && m.at-prev.at < 5*60e3;
   const files = (m.files||[]).map(id=>fileChip(S.files.find(f=>f.id===id), true)).join('');
   return `<div class="msg${m.by===S.me?' me':''}${same?' cont':''}">${same?'<span class="av-sp"></span>':av(m.by,30)}<div class="bd">
-    ${same?'':`<div class="mh"><b>${esc(pname(m.by))}</b><small>${dtf.format(m.at)}</small></div>`}
+    ${same?'':`<div class="mh"><b>${esc(pname(m.by))}</b><small title="${esc(dayf.format(m.at)+', '+dtf.format(m.at))}">${thread ? ago(m.at) : dtf.format(m.at)}</small></div>`}
     ${m.text?`<div class="tx">${mdBlock(m.text)}</div>`:''}${files?`<div class="mf">${files}</div>`:''}</div>
-    ${m.by===S.me?`<button class="mini-x" data-action="msg-del" data-id="${esc(m.id)}" aria-label="Удалить сообщение" title="Удалить">${ic('Trash2')}</button>`:''}</div>`;
+    ${m.by===S.me && !m.old?`<button class="mini-x" data-action="msg-del" data-id="${esc(m.id)}" aria-label="Удалить сообщение" title="Удалить">${ic('Trash2')}</button>`:''}</div>`;
 }
 function viewChats(){
-  const list = [...S.chats].sort((a,b)=>(b.lastAt||b.createdAt||0)-(a.lastAt||a.createdAt||0));
-  const c = UI.chat && chat(UI.chat);
+  const list = S.chats.filter(c=>!isThread(c)).sort((a,b)=>(b.lastAt||b.createdAt||0)-(a.lastAt||a.createdAt||0));
+  let c = UI.chat && chat(UI.chat);
+  /* старая ссылка на чат задачи или записи: обсуждение теперь в карточке — открываем её */
+  if (c && isThread(c)) { const th = c; c = null; setTimeout(() => th.task ? go('task/'+encodeURIComponent(th.task)) : openReg(th.reg), 0); }
   listenChat(c ? c.id : null);
   if (c) markRead(c.id);
   const t = c && c.task && S.allTasks.find(x=>x.id===c.task);
-  let main = `<div class="empty" style="margin:auto"><b>${ic('MessagesSquare')} Выбери чат слева</b>Или создай новый — его увидит вся команда. Чат задачи создаётся кнопкой в карточке задачи.</div>`;
+  let main = `<div class="empty" style="margin:auto"><b>${ic('MessagesSquare')} Выбери чат слева</b>Или создай новый — его увидит вся команда. Обсуждать задачу или запись отдела удобнее прямо в её карточке.</div>`;
   if (UI.chat && !c && S.loaded.has('hub_chats')) main = `<div class="empty" style="margin:auto"><b>Чат не найден</b>Возможно, его удалили.<a class="btn sm" href="#/chats">К списку</a></div>`;
   if (c) {
     const msgs = S.msgs;
@@ -856,15 +916,76 @@ function viewChats(){
         <textarea class="input" id="chat-in" name="m" rows="1" maxlength="4000" placeholder="Сообщение… Enter — отправить, Shift+Enter — новая строка. Картинку можно вставить из буфера.">${esc(UI.chatDraft[c.id]||'')}</textarea>
         <button class="btn primary" aria-label="Отправить">${ic('Send')}</button></form>`;
   }
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#7DD3E8">${ic('MessagesSquare')}</span><div><h1>Чаты</h1><p>Общие для всей команды. У каждой задачи может быть свой чат.</p></div></div><button class="btn primary" data-action="chat-new">${ic('Plus')} Чат</button></div>
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#7DD3E8">${ic('MessagesSquare')}</span><div><h1>Чаты</h1><p>Общие каналы команды. Обсуждение задачи или записи отдела — прямо в её карточке.</p></div></div><button class="btn primary" data-action="chat-new">${ic('Plus')} Чат</button></div>
   <div class="chats${c?' open':''}"><aside class="chat-list">${list.map(chatItem).join('') || '<div class="empty">Чатов пока нет.</div>'}</aside><section class="chat-main">${main}</section></div>`;
 }
-async function openTaskChat(id){
-  const t = task(id); if (!t) return;
-  const ex = S.chats.find(c=>c.task===id); if (ex) { go('chats/'+ex.id); return; }
-  const ref = col('hub_chats').doc();
-  const ok = await write(()=>ref.set({title:clip(t.title,120), task:id, dept:t.dept, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''}));
-  if (ok) { log('создал(а) чат задачи', t.title, t.dept); go('chats/'+ref.id); }
+/* ── обсуждение в карточке ──────────────────────
+   У задачи и у записи отдела одна лента прямо в карточке: старые комментарии задачи (поле comments)
+   и сообщения её чата (hub_msgs, чат с полем task или reg). Чат заводится сам при первом сообщении,
+   в разделе «Чаты» остаются только общие каналы. */
+const threadChat = (k, id) => S.chats.find(c=>c[k]===id);
+const isThread = c => !!(c.task || c.reg);
+const TH = {chat:null, msgs:[], loaded:true, unsub:null};
+function listenThread(chatId){
+  if (TH.chat===chatId) return;
+  if (TH.unsub) { try { TH.unsub(); } catch (e) {} TH.unsub = null; }
+  TH.chat = chatId; TH.msgs = []; TH.loaded = !chatId;
+  if (!chatId) return;
+  TH.unsub = col('hub_msgs').where('chat','==',chatId).onSnapshot(sn => { if (TH.chat!==chatId) return; TH.msgs = sn.docs.map(d=>Object.assign({id:d.id}, d.data())).sort((a,b)=>a.at-b.at); TH.loaded = true; schedule(); },
+    e => { console.error('hub_msgs', e); TH.loaded = true; schedule(); });
+}
+function threadMsgs(k, id){
+  const t = k==='task' && task(id), c = threadChat(k, id);
+  listenThread(c ? c.id : null);
+  const old = ((t && t.comments) || []).map(x => Object.assign({files:[]}, x, {old:true}));
+  return [...old, ...(c ? TH.msgs : [])].sort((a,b)=>a.at-b.at);
+}
+function threadList(k, id){
+  const msgs = threadMsgs(k, id);
+  if (!TH.loaded) return '<div class="loading"><span class="spin"></span>Загружаем обсуждение…</div>';
+  return msgs.map((m,i)=>msgHtml(m, msgs[i-1], true)).join('') || '<small style="color:var(--muted)">Пока никто не писал. Вопрос, ответ, скриншот — всё сюда. @логин позовёт человека.</small>';
+}
+const threadCount = (k, id) => threadMsgs(k, id).length;
+function threadBlock(k, id){
+  const c = threadChat(k, id), n = threadCount(k, id);
+  return `<div class="thread" id="thread" data-k="${k}" data-id="${esc(id)}"><p class="sub-h" style="margin:0">Обсуждение<span id="thread-n">${n?' · '+n:''}</span></p>
+    <div class="msgs" id="thread-list">${threadList(k, id)}</div><div id="thread-up">${c ? upBar('chat:'+c.id) : ''}</div>
+    <form class="composer" data-form="thread" data-k="${k}" data-id="${esc(id)}">${attachBtn('thread-attach', k+':'+id)}
+      <textarea class="input" id="thread-in" name="m" rows="1" maxlength="4000" placeholder="Написать… Enter — отправить, Shift+Enter — новая строка. Картинку можно вставить из буфера."></textarea>
+      <button class="btn primary" aria-label="Отправить">${ic('Send')}</button></form></div>`;
+}
+/* обновить ленту, не трогая поле ввода (шторка записи целиком не перерисовывается) */
+function paintThread(){
+  const el = $('#thread'); if (!el) return;
+  const k = el.dataset.k, id = el.dataset.id, c = threadChat(k, id), n = threadCount(k, id);
+  $('#thread-list').innerHTML = threadList(k, id);
+  $('#thread-n').textContent = n ? ' · '+n : '';
+  $('#thread-up').innerHTML = c ? upBar('chat:'+c.id) : '';
+}
+async function threadChatId(k, id){
+  const ex = threadChat(k, id); if (ex) return ex.id;
+  const it = k==='task' ? task(id) : regItem(id); if (!it) return null;
+  const ref = col('hub_chats').doc(), body = {title:clip(k==='task' ? it.title : it.name, 120), task:k==='task' ? id : null, reg:k==='reg' ? id : null,
+    dept:k==='task' ? it.dept : it.key.split('/')[0], by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''};
+  if (!await write(()=>ref.set(body))) return null;
+  if (!chat(ref.id)) S.chats.push(Object.assign({id:ref.id}, body)); // до прихода снимка из базы
+  return ref.id;
+}
+async function threadSend(k, id, text, files){
+  const cid = await threadChatId(k, id); if (!cid) return false;
+  listenThread(cid);
+  if (!await sendMsg(cid, text, files)) return false;
+  const what = text || '📎 '+plural(files.length,'файл','файла','файлов');
+  if (k==='task') { const t = task(id); if (!t) return true;
+    log('написал(а) в обсуждении', t.title, t.dept);
+    const ment = mentions(text||''); notify(ment, 'mention', t, what);
+    notify([...watchers(t), ...(t.comments||[]).map(c=>c.by), ...TH.msgs.map(m=>m.by)].filter(u=>!ment.includes(u)), 'comment', t, what); }
+  else { const it = regItem(id); if (it) log('написал(а) в обсуждении записи', it.name, it.key.split('/')[0]); }
+  return true;
+}
+async function threadFiles(k, id, list){
+  const cid = await threadChatId(k, id); if (!cid) return;
+  const ids = await uploadFiles(list, {chat:cid}); if (ids.length) threadSend(k, id, '', ids);
 }
 async function sendMsg(chatId, text, files){
   text = clip(text,4000); files = files||[];
@@ -873,7 +994,7 @@ async function sendMsg(chatId, text, files){
   const ok = await write(async () => {
     const b = DB.batch();
     b.set(col('hub_msgs').doc(), {chat:chatId, by:S.me, text, files, at:now()});
-    b.update(col('hub_chats').doc(chatId), {lastAt:now(), lastBy:S.me, lastText:text || ('📎 '+plural(files.length,'файл','файла','файлов'))});
+    b.update(col('hub_chats').doc(chatId), {lastAt:now(), lastBy:S.me, lastText:text || ('📎 '+plural(files.length,'файл','файла','файлов')), n:FV().increment(1)});
     await b.commit();
   });
   if (ok) READ_AT[chatId] = now();
@@ -991,12 +1112,25 @@ function cell(f, v){
   if (f.t==='select') return v ? chip(v, toneOf(f,v)) : '<span style="color:var(--muted)">—</span>';
   if (f.t==='person') return v ? `<span class="who-pick">${av(v,22)} ${esc(pname(v))}</span>` : '<span style="color:var(--muted)">—</span>';
   if (f.t==='url') return safeUrl(v) ? `<a class="ext" href="${esc(v)}" target="_blank" rel="noopener">${ic('ExternalLink')} открыть</a>` : '';
+  if (f.t==='dept') return dchip(hd(v));
   return esc(v||'');
 }
+const regKeys = key => [key, ...(REG_ALSO[key]||[])];
 function registry(key, d){
   if (key==='design/kit') return kit();
+  if (key==='qa/bugs') return bugsView();
+  return regList(key, d) + (key==='release/versions' ? oldChangelog(d) : '');
+}
+/* changelog теперь живёт в карточке версии; старые отдельные записи видны под версиями, пока их не перенесут */
+function oldChangelog(d){
+  const items = S.reg.filter(x=>x.key==='release/changelog').sort(byOrder); if (!items.length) return '';
+  const stF = REGS['release/changelog'].fields.find(f=>f.k==='status');
+  return `<h2 class="sub-h">Старые записи changelog · ${items.length}</h2><small style="color:var(--muted)">Перенеси текст в поле «Changelog» нужной версии и удали запись здесь.</small>
+  <div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}</h3>${it.status?chip(it.status, toneOf(stF, it.status)):''}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
+}
+function regList(key, d){
   const r = REGS[key]; if (!r) return '<div class="empty">Скоро.</div>';
-  const items = S.reg.filter(x=>x.key===key).sort(byOrder);
+  const items = S.reg.filter(x=>regKeys(key).includes(x.key)).sort(byOrder);
   const tools = `<div class="reg-tools"><small>${plural(items.length,'запись','записи','записей')}</small><span class="sp"></span><button class="btn sm primary" data-open="regnew:${key}">${ic('Plus')} Добавить ${esc(r.noun)}</button></div>`;
   if (!items.length) return tools + `<div class="empty"><b>Пока пусто</b>Добавь первую запись — её увидит вся команда.</div>`;
   if (r.type==='table') { const fs = tableFields(r);
@@ -1007,7 +1141,7 @@ function registry(key, d){
   if (r.type==='cards') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}">${cover(it)}<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}${decMark(it.id)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
   if (r.type==='mockups') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div class="thumb">${(f => f && thumb(f) ? `<img src="${thumb(f)}" alt="" loading="lazy">` : '<div class="ui"></div>')(regCover(it.id))}</div><div style="display:flex;justify-content:space-between;gap:8px"><h3>${esc(it.name)}</h3>${st(it)}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}<div style="display:flex;gap:8px;align-items:center">${it.who?av(it.who,22)+`<small style="color:var(--text-2)">${esc(pname(it.who))}</small>`:''}${safeUrl(it.link)?`<small style="color:var(--acc);margin-left:auto">${ic('ExternalLink')} есть ссылка</small>`:''}</div></button>`).join('')}</div>`;
   if (r.type==='metrics') return tools + `<div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}"><span class="k">${esc(it.name)}</span><span class="v">${esc(it.value||'—')}</span>${spark(series(it.series), d.color)}<span class="s">${mdLine(it.note)}</span></button>`).join('')}</div>`;
-  if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}</div>`).join('')}</div></section>`;
+  if (r.type==='timeline') return tools + `<section class="panel"><div class="timeline" style="--dc:${d.color}">${items.slice().reverse().map(it=>`<div class="tl-i${it.status==='Готовится'?' cur':''}" data-open="reg:${esc(it.id)}" style="cursor:pointer"><h3>${esc(it.name)} ${st(it)}</h3>${it.tldr?`<p>${esc(it.tldr)}</p>`:''}${it.changes?`<div class="md md-c">${md(it.changes, true)}</div>`:''}</div>`).join('')}</div></section>`;
   if (r.type==='checklist') { const n = items.filter(i=>i.done).length;
     return tools + `<section class="panel"><div class="panel-h"><h2>Готово ${n} из ${items.length}</h2>${n===items.length?chip('Всё готово','ok'):`<button class="btn sm ghost" data-action="check-reset" data-key="${key}">${ic('RotateCcw')} Сбросить</button>`}</div><div class="mini-bar"><i style="width:${Math.round(n/items.length*100)}%"></i></div>
     <div class="cl">${items.map(it=>`<div class="row"><label class="${it.done?'done':''}"><input type="checkbox" data-action="check" data-id="${esc(it.id)}" ${it.done?'checked':''}><span>${esc(it.name)}</span></label><button class="mini-x" data-open="reg:${esc(it.id)}" aria-label="Изменить пункт" title="Изменить">${ic('Pencil')}</button></div>`).join('')}</div></section>`; }
@@ -1021,7 +1155,7 @@ function kit(){
 function deptOverview(d){
   const tasks = S.tasks.filter(t=>inDept(t,d.id));
   const open = tasks.filter(t=>t.status!=='done');
-  const decs = S.decisions.filter(x=>hd(x.dept)===d.id && x.chosen==null);
+  const decs = allDecs().filter(x=>decDept(x)===d.id && decOpen(x));
   const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).some(x=>hd(x)===d.id));
   const doing = open.filter(t=>t.status==='doing'||t.status==='review');
   const next = open.filter(t=>t.status==='todo'||t.status==='inbox').slice(0,4);
@@ -1037,14 +1171,15 @@ function deptOverview(d){
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Hammer')}</span>Сейчас в работе</h2></div><div class="list">${doing.map(t=>taskItem(t,{status:true})).join('')||'<div class="empty">Ничего не в работе.</div>'}</div></section>
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('SkipForward')}</span>Следующие</h2><a class="btn sm ghost" href="#/d/${d.id}/tasks">Все задачи</a></div><div class="list">${next.map(t=>taskItem(t)).join('')||'<div class="empty">Очередь пуста.</div>'}</div></section>
   </div>`}
-  ${decs.length?`<h2 class="sub-h">Решения отдела</h2>${decs.map(decisionCard).join('')}`:''}
+  ${decs.length?`<h2 class="sub-h">Решения отдела</h2>${decs.map(decCard).join('')}`:''}
   <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Кто в отделе</h2>${isAdmin()?`<a class="btn sm ghost" href="#/people">Назначить отделы</a>`:''}</div><div class="g3">${people.map(id=>`<div class="person">${av(id,32)}<div class="bd"><div class="nm">${esc(S.people[id].name)}</div><div class="st">${esc(S.people[id].role||'')}</div></div></div>`).join('') || '<small style="color:var(--muted)">Пока никто не отметил этот отдел в профиле.</small>'}</div></section>`;
 }
 function viewDept(){
   const d = D[UI.route.slice(2)];
   const tab = d.tabs.some(t=>t[0]===UI.tab) ? UI.tab : 'overview';
   const body = tab==='overview' ? deptOverview(d) : tab==='tasks' ? (canSee(d.id) ? '' : roHint(d)) + filters(false) + board(d.id) : d.id==='econ' && !REGS[tabKey(d, tab)] ? econView(tab) : registry(tabKey(d, tab), d);
-  const count = id => id==='tasks' ? S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' && !REGS[tabKey(d, id)] ? econCount(id) : S.reg.filter(x=>x.key===tabKey(d, id)).length;
+  const count = id => id==='tasks' ? S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length : id==='overview' ? 0 : d.id==='econ' && !REGS[tabKey(d, id)] ? econCount(id)
+    : tabKey(d, id)==='qa/bugs' ? allBugs().filter(b=>b.open).length : S.reg.filter(x=>regKeys(tabKey(d, id)).includes(x.key)).length;
   const people = Object.keys(S.people).filter(id=>(S.people[id].depts||[]).some(x=>hd(x)===d.id)).map(id=>S.people[id].name);
   return `<div style="--dc:${d.color};display:contents">
   <div class="ph"><div class="ph-l"><span class="ph-ico">${ic(d.icon)}</span><div><h1>${esc(d.name)}</h1><p>${people.length?esc(people.join(', ')):'В отделе пока никого'}</p></div></div>
@@ -1092,7 +1227,7 @@ const ESCHEMA = {
     {k:'recommended',t:'number',l:'Рекомендуемый вариант (номер строки, 0 — нет)'}, {k:'note',t:'textarea',l:'Заметка',rows:3}]}
 };
 const EDEFAULTS = {params:{status:'proposed'}, bugs:{severity:'medium', status:'open'}, stages:{status:'todo'}, decisions:{recommended:0}, sections:{}};
-const efind = (c,id) => S.E && (S.E[c]||[]).find(x=>x.id===id);
+const efind = (c,id) => (c==='decisions' ? S.edec : S.E && S.E[c] || []).find(x=>x.id===id);
 const nfmt = new Intl.NumberFormat('ru-RU');
 const dtf = new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit'});
 const dayf = new Intl.DateTimeFormat('ru-RU',{day:'numeric',month:'long',weekday:'short'});
@@ -1165,33 +1300,35 @@ function tableHtml(s){
 /* подписка на данные экономики */
 function econListen(){
   if (S.E || !DB) return;
-  const E = S.E = {sections:[], params:[], bugs:[], stages:[], decisions:[], log:[], people:{}, anchor:3e6, meta:{}, loaded:new Set()};
+  const E = S.E = {sections:[], params:[], bugs:[], stages:[], log:[], people:{}, anchor:3e6, meta:{}, loaded:new Set()};
+  /* решения экономики слушаются всегда (они в общем разделе «Решения»), здесь — та же выборка */
+  Object.defineProperty(E, 'decisions', {get:() => S.edec, enumerable:true});
   const docs = sn => sn.docs.filter(d=>d.exists).map(d=>Object.assign({id:d.id}, d.data()));
   const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); E.loaded.add(c); schedule(); };
-  for (const c of ECOLLS) UNSUB.push(DB.collection(c).onSnapshot(sn => { E[c] = docs(sn); E.loaded.add(c); schedule(); }, onErr(c)));
-  UNSUB.push(DB.collection('log').orderBy('at','desc').limit(150).onSnapshot(sn => { E.log = docs(sn); schedule(); }, onErr('log')));
+  for (const c of ECOLLS.filter(c=>c!=='decisions')) UNSUB.push(DB.collection(c).onSnapshot(sn => { E[c] = docs(sn); E.loaded.add(c); schedule(); }, onErr(c)));
+  UNSUB.push(DB.collection('log').orderBy('at','desc').limit(150).onSnapshot(sn => { E.log = docs(sn); E.loaded.add('log'); schedule(); }, onErr('log')));
   UNSUB.push(DB.doc('meta/settings').onSnapshot(d => { if (d.exists) { E.meta = d.data(); E.anchor = Number(E.meta.anchor) || 3e6; } schedule(); }, onErr('meta')));
   UNSUB.push(DB.collection('people').onSnapshot(sn => { const p = {}; sn.docs.forEach(d => { p[d.id] = d.data(); }); E.people = p; schedule(); }, () => {}));
 }
-const eReady = () => S.E && ECOLLS.every(c=>S.E.loaded.has(c));
+const eReady = () => S.E && ECOLLS.every(c=>c==='decisions' ? S.loaded.has('decisions') : S.E.loaded.has(c));
 
 const ETAB_ICON = {plan:'BookOpen', params:'Gauge', bugs:'Bug', stages:'ListOrdered', edec:'Scale', elog:'ScrollText'};
 function econOverview(d){
   const E = S.E;
   if (!eReady()) return '<div class="loading"><span class="spin"></span>Загружаем экономику…</div>';
   const P = E.params, pc = s => P.filter(p=>p.status===s).length, live = P.length - pc('rejected');
-  const openB = E.bugs.filter(b=>b.status==='open'||b.status==='progress'), crit = openB.filter(b=>b.severity==='critical').length;
+  const openB = allBugs().filter(b=>b.dept==='econ' && b.open), crit = openB.filter(b=>b.sev==='critical').length;
   const doneSt = E.stages.filter(s=>s.status==='done').length, curSt = [...E.stages].sort(byOrder).find(s=>s.status!=='done');
   const decided = E.decisions.filter(x=>x.chosen!=null && x.chosen!=='').length;
   const bar = parts => `<div class="sbar">${parts.map(([n,c])=>n?`<i style="flex:${n};background:${c}"></i>`:'').join('')}</div>`;
   return `<section class="panel glow" style="--dc:${d.color}">
     <div class="panel-h"><h2><span class="hi">${ic('Coins')}</span>Экономика сейчас</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown для репозитория</button><a class="btn sm ghost" href="../economy/" target="_blank" rel="noopener">${ic('ExternalLink')} Старая страница</a></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown для репозитория</button><a class="btn sm ghost" href="#/log/econ">${ic('ScrollText')} Журнал экономики</a><a class="btn sm ghost" href="../economy/" target="_blank" rel="noopener">${ic('ExternalLink')} Старая страница</a></div></div>
     <div class="tiles">
       <a class="tile" href="#/d/econ/params"><span class="k">Параметры</span><span class="v">${pc('agreed')+pc('done')} <small>/ ${live}</small></span>${bar([[pc('done'),'var(--ok)'],[pc('agreed'),'var(--violet)'],[pc('proposed'),'var(--info)'],[pc('idea'),'var(--muted)']])}<span class="s">согласовано · ${pc('done')} внедрено · ${pc('proposed')} ждут</span></a>
-      <a class="tile" href="#/d/econ/bugs"><span class="k">Баги</span><span class="v">${openB.length}</span>${bar([[crit,'var(--red)'],[openB.length-crit,'var(--warn)']])}<span class="s">открыто · ${crit ? plural(crit,'критичный','критичных','критичных') : 'критичных нет'}</span></a>
+      <a class="tile" href="#/d/qa/bugs/econ"><span class="k">Баги</span><span class="v">${openB.length}</span>${bar([[crit,'var(--red)'],[openB.length-crit,'var(--warn)']])}<span class="s">открыто · ${crit ? plural(crit,'критичный','критичных','критичных') : 'критичных нет'}</span></a>
       <a class="tile" href="#/d/econ/stages"><span class="k">Этапы</span><span class="v">${doneSt} <small>/ ${E.stages.length}</small></span>${bar([[doneSt,'var(--ok)'],[E.stages.length-doneSt,'var(--panel-3)']])}<span class="s">${curSt ? 'сейчас: '+esc(clip(curSt.title,48)) : 'все готовы'}</span></a>
-      <a class="tile" href="#/d/econ/edec"><span class="k">Решения</span><span class="v">${decided} <small>/ ${E.decisions.length}</small></span>${bar([[decided,'var(--ok)'],[E.decisions.length-decided,'var(--panel-3)']])}<span class="s">${E.decisions.length-decided ? (E.decisions.length-decided)+' ждут решения' : 'все приняты'}</span></a>
+      <a class="tile" href="#/decisions/econ"><span class="k">Решения</span><span class="v">${decided} <small>/ ${E.decisions.length}</small></span>${bar([[decided,'var(--ok)'],[E.decisions.length-decided,'var(--panel-3)']])}<span class="s">${E.decisions.length-decided ? (E.decisions.length-decided)+' ждут решения' : 'все приняты'}</span></a>
       <div class="tile" style="cursor:default"><span class="k">Якорь</span><span class="v mono" style="font-size:20px">${nfmt.format(E.anchor)} $</span><span class="s">= 1 час работы новичка. От него считается «≈ N ч работы».</span><button class="btn sm" data-action="e-anchor" style="align-self:flex-start">${ic('Pencil')} Изменить</button></div>
     </div></section>`;
 }
@@ -1242,17 +1379,7 @@ function eParams(){
     ${shown ? `<div class="tbl-wrap"><table class="grid etable"><thead><tr><th>Параметр</th><th>Сейчас</th><th>Предлагаю</th><th>Статус</th><th>Ответственный</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
       : `<div class="empty"><b>Ничего не нашлось</b>Под фильтр не подходит ни один параметр.<button class="btn sm" data-action="e-freset">Сбросить фильтры</button></div>`}`;
 }
-const sevRank = {critical:0,high:1,medium:2,low:3}, bStRank = {progress:0,open:1,fixed:2,wontfix:3};
-function eBugs(){
-  const all = S.E.bugs;
-  if (!all.length) return eEmpty('Багов пока нет','Ошибки и эксплойты, которые влияют на экономику.','bugs','Добавить баг');
-  const closed = all.filter(b=>b.status==='fixed'||b.status==='wontfix').length;
-  const list = [...all].sort((a,b)=>(bStRank[a.status]??1)-(bStRank[b.status]??1) || (sevRank[a.severity]??2)-(sevRank[b.severity]??2) || byOrder(a,b)).filter(b => !UI.ef.hideFixed || (b.status!=='fixed' && b.status!=='wontfix'));
-  return `<div class="reg-tools"><div class="seg"><button data-action="e-toggle" data-k="hideFixed" aria-pressed="${UI.ef.hideFixed}">Скрыть закрытые <span class="mono" style="color:var(--muted)">${closed}</span></button></div><span class="sp"></span><button class="btn primary" data-open="enew:bugs">${ic('Plus')} Баг</button></div>
-  <div class="list">${list.map(b => `<article class="erow sev ${b.status==='fixed'||b.status==='wontfix'?'done':''}" style="--sev:${SEV_VAR[b.severity]||'var(--muted)'}">
-    <div class="body"><h3>${esc(b.title)}</h3>${b.where?`<div class="where mono">${esc(b.where)}</div>`:''}${b.impact?`<div class="txt">${mdBlock(b.impact)}</div>`:''}${b.note?`<div class="txt"><b>Заметка:</b>${mdBlock(b.note)}</div>`:''}${eMeta(b)}</div>
-    <div class="side">${chip(lab(BUG_SEV,b.severity), ETONE[b.severity])}${eStatusSelect('bugs', b, BUG_STATUS)}${ewho(b.assignee)}${eActions('bugs', b.id, false)}</div></article>`).join('')}</div>`;
-}
+const sevRank = {critical:0,high:1,medium:2,low:3};
 function eStages(){
   const all = [...S.E.stages].sort(byOrder);
   if (!all.length) return eEmpty('Этапов пока нет','Этап — шаг плана работ: что делаем, от чего зависит, кто ведёт.','stages','Добавить этап');
@@ -1263,21 +1390,20 @@ function eStages(){
     <div class="body"><h3><span class="stage-n">${n}</span>${esc(s.title)}</h3>${s.details?`<div class="txt">${mdBlock(s.details)}</div>`:''}${s.depends?`<div class="txt"><b>Зависит от:</b> ${mdLine(s.depends)}</div>`:''}${s.note?`<div class="txt"><b>Заметка:</b>${mdBlock(s.note)}</div>`:''}${eMeta(s)}</div>
     <div class="side">${eStatusSelect('stages', s, STAGE_STATUS)}${ewho(s.assignee)}${eActions('stages', s.id, true)}</div></article>`).join('')}</div>`;
 }
-function eDecisions(){
-  const all = [...S.E.decisions].sort(byOrder);
-  if (!all.length) return eEmpty('Вопросов пока нет','Вопрос с вариантами: каждый голосует, потом фиксируете итог.','decisions','Добавить вопрос');
-  return `<div class="reg-tools"><small>Голосуйте за вариант, затем зафиксируйте итог кнопкой «Принять».</small><span class="sp"></span><button class="btn primary" data-open="enew:decisions">${ic('Plus')} Вопрос</button></div>
-  ${all.map(x => {
-    const opts = Array.isArray(x.options) ? x.options : [], votes = x.votes || {};
-    const chosen = (x.chosen===null||x.chosen===undefined||x.chosen==='') ? null : Number(x.chosen), rec = Number(x.recommended)||0;
-    return `<article class="decision"><div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start"><h3>${esc(x.question)}</h3>${eActions('decisions', x.id, true)}</div>
-      <div>${chosen!=null && opts[chosen] ? chip('Принято: '+opts[chosen].label,'ok') : chip('Ждёт решения','warn')}</div>
-      <div class="list">${opts.map((o,i) => { const voters = Object.keys(votes).filter(k => votes[k]===i), mine = votes[S.me]===i;
-        return `<div class="opt ${chosen===i?'chosen':''} ${mine?'mine':''}"><div><div class="l">${i+1}. ${esc(o.label)} ${rec===i+1?'<span class="chip t-violet">рекомендовано</span>':''}</div>${o.desc?`<div class="d">${mdLine(o.desc)}</div>`:''}</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes" title="${esc(voters.map(epname).join(', '))}">${voters.map(v=>eav(v,24)).join('')}</span>
-          <button class="btn sm${mine?' primary':''}" data-action="e-vote" data-id="${esc(x.id)}" data-i="${i}">${mine?ic('Check')+' Мой голос':'Голосую'}</button>
-          <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="${chosen===i?'':i}">${chosen===i?'Отменить итог':'Принять'}</button></div></div>`; }).join('')}</div>
-      ${x.note?`<div class="txt"><b>Заметка:</b>${mdBlock(x.note)}</div>`:''}${eMeta(x)}</article>`; }).join('')}`;
+/* вопрос экономики в общем списке «Решения»: выглядит и голосуется как решение хаба, хранится в коллекции decisions */
+function eDecCard(x){
+  const opts = Array.isArray(x.options) ? x.options : [], votes = x.votes || {};
+  const chosen = (x.chosen===null||x.chosen===undefined||x.chosen==='') ? null : Number(x.chosen), rec = Number(x.recommended)||0;
+  return `<article class="decision" id="dec-${esc(x.id)}">
+    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(x.question)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip('econ')}${chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-open="eedit:decisions:${esc(x.id)}" title="Изменить вопрос" aria-label="Изменить вопрос" style="margin:0">${ic('Pencil')}</button></div></div>
+    <div class="list">${opts.map((o,i) => { const voters = Object.keys(votes).filter(k => votes[k]===i), mine = votes[S.me]===i;
+      return `<div class="opt${chosen===i?' chosen':''}${mine?' mine':''}"><div><div class="l">${esc(o.label)} ${rec===i+1?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.desc?`<div class="d">${mdLine(o.desc)}</div>`:''}</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes" title="${esc(voters.map(epname).join(', '))}">${voters.map(v=>eav(v,24)).join('')}</span>
+        ${chosen==null ? `<button class="btn sm${mine?' primary':''}" data-action="e-vote" data-id="${esc(x.id)}" data-i="${i}">${mine?ic('Check')+' Мой голос':'Голосовать'}</button>
+        <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="${i}" title="Зафиксировать итог">Принять</button>` : ''}</div></div>`; }).join('')}</div>
+    ${x.note?`<div class="txt"><b>Заметка:</b>${mdBlock(x.note)}</div>`:''}
+    ${chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">Итог: <b style="color:var(--text)">${esc((opts[chosen]||{}).label||'')}</b>${x.updatedBy?' · '+esc(epname(x.updatedBy))+' · '+ago(x.updatedAt):''} <button class="btn sm ghost" data-action="e-choose" data-id="${esc(x.id)}" data-i="">${ic('RotateCcw')} Переоткрыть</button></div>`:eMeta(x)}
+  </article>`;
 }
 function eLogText(l){
   const N = ENOUN[l.coll] || {n:'запись',a:'добавлена',c:'изменена',d:'удалена',r:'восстановлена'};
@@ -1288,32 +1414,50 @@ function eLogText(l){
     case 'choose': return `итог решения${t}`; case 'note': return 'заметка'; default: return esc(l.action||'');
   }
 }
-function eLog(){
-  const comp = `<section class="panel"><form class="form" data-form="e-note"><label class="fld"><span>Заметка для команды</span><textarea class="input" name="t" rows="3" placeholder="Что обсудили, что проверили в игре, какие цифры получили" maxlength="4000">${esc(UI.eDraft||'')}</textarea></label><div style="display:flex;justify-content:flex-end"><button class="btn primary">${ic('Plus')} Добавить заметку</button></div></form></section>`;
-  const list = S.E.log; if (!list.length) return comp + '<div class="empty"><b>Журнал пуст</b>Здесь появится каждое изменение и заметки команды.</div>';
-  let out = '', lastDay = '';
-  for (const l of list) {
-    const dt = new Date(l.at||0), day = dayf.format(dt);
-    if (day !== lastDay) { out += `<div class="day">${esc(day)}</div>`; lastDay = day; }
-    const diff = Array.isArray(l.diff) && l.diff.length ? `<ul class="diff">${l.diff.map(x=>`<li><span class="f">${esc(x.f)}:</span> <del>${esc(x.from||'—')}</del> → <ins>${esc(x.to||'—')}</ins></li>`).join('')}</ul>` : '';
-    const canRestore = l.action==='delete' && l.snapshot && ECOLLS.includes(l.coll) && !efind(l.coll, l.docId);
-    out += `<div class="entry">${eav(l.by||'claude',24)}<div><b>${esc(epname(l.by||'claude'))}</b> — ${eLogText(l)}${l.text?`<div class="note-text">${mdBlock(l.text)}</div>`:''}${diff}${canRestore?`<div style="margin-top:6px"><button class="btn sm" data-action="e-restore" data-id="${esc(l.id)}">${ic('RotateCcw')} Восстановить</button></div>`:''}</div><span class="when">${esc(dtf.format(dt))}</span></div>`;
-  }
-  return comp + `<section class="panel"><div class="log">${out}</div></section>`;
+/* запись журнала экономики: кто, что поменял (было → стало), удалённое можно вернуть */
+function eLogEntry(l){
+  const dt = new Date(l.at||0);
+  const diff = Array.isArray(l.diff) && l.diff.length ? `<ul class="diff">${l.diff.map(x=>`<li><span class="f">${esc(x.f)}:</span> <del>${esc(x.from||'—')}</del> → <ins>${esc(x.to||'—')}</ins></li>`).join('')}</ul>` : '';
+  const canRestore = l.action==='delete' && l.snapshot && ECOLLS.includes(l.coll) && !efind(l.coll, l.docId);
+  return `<div class="entry">${eav(l.by||'claude',24)}<div><b>${esc(epname(l.by||'claude'))}</b> ${eLogText(l)} ${dchip('econ')}${l.text?`<div class="note-text">${mdBlock(l.text)}</div>`:''}${diff}${canRestore?`<div style="margin-top:6px"><button class="btn sm" data-action="e-restore" data-id="${esc(l.id)}">${ic('RotateCcw')} Восстановить</button></div>`:''}</div><span class="when">${esc(dtf.format(dt))}</span></div>`;
 }
 function econView(tab){
   if (!eReady()) return '<div class="loading"><span class="spin"></span>Загружаем экономику…</div>';
   if (tab==='plan') return ePlan();
   if (tab==='params') return eParams();
-  if (tab==='bugs') return eBugs();
   if (tab==='stages') return eStages();
-  if (tab==='edec') return eDecisions();
-  if (tab==='elog') return eLog();
   return '';
 }
 function econCount(tab){
   if (!S.E) return 0; const E = S.E;
-  return {plan:E.sections.length, params:E.params.length, bugs:E.bugs.filter(b=>b.status==='open'||b.status==='progress').length, stages:E.stages.length, edec:E.decisions.filter(x=>x.chosen==null||x.chosen==='').length}[tab] || 0;
+  return {plan:E.sections.length, params:E.params.length, stages:E.stages.length}[tab] || 0;
+}
+
+/* ── баги: один список на всю команду ──────────
+   Баги QA (реестр qa/bugs, у каждого поле «Отдел») и баги экономики (коллекция bugs, общая со страницей /economy/)
+   приводятся к одному виду. Новые баги заводятся в реестре QA с нужным отделом. */
+const SEV_KEY = {'Критично':'critical', 'Высокая':'high', 'Средняя':'medium', 'Низкая':'low'};
+const QA_BUG_OPEN = ['Открыт','В работе','На ревью'];
+function allBugs(){
+  const reg = REGS['qa/bugs'], sevF = reg.fields.find(f=>f.k==='sev'), stF = reg.fields.find(f=>f.k==='status');
+  const qa = S.reg.filter(x=>x.key==='qa/bugs').map(x => ({id:x.id, name:x.name, dept:hd(x.dept)||'qa', sev:SEV_KEY[x.sev]||'', sevL:x.sev||'', where:x.where||'', who:x.who||null,
+    st:x.status||'', stTone:toneOf(stF, x.status), open:!x.status || QA_BUG_OPEN.includes(x.status), ref:'reg:'+x.id, at:x.createdAt||0, item:x}));
+  const ec = S.E && S.E.loaded.has('bugs') ? S.E.bugs.map(b => ({id:b.id, name:b.title, dept:'econ', sev:b.severity||'medium', sevL:lab(BUG_SEV,b.severity||'medium'), where:b.where||'', who:b.assignee||null,
+    st:lab(BUG_STATUS,b.status||'open'), stTone:ETONE[b.status||'open'], open:b.status!=='fixed' && b.status!=='wontfix', ref:'eedit:bugs:'+b.id, at:b.createdAt||b.order||0, item:b, e:true})) : [];
+  return [...qa, ...ec];
+}
+function bugsView(){
+  const every = allBugs(), f = UI.bfilt, loading = !(S.E && S.E.loaded.has('bugs'));
+  const counts = {}; every.forEach(b => { counts[b.dept] = (counts[b.dept]||0)+1; });
+  const list = every.filter(b => (f==='all' || b.dept===f) && (!UI.bhide || b.open))
+    .sort((a,b)=>(b.open-a.open) || (sevRank[a.sev]??2)-(sevRank[b.sev]??2) || b.at-a.at);
+  const closed = every.filter(b => (f==='all' || b.dept===f) && !b.open).length;
+  const tools = `<div class="toolbar">${deptSeg('d/qa/bugs', f, counts)}</div>
+    <div class="reg-tools"><div class="seg"><button data-action="bugs-hide" aria-pressed="${UI.bhide}">Скрыть закрытые <span class="mono" style="color:var(--muted)">${closed}</span></button></div>${loading?'<small style="color:var(--muted)"><span class="spin"></span> загружаем баги экономики…</small>':''}<span class="sp"></span><button class="btn sm primary" data-open="regnew:qa/bugs">${ic('Plus')} Добавить баг</button></div>`;
+  if (!list.length) return tools + `<div class="empty"><b>${every.length ? 'Под фильтр ничего не подходит' : 'Багов пока нет'}</b>Новый баг — кнопка «Добавить баг», в карточке выбери отдел.</div>`;
+  return tools + `<div class="tbl-wrap"><table class="grid"><thead><tr><th>Баг</th><th>Отдел</th><th>Важность</th><th>Где</th><th>Ответственный</th><th>Статус</th></tr></thead><tbody>${list.map(b=>`<tr tabindex="0" data-open="${esc(b.ref)}"${b.open?'':' class="rej"'}>
+    <td class="b">${b.e?'':coverMini(b.id)}${esc(b.name)}${b.e?'':decMark(b.id)}</td><td>${dchip(b.dept)}</td><td>${b.sevL?chip(b.sevL, ETONE[b.sev]||'muted'):'<span style="color:var(--muted)">—</span>'}</td>
+    <td class="m">${esc(b.where)}</td><td>${b.who?`<span class="who-pick">${eav(b.who,22)} ${esc(epname(b.who))}</span>`:'<span style="color:var(--muted)">—</span>'}</td><td>${b.st?chip(b.st, b.stTone):''}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* формы записей экономики (в шторке) */
@@ -1531,7 +1675,7 @@ document.addEventListener('click', async e => {
     if (await ewrite(()=>DB.collection('decisions').doc(id).update(Object.assign({chosen:v}, eStamp())))) { elog({action:'choose', coll:'decisions', docId:id, title:x.question, diff:[{f:'Итог', from:x.chosen!=null&&o[x.chosen]?o[x.chosen].label:'', to:v!=null&&o[v]?o[v].label:'отменён'}]}, 'зафиксировал(а) итог в экономике'); if (v!=null) { const r = a.getBoundingClientRect(); confetti(r.left, r.top); gain(10, ic('Scale')+' Решение принято'); } else toast('Итог отменён'); }
   }
   if (k==='e-del') {
-    const cur = efind(coll, id); if (!cur || !confirm('Удалить «'+ESCHEMA[coll].title(cur)+'»? Вернуть можно из журнала экономики.')) return;
+    const cur = efind(coll, id); if (!cur || !confirm('Удалить «'+ESCHEMA[coll].title(cur)+'»? Вернуть можно в «Журнале», фильтр «Экономика».')) return;
     if (await ewrite(()=>DB.collection(coll).doc(id).delete())) { const snapshot = Object.assign({}, cur); delete snapshot.id; elog({action:'delete', coll, docId:id, title:ESCHEMA[coll].title(cur), snapshot}, 'удалил(а) из экономики'); TE = null; closeDrawer(); toast(ic('Trash2')+' Удалено. Вернуть можно из журнала.'); }
   }
   if (k==='e-restore') {
@@ -1615,7 +1759,7 @@ function openDrawer(ref, edit){
   paintDrawer();
   const el = $('#drawer'); el.classList.add('open'); el.setAttribute('aria-hidden','false');
 }
-function closeDrawer(){ clearPending(); UI.drawer = null; UI.edit = false; TE = null; const el = $('#drawer'); el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
+function closeDrawer(){ clearPending(); listenThread(null); UI.drawer = null; UI.edit = false; TE = null; const el = $('#drawer'); el.classList.remove('open'); el.setAttribute('aria-hidden','true'); }
 const drawerHead = (d, title, extra='') => `<div class="dr-h" style="--dc:${d?d.color:'var(--acc)'}"><span class="ph-ico" style="width:40px;height:40px">${ic(d?d.icon:'BookOpen')}</span><h2>${esc(title)}</h2>${extra}<button class="icon-btn" data-action="close-drawer" aria-label="Закрыть">${ic('X')}</button></div>`;
 function linkChip(id, removable){
   const t = task(id), d = dec(id);
@@ -1654,8 +1798,7 @@ function drawerTask(t){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm primary" data-action="focus-start" data-id="${esc(t.id)}">${ic('Headphones')} Фокус 25 мин</button>
       <button class="btn sm" data-action="toggle-top" data-id="${esc(t.id)}">${top?ic('Star','filled')+' В «Моём дне»':ic('Star')+' В день'}</button>
-      <button class="btn sm" data-action="task-chat" data-id="${esc(t.id)}" title="Чат задачи доступен всей команде">${ic('MessagesSquare')} ${S.chats.some(c=>c.task===t.id)?'Открыть чат':'Создать чат'}</button>
-      ${S.chats.some(c=>c.task===t.id) || (t.comments||[]).length ? `<button class="btn sm" data-action="task-md" data-id="${esc(t.id)}" title="Скачать чат и обсуждение задачи одним файлом Markdown">${ic('FileDown')} Экспорт .md</button>` : ''}
+      ${threadChat('task', t.id) || (t.comments||[]).length ? `<button class="btn sm" data-action="task-md" data-id="${esc(t.id)}" title="Скачать задачу с обсуждением одним файлом Markdown">${ic('FileDown')} Экспорт .md</button>` : ''}
     </div>
     <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${ro ? '' : attachBtn('task-attach', t.id, 'Прикрепить')}</div>
       ${upBar('task:'+t.id)}<div class="files">${files.map(f=>fileChip(f, true)).join('') || '<small style="color:var(--muted)">Макеты, логи, скриншоты — до '+fsize(FILE_MAX)+' на файл.</small>'}</div></div>
@@ -1665,8 +1808,7 @@ function drawerTask(t){
     ${t.details?`<details class="more"><summary>Подробности</summary><div class="body md">${md(t.details, true)}</div></details>`:''}
     <div><p class="sub-h" style="margin-bottom:8px">Связано</p><div class="links">${links.map(id=>linkChip(id, !ro && (t.links||[]).includes(id))).join('') || (ro ? '<small style="color:var(--muted)">Связей нет.</small>' : '')}</div>
       ${linkable.length && !ro?`<select class="input" data-action="link-add" data-id="${esc(t.id)}" aria-label="Связать" style="margin-top:8px"><option value="">${'＋ Связать с задачей или решением…'}</option>${linkable.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`:''}</div>
-    <div><p class="sub-h" style="margin-bottom:8px">Обсуждение</p><div class="list">${(t.comments||[]).map(c=>`<div class="comment">${av(c.by,26)}<div class="bd"><b>${esc(pname(c.by))}</b> <small>${ago(c.at)}</small>${mdBlock(c.text)}</div></div>`).join('')}</div>
-    <form data-form="comment" data-id="${esc(t.id)}" style="display:flex;gap:8px;margin-top:8px"><input class="input" name="c" placeholder="Написать комментарий… @логин — упомянуть" autocomplete="off" maxlength="2000"><button class="btn" aria-label="Отправить">${ic('ArrowRight')}</button></form></div>
+    ${threadBlock('task', t.id)}
   </div>`;
 }
 function regDecBlock(it){
@@ -1682,17 +1824,18 @@ function regForm(key, it){
     if (f.t==='textarea') return inArea(f.k, f.l, v, 5);
     if (f.t==='select') return inSelect(f.k, f.l, [['','—'], ...f.o.map(o=>[o[0],o[0]])], v);
     if (f.t==='person') return inSelect(f.k, f.l, peopleOpts(), v||'');
+    if (f.t==='dept') return inSelect(f.k, f.l, deptOpts(), hd(v) || (UI.bfilt!=='all' ? UI.bfilt : d.id));
     if (f.t==='url') return inText(f.k, f.l, v, 'type="url" placeholder="https://"');
     return inText(f.k, f.l, v, (f.req?'required ':'')+'maxlength="300"'+(f.mono?' style="font-family:var(--f-mono);font-size:13px"':''));
   };
-  return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun, it && r.type!=='checklist' ? `<button type="button" class="btn sm" data-action="reg-decide" data-id="${esc(it.id)}" title="Вынести запись на решение — она останется на месте">${ic('Scale')} На решение</button>` : '') + `<form class="dr-b form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
+  return drawerHead(d, it ? it.name : 'Новая запись: '+r.noun, it && r.type!=='checklist' ? `<button type="button" class="btn sm" data-action="reg-decide" data-id="${esc(it.id)}" title="Вынести запись на решение — она останется на месте">${ic('Scale')} На решение</button>` : '') + `<div class="dr-b"><form class="form" data-form="reg-save" data-key="${key}" data-id="${it?esc(it.id):''}">
     ${r.fields.map(field).join('')}
     ${it && safeUrl(it.link) ? `<a class="btn" href="${esc(it.link)}" target="_blank" rel="noopener">${ic('ExternalLink')} Открыть макет</a>`:''}
     ${it && r.type!=='checklist' ? regDecBlock(it) : ''}
     ${r.type==='checklist' ? '' : `<div class="reg-gal" id="reg-gal" data-id="${it?esc(it.id):''}">${regGallery(it&&it.id)}</div>`}
     <div class="form-foot"><button class="btn primary">${ic('Save')} ${it?'Сохранить':'Добавить'}</button><button type="button" class="btn ghost" data-action="close-drawer">Отмена</button><span class="sp"></span>${it?`<button type="button" class="btn danger" data-action="reg-del" data-id="${esc(it.id)}">${ic('Trash2')} Удалить</button>`:''}</div>
     ${it&&it.updatedBy?`<small style="color:var(--muted)">Изменено: ${esc(pname(it.updatedBy))}, ${ago(it.updatedAt)}</small>`:''}
-  </form>`;
+  </form>${it && r.type!=='checklist' ? threadBlock('reg', it.id) : ''}</div>`;
 }
 function wikiDrawer(w){
   const pre = (!w && UI.wikiPre) || {};
@@ -1715,7 +1858,7 @@ function paintDrawer(){
   else if (kind==='regnew') html = regForm(id, null);
   else if (kind==='wiki') { const w = wikiItem(id); if (!w) return missing(); html = wikiDrawer(w); }
   else if (kind==='wikinew') html = wikiDrawer(null);
-  else if (kind==='eedit') { const [c, x] = [id.slice(0, id.indexOf(':')), id.slice(id.indexOf(':')+1)]; html = S.E && eForm(c, x); if (!html) return missing(); }
+  else if (kind==='eedit') { const [c, x] = [id.slice(0, id.indexOf(':')), id.slice(id.indexOf(':')+1)]; html = (S.E || c==='decisions') && eForm(c, x); if (!html) return missing(); }
   else if (kind==='enew') html = S.E ? eForm(id, null) : '';
   else if (kind==='etable') { html = S.E && eTableForm(id); if (!html) return missing(); }
   el.classList.toggle('wide', kind==='etable');
@@ -1726,7 +1869,7 @@ function paintDrawer(){
 function refreshDrawer(){
   if (!UI.drawer) return;
   if ($('#drawer .loading')) return paintDrawer();
-  paintRegGal(); // фото и решения записи обновляются, даже пока форма открыта
+  paintRegGal(); paintThread(); // фото, обсуждение и решения записи обновляются, даже пока форма открыта
   { const rd = $('#reg-decs'), it = rd && regItem(rd.dataset.id); if (it) rd.outerHTML = regDecBlock(it); }
   const force = UI.forceDrawer; UI.forceDrawer = false;
   if (!force && (UI.edit || /^(reg|regnew|wikinew|eedit|enew|etable):/.test(UI.drawer))) return;
@@ -1734,7 +1877,9 @@ function refreshDrawer(){
   const form = inside && a.form && a.form.dataset.form, name = inside && a.name, act = inside && a.dataset && a.dataset.action;
   const keep = {}; document.querySelectorAll('#drawer form[data-form] input[name], #drawer form[data-form] textarea[name]').forEach(i => { if (i.value) keep[i.form.dataset.form+'/'+i.name] = i.value; });
   const sel = inside && 'selectionStart' in a ? [a.selectionStart, a.selectionEnd] : null;
+  const sb = $('#drawer .dr-b'), st = sb ? sb.scrollTop : 0; // перерисовка не должна уводить к началу карточки
   paintDrawer();
+  { const nb = $('#drawer .dr-b'); if (nb) nb.scrollTop = st; }
   for (const [k,v] of Object.entries(keep)) { const [f,n] = k.split('/'); const i = $(`#drawer form[data-form="${f}"] [name="${n}"]`); if (i && !i.value) i.value = v; }
   const el = form ? $(`#drawer form[data-form="${form}"] [name="${name}"]`) : act ? $(`#drawer [data-action="${act}"]`) : null;
   if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
@@ -1803,19 +1948,20 @@ function palItems(q){
     .map(p=>({g:'Разделы', ico:p[1], t:p[2], run:()=>go(p[0])}))
     .concat(DEPTS.flatMap(d=>[{g:'Разделы', ico:d.icon, t:d.name, run:()=>go('d/'+d.id)}].concat(d.tabs.slice(1).map(([id,n])=>({g:'Разделы', ico:d.icon, t:d.name+' → '+n, run:()=>go('d/'+d.id+'/'+id)})))));
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:(D[t.dept]||DEPTS[0]).icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
-  const decs = S.decisions.map(d=>({g:'Решения', ico:'Scale', t:d.q, extra:d.tldr, run:()=>go('decisions')}));
-  const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>{ const dd = D[r.key.split('/')[0]], t = dd && (dd.tabs.find(x=>tabKey(dd, x[0])===r.key)||[])[0]; go('d/'+(dd ? dd.id+'/'+t : r.key)); setTimeout(()=>openDrawer('reg:'+r.id), 120); }}));
-  const chats = S.chats.map(c=>({g:'Чаты', ico:'MessagesSquare', t:c.title, extra:c.lastText, run:()=>go('chats/'+c.id)}));
+  const decs = S.decisions.map(d=>({g:'Решения', ico:'Scale', t:d.q, extra:d.tldr, run:()=>openDec(d.id)}));
+  const regs = S.reg.map(r=>({g:'Записи отделов', ico:(D[r.key.split('/')[0]]||DEPTS[0]).icon, t:r.name, extra:r.tldr||r.what||'', run:()=>openReg(r.id)}));
+  const chats = S.chats.filter(c=>!isThread(c)).map(c=>({g:'Чаты', ico:'MessagesSquare', t:c.title, extra:c.lastText, run:()=>go('chats/'+c.id)}));
   const wiki = S.wiki.map(w=>({g:'Вики', ico:'BookOpen', t:w.title, extra:w.tldr, run:()=>openDrawer('wiki:'+w.id)}));
   const people = Object.entries(S.people).map(([id,p])=>({g:'Люди', ico:'User', t:p.name, extra:p.role, run:()=>go('people')}));
   const eco = !S.E ? [] : [
     ...S.E.params.map(p=>({g:'Экономика', ico:'Gauge', t:p.name, r:lab(PARAM_STATUS,p.status), extra:[p.where,p.current,p.proposed,p.group].join(' '), run:()=>{ go('d/econ/params'); setTimeout(()=>openDrawer('eedit:params:'+p.id), 120); }})),
-    ...S.E.bugs.map(b=>({g:'Экономика', ico:'Bug', t:b.title, r:lab(BUG_STATUS,b.status), extra:b.where, run:()=>{ go('d/econ/bugs'); setTimeout(()=>openDrawer('eedit:bugs:'+b.id), 120); }})),
+    ...S.E.bugs.map(b=>({g:'Экономика', ico:'Bug', t:b.title, r:lab(BUG_STATUS,b.status), extra:b.where, run:()=>{ go('d/qa/bugs/econ'); setTimeout(()=>openDrawer('eedit:bugs:'+b.id), 120); }})),
     ...S.E.stages.map(x=>({g:'Экономика', ico:'ListOrdered', t:x.title, r:lab(STAGE_STATUS,x.status), run:()=>go('d/econ/stages')})),
     ...S.E.sections.map(x=>({g:'Экономика', ico:'BookOpen', t:x.title, extra:x.body, run:()=>go('d/econ/plan')})),
-    ...S.E.decisions.map(x=>({g:'Экономика', ico:'Scale', t:x.question, run:()=>go('d/econ/edec')}))];
+  ];
+  const edecs = S.edec.map(x=>({g:'Решения', ico:'Scale', t:x.question, extra:x.note, run:()=>openDec(x.id)}));
   if (!q) return [...cmds, ...pages.slice(0,7), ...tasks.filter(t=>true).slice(0,4)];
-  return [...cmds, ...pages, ...tasks, ...decs, ...chats, ...regs, ...wiki, ...people, ...eco].filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q)).slice(0,40);
+  return [...cmds, ...pages, ...tasks, ...decs, ...edecs, ...chats, ...regs, ...wiki, ...people, ...eco].filter(x=>(x.t+' '+(x.extra||'')).toLowerCase().includes(q)).slice(0,40);
 }
 function palette(){
   UI.pal = {q:'', i:0, items:palItems('')};
@@ -1939,6 +2085,7 @@ document.addEventListener('click', e => {
       case 'new-task': newTask(a.dataset.status, a.dataset.dept); break;
       case 'new-decision': newDecision(a.dataset.dept); break;
       case 'filt-small': UI.filt.small = !UI.filt.small; paint(); break;
+      case 'bugs-hide': UI.bhide = !UI.bhide; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
       case 'inbox-del': write(()=>col('hub_inbox').doc(id).delete()); break;
       case 'inbox-task': { const it = S.inbox.find(i=>i.id===id); if (it) newTask('inbox', it.dept, it.text, it.id); break; }
@@ -1982,13 +2129,12 @@ document.addEventListener('click', e => {
       case 'wiki-del': { const w = wikiItem(id); if (!confirm('Удалить статью «'+w.title+'»?')) break; write(()=>col('hub_wiki').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) статью', w.title); closeDrawer(); } }); break; }
       case 'file-get': downloadFile(id); break;
       case 'file-del': { const f = S.files.find(x=>x.id===id); if (!f || !confirm('Удалить файл «'+f.name+'»?')) break; write(()=>deleteFiles([id])); break; }
-      case 'task-chat': openTaskChat(id); break;
       case 'chat-new': newChat(); break;
       case 'chat-del': { const c = chat(id); if (!c || !confirm('Удалить чат «'+c.title+'» со всеми сообщениями?')) break;
         write(async () => { const ms = await col('hub_msgs').where('chat','==',id).get(); const fids = ms.docs.flatMap(d=>d.data().files||[]);
           for (let i=0;i<ms.docs.length;i+=400) { const b = DB.batch(); ms.docs.slice(i,i+400).forEach(d=>b.delete(d.ref)); await b.commit(); }
           await deleteFiles(fids); await col('hub_chats').doc(id).delete(); }).then(ok => { if (ok) { log('удалил(а) чат', c.title); go('chats'); } }); break; }
-      case 'msg-del': { const m = S.msgs.find(x=>x.id===id); if (!m || !confirm('Удалить сообщение?')) break; write(async () => { await col('hub_msgs').doc(id).delete(); await deleteFiles(m.files||[]); }); break; }
+      case 'msg-del': { const m = S.msgs.find(x=>x.id===id) || TH.msgs.find(x=>x.id===id); if (!m || !confirm('Удалить сообщение?')) break; write(async () => { await col('hub_msgs').doc(id).delete(); await deleteFiles(m.files||[]); }); break; }
       case 'claude-past': UI.cpast = !UI.cpast; paint(); break;
       case 'claude-day': UI.cday = Number(a.dataset.v); paint(); break;
       case 'claude-book': claudeBookForm(); break;
@@ -2019,6 +2165,7 @@ document.addEventListener('change', e => {
   if (a.dataset.action==='task-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
     uploadFiles(list, {task:id}).then(ids => { if (ids.length) { const t = task(id); if (t) log('прикрепил(а) '+plural(ids.length,'файл','файла','файлов')+' к задаче', t.title, t.dept); toast(ic('Paperclip')+' Прикреплено: '+ids.length); } }); }
   if (a.dataset.action==='reg-attach' && a.files.length) { const list = [...a.files]; a.value = ''; addRegFiles(a.dataset.id, list); }
+  if (a.dataset.action==='thread-attach' && a.files.length) { const [tk, tid] = a.dataset.id.split(':'), list = [...a.files]; a.value = ''; threadFiles(tk, tid, list); }
   if (a.dataset.action==='chat-attach' && a.files.length) { const id = a.dataset.id, list = [...a.files]; a.value = '';
     uploadFiles(list, {chat:id}).then(ids => { if (ids.length) sendMsg(id, '', ids); }); }
   if (a.name==='day' && a.form && a.form.dataset.form==='claude-book') { a.form.from.innerHTML = claudeTimes(Number(a.value)).map(([v,l])=>`<option value="${v}">${esc(l)}</option>`).join(''); }
@@ -2038,10 +2185,9 @@ document.addEventListener('submit', async e => {
     const ok = await sendMsg(id, text.trim()); if (!ok) { f.m.value = text; UI.chatDraft[id] = text; } const i = $('#chat-in'); if (i) i.focus(); }
   if (k==='claude-book') { const s = Number(f.from.value); if (!s) return; const ok = await bookClaude(s, s+Number(f.dur.value), f.note.value);
     if (ok) { UI.cday = Number(f.day.value); closeOverlay(); paint(); } }
-  if (k==='comment') { const t = clip(f.c.value,2000); if (!t) return; const tk = task(f.dataset.id); f.c.value = '';
-    updTask(tk.id, {comments:FV().arrayUnion({by:S.me, text:t, at:now()})}).then(ok => { if (!ok) return; log('прокомментировал(а)', tk.title, tk.dept); gain(3, ic('MessageSquare')+' Комментарий добавлен');
-      const ment = mentions(t); notify(ment, 'mention', tk, t);
-      notify([...watchers(tk), ...(tk.comments||[]).map(c=>c.by)].filter(u=>!ment.includes(u)), 'comment', tk, t); }); }
+  if (k==='thread') { const text = f.m.value.trim(); if (!text) return; f.m.value = '';
+    const ok = await threadSend(f.dataset.k, f.dataset.id, clip(text,4000), []); if (!ok) f.m.value = text; const i = $('#thread-in'); if (i) i.focus();
+    if (ok) setTimeout(() => { const b = $('#drawer .dr-b'); if (b) b.scrollTop = b.scrollHeight; }, 150); } // своё сообщение — сразу видно внизу
   if (k==='step-add') { const t = clip(f.s.value,160); if (!t) return; const tk = task(f.dataset.id); updTask(tk.id, {sub:[...(tk.sub||[]), {t, done:false}]}).then(ok => { if (ok) setTimeout(()=>{ const i = $('#drawer [data-form="step-add"] input'); if (i) i.focus(); }, 60); }); f.s.value = ''; }
   if (k==='task-edit') { const t = task(f.dataset.id); const title = clip(f.title.value,160); if (!title) return;
     const ds = formDepts(f); if (!ds.length) return;
@@ -2090,6 +2236,8 @@ document.addEventListener('mousemove', e => { const p = e.screenX+','+e.screenY;
 document.addEventListener('input', e => { if (e.target.id==='chat-in') { UI.chatDraft[e.target.form.dataset.id] = e.target.value; return; } });
 /* картинку из буфера обмена можно сразу отправить в чат */
 document.addEventListener('paste', e => {
+  if (e.target.id==='thread-in') { const files = [...(e.clipboardData && e.clipboardData.files || [])]; if (!files.length) return;
+    e.preventDefault(); const f = e.target.form; threadFiles(f.dataset.k, f.dataset.id, files.map(shotName)); return; }
   const g = $('#reg-gal');
   if (g && e.target.closest && e.target.closest('#drawer')) { const files = [...(e.clipboardData && e.clipboardData.files || [])].filter(f=>/^image\//.test(f.type)); if (!files.length) return; e.preventDefault(); addRegFiles(g.dataset.id, files.map(shotName)); return; }
   if (e.target.id!=='chat-in') return;
@@ -2104,7 +2252,7 @@ document.addEventListener('drop', e => { const g = e.target.closest && e.target.
 document.addEventListener('input', e => { if (e.target.id==='pal-in') { UI.pal.q = e.target.value; UI.pal.items = palItems(e.target.value); UI.pal.i = 0; paintPal(); } });
 document.addEventListener('keydown', e => {
   if (document.body.classList.contains('locked')) return;
-  if (e.key==='Enter' && e.target.matches('[data-go]:not(button),[data-open]:not(button)')) { e.preventDefault(); e.target.click(); return; }
+  if (e.key==='Enter' && e.target.matches('[data-go]:not(button),[data-open]:not(button),[data-action="open-dec"]:not(button)')) { e.preventDefault(); e.target.click(); return; }
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
   if ((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') { e.preventDefault(); UI.pal ? closeOverlay() : palette(); return; }
   if (LB && (e.key==='ArrowLeft' || e.key==='ArrowRight')) { e.preventDefault(); lbGo(e.key==='ArrowLeft' ? -1 : 1); return; }
@@ -2116,7 +2264,7 @@ document.addEventListener('keydown', e => {
     if (e.key==='Enter') { e.preventDefault(); runPal(UI.pal.i); }
     return;
   }
-  if (e.target.id==='chat-in' && e.key==='Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); e.target.form.requestSubmit(); return; }
+  if ((e.target.id==='chat-in' || e.target.id==='thread-in') && e.key==='Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); e.target.form.requestSubmit(); return; }
   if (e.target.name==='t' && e.target.form && e.target.form.dataset.form==='capture' && e.key==='Enter' && !e.shiftKey) { e.preventDefault(); e.target.form.requestSubmit(); return; }
   if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key==='q' || e.key==='й')) { e.preventDefault(); capture(); }
 });
@@ -2158,7 +2306,8 @@ function focusKey(el){
 }
 function paint(){
   if (document.body.classList.contains('locked')) return;
-  if (UI.route.startsWith('d/econ')) econListen(); // данные экономики грузим, только когда их открыли
+  /* данные экономики грузим, только когда их открыли: сама экономика, общий список багов и журнал */
+  if (UI.route.startsWith('d/econ') || UI.route==='log' || (UI.route==='d/qa' && UI.tab==='bugs')) econListen();
   const ae = document.activeElement, fk = focusKey(ae), sy = scrollY, sel = ae && ae.id && 'selectionStart' in ae ? [ae.selectionStart, ae.selectionEnd] : null;
   const ms = $('#msgs'), mst = ms ? {top:ms.scrollTop, end:ms.scrollHeight-ms.scrollTop-ms.clientHeight < 60, chat:UI.chat} : null;
   $('#side').innerHTML = sidebar();
@@ -2428,6 +2577,8 @@ function listen(){
   const docs = sn => sn.docs.map(d=>Object.assign({id:d.id}, d.data()));
   const simple = [['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki'],['hub_files','files'],['hub_chats','chats']];
   for (const [c,k] of simple) UNSUB.push(col(c).onSnapshot(sn => { S[k] = docs(sn); S.loaded.add(c); schedule(); }, onErr(c)));
+  /* вопросы экономики — часть общего раздела «Решения»; без них хаб работает, поэтому ошибка не ломает страницу */
+  UNSUB.push(col('decisions').onSnapshot(sn => { S.edec = docs(sn).filter(x=>x.question); S.loaded.add('decisions'); schedule(); }, e => { console.warn('decisions', e); S.loaded.add('decisions'); schedule(); }));
   /* задачи видят все — одна подписка. Пока в базе старые правила, читаем по своим отделам, как раньше */
   let allTasks = true, allTries = 0;
   const syncTasks = () => {
