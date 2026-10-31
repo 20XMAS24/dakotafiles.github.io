@@ -3060,9 +3060,18 @@ async function scrToggle(){
   if (!CALL.in || !CAN_SHARE) return;
   if (CALL.scr) return scrOff();
   try {
-    CALL.scr = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30, max:30}, width:{max:1920}, height:{max:1080}},
-      audio:true, systemAudio:'include', selfBrowserSurface:'exclude', surfaceSwitching:'include'});
+    /* выбор сразу открывается на «Весь экран»; окна и вкладки тоже доступны.
+       restrictOwnAudio — в звук экрана не попадает звук самого хаба (голоса звонка), иначе у всех эхо */
+    CALL.scr = await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:'monitor', frameRate:{ideal:30, max:30}, width:{max:1920}, height:{max:1080}},
+      audio:{restrictOwnAudio:true, suppressLocalAudioPlayback:false, echoCancellation:false, noiseSuppression:false, autoGainControl:false},
+      systemAudio:'include', monitorTypeSurfaces:'include', selfBrowserSurface:'exclude', surfaceSwitching:'include'});
   } catch (e) { CALL.scr = null; if (e.name!=='NotAllowedError' && e.name!=='AbortError') toast(ic('CircleAlert')+' Не получилось показать экран: '+esc(e.message||e.name)); return; }
+  /* весь экран со звуком, а браузер не умеет вырезать свой звук — звук экрана не шлём, чтобы голоса звонка не вернулись эхом */
+  const sa = CALL.scr.getAudioTracks()[0];
+  if (sa && (CALL.scr.getVideoTracks()[0].getSettings().displaySurface||'monitor')!=='browser' && !(navigator.mediaDevices.getSupportedConstraints() || {}).restrictOwnAudio) {
+    sa.stop(); CALL.scr.removeTrack(sa);
+    toast(ic('CircleAlert')+' Звук экрана выключен: этот браузер не умеет отделять от него звук звонка. Обнови Chrome или Edge.');
+  }
   const v = CALL.scr.getVideoTracks()[0], a = CALL.scr.getAudioTracks()[0] || null;
   /* «detail» — браузер бережёт резкость текста, а не плавность */
   v.contentHint = 'detail'; v.onended = () => scrOff();
@@ -3180,7 +3189,7 @@ function paintLobby(box){
       <button class="pill${CALL.wantCam?' on':''}" data-call="cam" aria-pressed="${CALL.wantCam}">${ic(CALL.wantCam?'Video':'VideoOff')} ${CALL.wantCam?'Камера включена':'Без камеры'}</button>
     </div>
     <button class="btn primary join" data-call="join" ${CALL.joining?'disabled':''}>${CALL.joining?'<span class="spin"></span> Подключаемся…':ic('Phone')+' Подключиться'}</button>
-    <small class="lobby-hint">${CAN_SHARE ? 'Экран можно показать после подключения.' : 'Показ экрана доступен с компьютера.'} Горячие клавиши в звонке: M — микрофон, V — камера.</small>`;
+    <small class="lobby-hint">${CAN_SHARE ? 'Экран можно показать после подключения: весь экран ПК, окно или вкладку.' : 'Телефонные браузеры не дают сайтам показывать экран — демонстрация доступна с компьютера.'} Горячие клавиши в звонке: M — микрофон, V — камера.</small>`;
   callTime();
 }
 /* плитки: своя камера, камеры остальных и отдельные плитки экранов */
