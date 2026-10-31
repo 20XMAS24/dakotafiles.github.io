@@ -85,6 +85,14 @@ const ICONS = {
   Bell:'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   AtSign:'<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/>',
   FileDown:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
+  Phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  PhoneOff:'<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><path d="M22 2 2 22"/>',
+  Mic:'<path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><path d="M12 19v3"/>',
+  MicOff:'<path d="m2 2 20 20"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><path d="M12 19v3"/>',
+  Video:'<path d="m16 13 5.22 3.48a.5.5 0 0 0 .78-.42V7.87a.5.5 0 0 0-.75-.43L16 10.5"/><rect x="2" y="6" width="14" height="12" rx="2"/>',
+  VideoOff:'<path d="M10.66 6H14a2 2 0 0 1 2 2v2.5l5.25-3.06a.5.5 0 0 1 .75.43v8.2"/><path d="M16 16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2"/><path d="m2 2 20 20"/>',
+  ScreenShare:'<path d="M13 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3"/><path d="M8 21h8"/><path d="M12 17v4"/><path d="m17 8 5-5"/><path d="M17 3h5v5"/>',
+  Maximize:'<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
   Zap:'<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>'
 };
 const ic = (n, cls) => `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||''}</svg>`;
@@ -355,7 +363,7 @@ function readHash(){
   if (moved) { history.replaceState(null, '', '#/'+moved); return readHash(); }
   const filt = v => v && (D[v] ? hd(v) : 'all') || 'all';
   if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; if (UI.route==='d/qa' && UI.tab==='bugs') UI.bfilt = filt(p[3]); }
-  else { UI.route = ['today','lead','tasks','decisions','inbox','log','people','wiki','chats','claude'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
+  else { UI.route = ['today','lead','tasks','decisions','inbox','log','people','wiki','chats','claude','call'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
   if (UI.route==='decisions') UI.dfilt = filt(p[1]);
   if (UI.route==='log') UI.lfilt = filt(p[1]);
   UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
@@ -384,6 +392,7 @@ function sidebar(){
     ${link('log','ScrollText','Журнал', 0, '#A9A8B6')}
     ${isAdmin() && S.pending.length ? link('people','Users','Люди', S.pending.length, '#86D9B0', true) : link('people','Users','Люди', Object.keys(S.people).filter(isOnline).length, '#86D9B0')}
     ${link('chats','MessagesSquare','Чаты', unreadChats(), '#7DD3E8', unreadChats()>0)}
+    ${(n => link('call','Phone','Звонок', CALL.in ? '●' : n, '#7FD6A4', n>0 && !CALL.in))(callCount())}
     ${link('wiki','BookOpen','Вики', 0, '#F5B98A')}
     ${(b => link('claude','Bot','Claude', b ? (b.by===S.me ? 'ты' : 'занят') : '', '#E8B07D', !!b && b.by!==S.me))(claudeAt(now()))}
   </nav>
@@ -2151,7 +2160,7 @@ function palItems(q){
     ['Leaf','Спокойный режим вкл/выкл','',()=>{ P.calm = !P.calm; applyPrefs(); savePrefs(); toast(P.calm?'Спокойный режим: без конфетти и всплывающих XP':'Спокойный режим выключен'); }],
     ['Settings','Профиль и настройки','',()=>settings()]
   ].map(c=>({g:'Команды', ico:c[0], t:c[1], r:c[2], run:c[3]}));
-  const pages = [['today','Sun','Мой день'],['inbox','Inbox','Входящие'],['tasks','LayoutGrid','Задачи'],['decisions','Scale','Решения'],['log','ScrollText','Журнал'],['people','Users','Люди'],['chats','MessagesSquare','Чаты'],['wiki','BookOpen','Вики'],['claude','Bot','Claude — график']]
+  const pages = [['today','Sun','Мой день'],['inbox','Inbox','Входящие'],['tasks','LayoutGrid','Задачи'],['decisions','Scale','Решения'],['log','ScrollText','Журнал'],['people','Users','Люди'],['chats','MessagesSquare','Чаты'],['call','Phone','Звонок'],['wiki','BookOpen','Вики'],['claude','Bot','Claude — график']]
     .map(p=>({g:'Разделы', ico:p[1], t:p[2], run:()=>go(p[0])}))
     .concat(DEPTS.flatMap(d=>[{g:'Разделы', ico:d.icon, t:d.name, run:()=>go('d/'+d.id)}].concat(d.tabs.slice(1).map(([id,n])=>({g:'Разделы', ico:d.icon, t:d.name+' → '+n, run:()=>go('d/'+d.id+'/'+id)})))));
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:(D[t.dept]||DEPTS[0]).icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
@@ -2525,6 +2534,7 @@ function viewRoute(){
   if (r==='wiki') return viewWiki();
   if (r==='chats') return viewChats();
   listenChat(null);
+  if (r==='call') return '';
   if (r==='claude') return viewClaude();
   if (r.startsWith('d/')) return viewDept();
   return viewToday();
@@ -2545,6 +2555,8 @@ function paint(){
   $('#topbar').innerHTML = topbar();
   $('#view').innerHTML = view();
   document.body.classList.toggle('r-chats', UI.route==='chats');
+  document.body.classList.toggle('r-call', UI.route==='call');
+  callPaint();
   const ms2 = $('#msgs'); if (ms2) ms2.scrollTop = !mst || mst.end || mst.chat!==UI.chat ? ms2.scrollHeight : mst.top;
   if (fk) { const el = document.querySelector('#side '+fk+',#topbar '+fk+',#view '+fk); if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
   if (scrollY !== sy) scrollTo(0, sy);
@@ -2802,6 +2814,455 @@ async function exportTask(id){
   toast(ic('FileDown')+' Скачано: обсуждение задачи');
 }
 
+/* ── звонок: один общий канал — голос, камера, демонстрация экрана ─────
+   Звук и видео идут напрямую между браузерами (WebRTC, каждый с каждым). Firestore только сводит участников:
+   hub_call/{uid} — кто сейчас в канале (пульс раз в 20 с), hub_rtc — предложение и ответ SDP для пары.
+   Кандидаты ICE не шлём по одному: ждём, пока соберутся, и отправляем SDP целиком — одна запись на сторону.
+   Блок звонка (#callbox) живёт вне #view: перерисовка страницы не пересоздаёт видео. */
+const CALL_BEAT = 20e3, CALL_STALE = 65e3, CALL_MAX = 8;
+const CALL_ICE = [{urls:['stun:stun.l.google.com:19302','stun:stun1.l.google.com:19302']},
+  ...(typeof TURN_SERVERS!=='undefined' && Array.isArray(TURN_SERVERS) ? TURN_SERVERS : [])];
+/* порядок дорожек в соединении одинаковый у обеих сторон — по нему и узнаём, что пришло */
+const T_MIC = 0, T_CAM = 1, T_SCR = 2, T_SCRA = 3;
+const CAN_SHARE = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+const CALL = {in:false, joining:false, sid:'', raw:{}, list:{}, sig:'', first:true, err:'', peers:{}, mic:null, cam:null, scr:null,
+  wantMic:true, wantCam:false, beat:null, sigUnsub:null, ac:null, meters:{}, loud:{}, meterT:null, tickT:null, pin:null, built:false, lobbyKey:'', dockKey:''};
+const callIds = () => Object.keys(CALL.list).sort((a,b)=>(CALL.list[a].at||0)-(CALL.list[b].at||0));
+const callCount = () => callIds().length;
+const callSince = () => Math.min(...callIds().map(id=>CALL.list[id].at||now()), now());
+const hms = ms => { const s = Math.max(0, Math.floor(ms/1000)), h = Math.floor(s/3600); return (h ? h+':' : '') + String(Math.floor(s/60)%60).padStart(h?2:1,'0')+':'+String(s%60).padStart(2,'0'); };
+const myTracks = () => [CALL.mic && CALL.mic.getAudioTracks()[0], CALL.cam && CALL.cam.getVideoTracks()[0],
+  CALL.scr && CALL.scr.getVideoTracks()[0], CALL.scr && CALL.scr.getAudioTracks()[0]].map(t=>t||null);
+const micLive = () => !!(CALL.mic && CALL.mic.getAudioTracks()[0] && CALL.mic.getAudioTracks()[0].enabled);
+
+/* ── присутствие ── */
+function callListen(){
+  return col('hub_call').onSnapshot(sn => {
+    CALL.err = ''; CALL.raw = {}; sn.docs.forEach(d => { CALL.raw[d.id] = d.data(); });
+    callRefresh(sn.metadata.fromCache);
+  }, e => { console.warn('hub_call', e); CALL.err = errText(e); callPaint(); });
+}
+/* свежие — с пульсом не старше CALL_STALE; полная перерисовка хаба — только если состав или значки поменялись */
+function callRefresh(cached){
+  const prev = CALL.list, L = {};
+  for (const [id, x] of Object.entries(CALL.raw)) if (x && x.beat > now()-CALL_STALE && x.sid) L[id] = x;
+  CALL.list = L;
+  if (CALL.in && L[S.me] && L[S.me].sid!==CALL.sid) { callLeave(true); toast(ic('Phone')+' Ты подключился к звонку в другой вкладке — здесь звонок закрыт.'); return; }
+  if (!CALL.first && !cached) callNews(prev, L);
+  if (!cached) CALL.first = false;
+  if (CALL.in) callPeers();
+  const sig = callIds().map(id => id+L[id].sid+(L[id].mic?1:0)+(L[id].cam?1:0)+(L[id].scr?1:0)).join('|');
+  if (sig!==CALL.sig) { CALL.sig = sig; schedule(); }
+  callPaint();
+}
+function callNews(prev, L){
+  const came = Object.keys(L).filter(id=>id!==S.me && (!prev[id] || prev[id].sid!==L[id].sid));
+  const went = Object.keys(prev).filter(id=>id!==S.me && !L[id]);
+  if (CALL.in) { if (came.length) blip(true); else if (went.length) blip(false); return; }
+  /* канал был пуст — зовём остальных */
+  if (!Object.keys(prev).length && came.length) toast(ic('Phone')+' '+esc(pname(came[0]))+' в звонке — раздел «Звонок» слева');
+}
+function callBeat(patch){
+  if (!CALL.in || !S.me) return Promise.resolve();
+  return col('hub_call').doc(S.me).set(Object.assign({sid:CALL.sid, at:CALL.at, beat:now(), mic:micLive(), cam:!!CALL.cam, scr:!!CALL.scr}, patch||{})).catch(e => console.warn('hub_call beat', e.code));
+}
+
+/* ── вход и выход ── */
+async function callJoin(){
+  if (CALL.in || CALL.joining || !S.me) return;
+  if (!window.RTCPeerConnection || !navigator.mediaDevices) return toast(ic('CircleAlert')+' Этот браузер не умеет звонки. Открой хаб в Chrome, Edge или Firefox.');
+  if (callIds().filter(id=>id!==S.me).length >= CALL_MAX) return toast(ic('CircleAlert')+' В канале уже '+CALL_MAX+' человек — больше связь каждый-с-каждым не потянет.');
+  CALL.joining = true; callPaint();
+  /* звук создаём по клику — иначе браузер его заглушит */
+  try { CALL.ac = CALL.ac || new (window.AudioContext || window.webkitAudioContext)(); CALL.ac.resume(); } catch (e) { CALL.ac = null; }
+  try { CALL.mic = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true}}); }
+  catch (e) { CALL.mic = null; toast(ic('MicOff')+' Микрофон недоступен — зайдёшь без звука. Разреши доступ в адресной строке.'); }
+  if (CALL.mic && !CALL.wantMic) CALL.mic.getAudioTracks().forEach(t => t.enabled = false);
+  if (CALL.wantCam) await camOn(true);
+  CALL.sid = Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+  CALL.at = now(); CALL.in = true; CALL.joining = false; CALL.pin = null;
+  const ok = await col('hub_call').doc(S.me).set({sid:CALL.sid, at:CALL.at, beat:now(), mic:micLive(), cam:!!CALL.cam, scr:false}).then(()=>true, e => { console.error(e); return e; });
+  if (ok!==true) { callLeave(true); return toast(ic('CircleAlert')+' Не получилось войти в канал: '+esc(errText(ok))); }
+  CALL.raw[S.me] = {sid:CALL.sid, at:CALL.at, beat:now(), mic:micLive(), cam:!!CALL.cam, scr:false};
+  CALL.sigUnsub = col('hub_rtc').where('to','==',S.me).onSnapshot(onSignals, e => { console.warn('hub_rtc', e); toast(ic('CircleAlert')+' Сигналы звонка не доходят: '+esc(errText(e))); });
+  CALL.beat = setInterval(() => callBeat(), CALL_BEAT);
+  meter(S.me, CALL.mic);
+  CALL.meterT = setInterval(meterTick, 110);
+  blip(true);
+  callRefresh(false); schedule();
+}
+function callLeave(quiet){
+  if (!CALL.in && !CALL.joining) return;
+  const sid = CALL.sid;
+  CALL.in = false; CALL.joining = false; CALL.sid = ''; CALL.pin = null;
+  clearInterval(CALL.beat); clearInterval(CALL.meterT);
+  if (CALL.sigUnsub) { try { CALL.sigUnsub(); } catch (e) {} CALL.sigUnsub = null; }
+  Object.keys(CALL.peers).forEach(peerClose);
+  for (const s of [CALL.mic, CALL.cam, CALL.scr]) if (s) s.getTracks().forEach(t => t.stop());
+  CALL.mic = CALL.cam = CALL.scr = null;
+  Object.keys(CALL.meters).forEach(meterOff); CALL.loud = {};
+  /* свой документ удаляем, только если его не перехватила другая вкладка */
+  if (S.me && CALL.raw[S.me] && CALL.raw[S.me].sid===sid) { delete CALL.raw[S.me]; col('hub_call').doc(S.me).delete().catch(()=>{}); }
+  if (!quiet) blip(false);
+  callRefresh(false); schedule();
+}
+addEventListener('pagehide', () => callLeave(true));
+
+/* ── соединения ── */
+function callPeers(){
+  for (const [uid, x] of Object.entries(CALL.list)) {
+    if (uid===S.me) continue;
+    const p = CALL.peers[uid];
+    if (p && p.sid!==x.sid) peerClose(uid);
+    if (!CALL.peers[uid]) peerOpen(uid, x.sid);
+  }
+  for (const uid of Object.keys(CALL.peers)) if (!CALL.list[uid]) peerClose(uid);
+}
+function peerOpen(uid, sid){
+  const pc = new RTCPeerConnection({iceServers:CALL_ICE, bundlePolicy:'max-bundle'});
+  /* предложение всегда шлёт участник с меньшим uid — встречных предложений не бывает */
+  const p = CALL.peers[uid] = {uid, sid, pc, offerer:S.me < uid, cam:null, scr:null, q:Promise.resolve(), tries:0, timer:null, state:'new',
+    audio:new Audio(), saudio:new Audio()};
+  p.audio.autoplay = p.saudio.autoplay = true;
+  pc.ontrack = e => {
+    const i = pc.getTransceivers().indexOf(e.transceiver), ms = new MediaStream([e.track]);
+    if (i===T_MIC) { p.audio.srcObject = ms; p.audio.play().catch(()=>{}); meter(uid, ms); }
+    else if (i===T_SCRA) { p.saudio.srcObject = ms; p.saudio.play().catch(()=>{}); }
+    else if (i===T_CAM) p.cam = ms;
+    else if (i===T_SCR) p.scr = ms;
+    callPaint();
+  };
+  pc.onconnectionstatechange = () => {
+    const s = pc.connectionState; p.state = s; clearTimeout(p.timer);
+    if (s==='connected') p.tries = 0;
+    if (s==='failed' && p.offerer) peerRetry(p);
+    if (s==='disconnected') p.timer = setTimeout(() => { if (pc.connectionState!=='connected' && p.offerer) peerRetry(p); }, 4000);
+    callPaint();
+  };
+  if (p.offerer) {
+    myTracks().forEach((t, i) => pc.addTransceiver(t || (i===T_MIC || i===T_SCRA ? 'audio' : 'video'), {direction:'sendrecv'}));
+    sendOffer(p, false);
+  }
+  return p;
+}
+function peerClose(uid){
+  const p = CALL.peers[uid]; if (!p) return;
+  delete CALL.peers[uid]; clearTimeout(p.timer); clearTimeout(p.watch);
+  try { p.pc.close(); } catch (e) {}
+  for (const a of [p.audio, p.saudio]) { a.pause(); a.srcObject = null; }
+  meterOff(uid); delete CALL.loud[uid];
+  if (CALL.pin && CALL.pin.startsWith(uid)) CALL.pin = null;
+}
+/* не соединились — переотправляем предложение с перезапуском ICE, не больше 4 раз подряд */
+function peerRetry(p){
+  if (CALL.peers[p.uid]!==p || p.tries >= 4) return;
+  p.tries++; sendOffer(p, true);
+}
+const gathered = pc => new Promise(res => {
+  if (pc.iceGatheringState==='complete') return res();
+  const t = setTimeout(done, 2500);
+  function done(){ clearTimeout(t); pc.removeEventListener('icegatheringstatechange', chk); res(); }
+  function chk(){ if (pc.iceGatheringState==='complete') done(); }
+  pc.addEventListener('icegatheringstatechange', chk);
+});
+function sendSig(p, kind, sdp){
+  return col('hub_rtc').add(Object.assign({from:S.me, fsid:CALL.sid, to:p.uid, tsid:p.sid, kind, sdp, at:now()}, expireIn(1)));
+}
+function sendOffer(p, restart){
+  p.q = p.q.then(async () => {
+    if (CALL.peers[p.uid]!==p) return;
+    await p.pc.setLocalDescription(await p.pc.createOffer(restart ? {iceRestart:true} : {}));
+    await gathered(p.pc);
+    if (CALL.peers[p.uid]!==p) return;
+    await sendSig(p, 'offer', p.pc.localDescription.sdp);
+    /* ответа нет 12 с — пробуем ещё раз */
+    clearTimeout(p.watch); p.watch = setTimeout(() => { if (CALL.peers[p.uid]===p && p.pc.connectionState!=='connected') peerRetry(p); }, 12000);
+  }).catch(e => console.warn('offer', e));
+}
+function onSignals(sn){
+  sn.docChanges().forEach(ch => {
+    if (ch.type!=='added') return;
+    const d = ch.doc, x = d.data();
+    /* сигнал прошлой сессии или другой вкладки: свежий не трогаем, старый убираем */
+    if (x.tsid!==CALL.sid) { if (!(x.at > now()-120e3)) d.ref.delete().catch(()=>{}); return; }
+    d.ref.delete().catch(()=>{});
+    onSignal(x);
+  });
+}
+function onSignal(x){
+  let p = CALL.peers[x.from];
+  if (x.kind==='offer') {
+    if (!p || p.sid!==x.fsid) { if (p) peerClose(x.from); p = peerOpen(x.from, x.fsid); }
+    if (p.offerer) return;
+    p.q = p.q.then(async () => {
+      await p.pc.setRemoteDescription({type:'offer', sdp:x.sdp});
+      const tr = p.pc.getTransceivers(), mine = myTracks();
+      for (let i=0; i<tr.length && i<4; i++) { tr[i].direction = 'sendrecv'; await tr[i].sender.replaceTrack(mine[i]); }
+      await p.pc.setLocalDescription(await p.pc.createAnswer());
+      await gathered(p.pc);
+      if (CALL.peers[p.uid]!==p) return;
+      await sendSig(p, 'answer', p.pc.localDescription.sdp);
+      tune(p);
+    }).catch(e => console.warn('answer', e));
+  } else if (x.kind==='answer') {
+    if (!p || p.sid!==x.fsid || !p.offerer) return;
+    p.q = p.q.then(async () => {
+      if (p.pc.signalingState!=='have-local-offer') return;
+      await p.pc.setRemoteDescription({type:'answer', sdp:x.sdp});
+      clearTimeout(p.watch); tune(p);
+    }).catch(e => console.warn('answer in', e));
+  }
+}
+/* битрейт: камера скромно, экран — чётко; чем больше людей, тем меньше на каждого */
+function tune(p){
+  const tr = p.pc.getTransceivers(), many = Object.keys(CALL.peers).length > 3;
+  setMax(tr[T_CAM], many ? 300e3 : 650e3, 'balanced');
+  setMax(tr[T_SCR], many ? 1.2e6 : 2.5e6, 'maintain-resolution');
+}
+async function setMax(t, bps, deg){
+  if (!t || !t.sender || !t.sender.getParameters) return;
+  try {
+    const pr = t.sender.getParameters();
+    if (!pr.encodings || !pr.encodings.length) pr.encodings = [{}];
+    pr.encodings[0].maxBitrate = bps; pr.degradationPreference = deg;
+    await t.sender.setParameters(pr);
+  } catch (e) { /* старые браузеры не дают менять — работаем на своих настройках */ }
+}
+function pushTrack(i, track){
+  for (const p of Object.values(CALL.peers)) { const t = p.pc.getTransceivers()[i]; if (t) t.sender.replaceTrack(track).then(() => tune(p)).catch(()=>{}); }
+}
+
+/* ── микрофон, камера, экран ── */
+async function micToggle(){
+  if (!CALL.in) { CALL.wantMic = !CALL.wantMic; return callPaint(); }
+  if (!CALL.mic) {
+    try { CALL.mic = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true, noiseSuppression:true, autoGainControl:true}}); }
+    catch (e) { return toast(ic('MicOff')+' Нет доступа к микрофону — разреши его в адресной строке.'); }
+    pushTrack(T_MIC, CALL.mic.getAudioTracks()[0]); meter(S.me, CALL.mic);
+  } else { const t = CALL.mic.getAudioTracks()[0]; t.enabled = !t.enabled; }
+  callBeat(); callPaint();
+}
+async function camOn(silent){
+  try {
+    CALL.cam = await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640}, height:{ideal:360}, frameRate:{ideal:24, max:30}}});
+    const t = CALL.cam.getVideoTracks()[0]; t.contentHint = 'motion';
+    t.onended = () => camOff();
+    pushTrack(T_CAM, t); return true;
+  } catch (e) { CALL.cam = null; if (!silent || e.name!=='AbortError') toast(ic('VideoOff')+' Камера недоступна: '+esc(e.name==='NotAllowedError' ? 'нет разрешения' : e.name==='NotFoundError' ? 'камеры нет' : 'занята другим приложением')); return false; }
+}
+function camOff(){ if (!CALL.cam) return; CALL.cam.getTracks().forEach(t=>t.stop()); CALL.cam = null; pushTrack(T_CAM, null); callBeat(); callPaint(); }
+async function camToggle(){
+  if (!CALL.in) { CALL.wantCam = !CALL.wantCam; return callPaint(); }
+  if (CALL.cam) return camOff();
+  if (await camOn()) { callBeat(); callPaint(); }
+}
+async function scrToggle(){
+  if (!CALL.in || !CAN_SHARE) return;
+  if (CALL.scr) return scrOff();
+  try {
+    CALL.scr = await navigator.mediaDevices.getDisplayMedia({video:{frameRate:{ideal:30, max:30}, width:{max:1920}, height:{max:1080}},
+      audio:true, systemAudio:'include', selfBrowserSurface:'exclude', surfaceSwitching:'include'});
+  } catch (e) { CALL.scr = null; if (e.name!=='NotAllowedError' && e.name!=='AbortError') toast(ic('CircleAlert')+' Не получилось показать экран: '+esc(e.message||e.name)); return; }
+  const v = CALL.scr.getVideoTracks()[0], a = CALL.scr.getAudioTracks()[0] || null;
+  /* «detail» — браузер бережёт резкость текста, а не плавность */
+  v.contentHint = 'detail'; v.onended = () => scrOff();
+  pushTrack(T_SCR, v); pushTrack(T_SCRA, a);
+  CALL.pin = S.me+':s'; callBeat(); callPaint();
+}
+function scrOff(){
+  if (!CALL.scr) return;
+  CALL.scr.getTracks().forEach(t=>t.stop()); CALL.scr = null;
+  pushTrack(T_SCR, null); pushTrack(T_SCRA, null);
+  if (CALL.pin===S.me+':s') CALL.pin = null;
+  callBeat(); callPaint();
+}
+
+/* ── кто говорит: один таймер на всех, без requestAnimationFrame ── */
+function meter(key, stream){
+  meterOff(key);
+  if (!CALL.ac || !stream || !stream.getAudioTracks().length) return;
+  try {
+    const src = CALL.ac.createMediaStreamSource(stream), an = CALL.ac.createAnalyser();
+    an.fftSize = 512; an.smoothingTimeConstant = .2; src.connect(an);
+    CALL.meters[key] = {src, an, buf:new Uint8Array(an.fftSize), hold:0};
+  } catch (e) {}
+}
+function meterOff(key){ const m = CALL.meters[key]; if (!m) return; try { m.src.disconnect(); } catch (e) {} delete CALL.meters[key]; }
+function meterTick(){
+  if (document.hidden) return;
+  const t = now();
+  for (const [key, m] of Object.entries(CALL.meters)) {
+    m.an.getByteTimeDomainData(m.buf);
+    let sum = 0; for (let i=0; i<m.buf.length; i+=4) { const v = (m.buf[i]-128)/128; sum += v*v; }
+    const lvl = Math.sqrt(sum/(m.buf.length/4));
+    if (lvl > .035 && (key!==S.me || micLive())) m.hold = t + 350;
+    const on = m.hold > t;
+    if (!!CALL.loud[key]!==on) {
+      CALL.loud[key] = on;
+      document.querySelectorAll(`#callbox [data-who="${CSS.escape(key)}"]`).forEach(el => el.classList.toggle('talk', on));
+    }
+  }
+}
+/* короткий звук входа и выхода — только когда сам в звонке */
+function blip(up){
+  const ac = CALL.ac; if (!ac || P.calm) return;
+  try {
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+    o.type = 'sine'; o.frequency.setValueAtTime(up?520:700, t); o.frequency.exponentialRampToValueAtTime(up?880:380, t+.16);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.07, t+.02); g.gain.exponentialRampToValueAtTime(.0001, t+.24);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t+.26);
+  } catch (e) {}
+}
+
+/* ── отрисовка: каркас один раз, дальше только точечные правки ── */
+const callBtn = (act, on, icOn, icOff, label, extra='') => `<button class="cbtn${on?'':' off'}" data-call="${act}" aria-pressed="${on}" title="${label}" aria-label="${label}" ${extra}>${ic(on?icOn:icOff)}</button>`;
+function callShell(){
+  const el = $('#callbox');
+  el.innerHTML = `
+  <div class="call-page">
+    <div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#7FD6A4">${ic('Phone')}</span><div><h1>Звонок</h1><p>Общий канал команды: голос, камера и демонстрация экрана. Связь идёт напрямую между участниками.</p></div></div>
+      <div class="call-meta"><span class="live-chip" hidden><i></i><span data-call-time>0:00</span></span><span class="chip t-muted" data-call-n></span></div></div>
+    <div class="call-err" hidden></div>
+    <div class="lobby" hidden></div>
+    <div class="cstage" hidden><div class="cstage-main"></div><div class="cstage-strip"></div></div>
+    <div class="callbar" hidden></div>
+  </div>
+  <div class="dock" hidden></div>`;
+  el.addEventListener('click', callClick);
+  el.addEventListener('dblclick', e => { const t = e.target.closest('.ctile'); if (t) callFull(t); });
+  CALL.built = true;
+}
+function callBar(dock){
+  const cam = !!CALL.cam, scr = !!CALL.scr;
+  return callBtn('mic', micLive(), 'Mic', 'MicOff', micLive() ? 'Выключить микрофон (M)' : 'Включить микрофон (M)')
+    + callBtn('cam', cam, 'Video', 'VideoOff', cam ? 'Выключить камеру (V)' : 'Включить камеру (V)')
+    + (CAN_SHARE ? `<button class="cbtn${scr?' share':' off'}" data-call="scr" aria-pressed="${scr}" title="${scr?'Остановить демонстрацию':'Показать экран'}" aria-label="${scr?'Остановить демонстрацию':'Показать экран'}">${ic('ScreenShare')}</button>` : '')
+    + (dock ? `<a class="cbtn off" href="#/call" title="Открыть звонок" aria-label="Открыть звонок">${ic('Maximize')}</a>` : '')
+    + `<button class="cbtn end" data-call="leave" title="Выйти из звонка" aria-label="Выйти из звонка">${ic('PhoneOff')}${dock?'':'<span>Выйти</span>'}</button>`;
+}
+function callPaint(){
+  const el = $('#callbox'); if (!el) return;
+  if (!S.me || document.body.classList.contains('locked')) { el.hidden = true; return; }
+  if (!CALL.built) callShell();
+  const page = UI.route==='call', dock = CALL.in && !page;
+  el.hidden = !page && !dock;
+  el.classList.toggle('docked', dock);
+  $('.call-page', el).hidden = !page;
+  $('.dock', el).hidden = !dock;
+  const n = callCount();
+  const err = $('.call-err', el); err.hidden = !CALL.err;
+  if (CALL.err) err.innerHTML = `<div class="banner err">${ic('CircleAlert')}<div><b>Звонок недоступен: ${esc(CALL.err)}.</b><br><small>В правилах Firestore нужны коллекции hub_call и hub_rtc.</small></div></div>`;
+  $('[data-call-n]', el).textContent = n ? plural(n, 'участник', 'участника', 'участников') : 'никого';
+  $('.live-chip', el).hidden = !n;
+  if (page) {
+    const lobby = $('.lobby', el), cstage = $('.cstage', el), bar = $('.callbar', el);
+    lobby.hidden = CALL.in; cstage.hidden = bar.hidden = !CALL.in;
+    if (!CALL.in) paintLobby(lobby); else { paintStage(cstage); bar.innerHTML = callBar(false); }
+  }
+  if (dock) paintDock($('.dock', el));
+  callTime();
+  clearInterval(CALL.tickT); if (n) CALL.tickT = setInterval(callTime, 1000);
+}
+function callTime(){ const t = callCount() ? hms(now()-callSince()) : '0:00'; document.querySelectorAll('#callbox [data-call-time]').forEach(x => { if (x.textContent!==t) x.textContent = t; }); }
+function paintLobby(box){
+  const ids = callIds(), key = ids.join(',')+'|'+CALL.joining+CALL.wantMic+CALL.wantCam+Object.keys(S.people).length;
+  if (key===CALL.lobbyKey && box.innerHTML) return;
+  CALL.lobbyKey = key;
+  const who = ids.length
+    ? `<div class="lobby-who">${ids.map(id=>`<span class="lw" data-who="${esc(id)}">${av(id,40)}<small>${esc(pname(id).split(' ')[0])}</small></span>`).join('')}</div>
+       <p>${ids.length===1 ? esc(pname(ids[0]))+' уже в канале' : 'Уже в канале: '+plural(ids.length,'человек','человека','человек')} · идёт <b data-call-time>0:00</b></p>`
+    : `<p>Сейчас тихо. Зайди первым — у остальных в хабе всплывёт уведомление.</p>`;
+  box.innerHTML = `
+    <div class="orb${ids.length?' live':''}"><i></i><i></i><i></i><span>${ic('Phone')}</span></div>
+    <h2>Общий канал</h2>${who}
+    <div class="lobby-opts" role="group" aria-label="С чем зайти">
+      <button class="pill${CALL.wantMic?' on':''}" data-call="mic" aria-pressed="${CALL.wantMic}">${ic(CALL.wantMic?'Mic':'MicOff')} ${CALL.wantMic?'Микрофон включён':'Без микрофона'}</button>
+      <button class="pill${CALL.wantCam?' on':''}" data-call="cam" aria-pressed="${CALL.wantCam}">${ic(CALL.wantCam?'Video':'VideoOff')} ${CALL.wantCam?'Камера включена':'Без камеры'}</button>
+    </div>
+    <button class="btn primary join" data-call="join" ${CALL.joining?'disabled':''}>${CALL.joining?'<span class="spin"></span> Подключаемся…':ic('Phone')+' Подключиться'}</button>
+    <small class="lobby-hint">${CAN_SHARE ? 'Экран можно показать после подключения.' : 'Показ экрана доступен с компьютера.'} Горячие клавиши в звонке: M — микрофон, V — камера.</small>`;
+  callTime();
+}
+/* плитки: своя камера, камеры остальных и отдельные плитки экранов */
+function callTiles(){
+  const T = [];
+  for (const id of callIds()) {
+    const x = CALL.list[id], mine = id===S.me, p = CALL.peers[id];
+    const live = mine || (p && p.state==='connected');
+    T.push({key:id, uid:id, scr:false, mine, stream: mine ? CALL.cam : p && p.cam, video: mine ? !!CALL.cam : !!(x.cam && p && p.cam), mic: mine ? micLive() : x.mic!==false, wait:!live});
+    if (mine ? CALL.scr : x.scr) T.push({key:id+':s', uid:id, scr:true, mine, stream: mine ? CALL.scr : p && p.scr, video: mine ? true : !!(p && p.scr), mic:true, wait:!live});
+  }
+  return T;
+}
+function tileEl(t){
+  const d = document.createElement('div');
+  d.className = 'ctile'; d.dataset.ctile = t.key;
+  if (!t.scr) d.dataset.who = t.uid;
+  d.innerHTML = `<video autoplay playsinline muted></video>
+    <div class="ct-av">${av(t.uid, 72)}</div>
+    <div class="ct-tag"><span class="ct-mic">${ic('MicOff')}</span>${t.scr?ic('ScreenShare'):''}<b>${esc(pname(t.uid))}${t.mine?' (ты)':''}${t.scr?' · экран':''}</b></div>
+    <div class="ct-wait"><span class="spin"></span>соединяемся…</div>
+    <button class="ct-fs" data-call="full" title="На весь экран" aria-label="На весь экран">${ic('Maximize')}</button>`;
+  return d;
+}
+function paintStage(cstage){
+  const T = callTiles(), main = $('.cstage-main', cstage), strip = $('.cstage-strip', cstage);
+  const keys = new Set(T.map(t=>t.key));
+  if (CALL.pin && !keys.has(CALL.pin)) CALL.pin = null;
+  const big = CALL.pin || (T.find(t=>t.scr && !t.mine) || T.find(t=>t.scr) || {}).key || null;
+  cstage.classList.toggle('focus', !!big);
+  cstage.querySelectorAll('.ctile').forEach(d => { if (!keys.has(d.dataset.ctile)) d.remove(); });
+  let rows = 0;
+  T.forEach(t => {
+    let d = cstage.querySelector(`.ctile[data-ctile="${CSS.escape(t.key)}"]`);
+    if (!d) d = tileEl(t);
+    const host = big && t.key!==big ? strip : main;
+    if (d.parentElement!==host) host.appendChild(d);
+    const v = d.firstElementChild;
+    const src = t.video ? t.stream : null;
+    if (v.srcObject!==src) { v.srcObject = src; if (src) v.play().catch(()=>{}); }
+    d.classList.toggle('vid', !!src); d.classList.toggle('scr', t.scr); d.classList.toggle('me', t.mine && !t.scr);
+    d.classList.toggle('mute', !t.mic); d.classList.toggle('wait', t.wait); d.classList.toggle('big', t.key===big);
+    d.classList.toggle('talk', !t.scr && !!CALL.loud[t.uid]);
+    if (host===main) rows++;
+  });
+  /* сетка: столбцы по числу плиток, ширина такая, чтобы все влезли по высоте */
+  const n = big ? 1 : T.length, cols = n<=1 ? 1 : n<=4 ? 2 : n<=9 ? 3 : 4;
+  main.style.setProperty('--cols', cols); main.style.setProperty('--rows', Math.ceil(n/cols)); main.style.setProperty('--mcols', n<=3 ? 1 : 2);
+}
+function paintDock(box){
+  const ids = callIds(), key = ids.join(',')+'|'+micLive()+!!CALL.cam+!!CALL.scr+ids.map(id=>CALL.list[id].mic?1:0).join('');
+  if (key===CALL.dockKey && box.innerHTML) return;
+  CALL.dockKey = key;
+  box.innerHTML = `<a class="dock-go" href="#/call" title="Открыть звонок"><span class="live-dot"></span><span class="dock-t"><b>Общий канал</b><small data-call-time>0:00</small></span></a>
+    <div class="dock-faces">${ids.slice(0,5).map(id=>`<span class="df${CALL.list[id].mic===false?' mute':''}${CALL.loud[id]?' talk':''}" data-who="${esc(id)}">${av(id,30)}</span>`).join('')}${ids.length>5?`<span class="df more">+${ids.length-5}</span>`:''}</div>
+    <div class="dock-btns">${callBar(true)}</div>`;
+  callTime();
+}
+function callFull(ctile){
+  if (document.fullscreenElement) return document.exitFullscreen().catch(()=>{});
+  if (ctile.requestFullscreen) ctile.requestFullscreen().catch(()=>{});
+}
+function callClick(e){
+  const b = e.target.closest('[data-call]');
+  if (!b) { const t = e.target.closest('.cstage .ctile'); if (t) { CALL.pin = CALL.pin===t.dataset.ctile ? null : t.dataset.ctile; callPaint(); } return; }
+  const a = b.dataset.call;
+  if (a==='join') callJoin();
+  else if (a==='leave') callLeave(false);
+  else if (a==='mic') micToggle();
+  else if (a==='cam') camToggle();
+  else if (a==='scr') scrToggle();
+  else if (a==='full') { e.stopPropagation(); callFull(b.closest('.ctile')); }
+}
+document.addEventListener('keydown', e => {
+  if (!CALL.in || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+  const t = e.target; if (t && (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable)) return;
+  if (e.code==='KeyM') { e.preventDefault(); micToggle(); }
+  if (e.code==='KeyV') { e.preventDefault(); camToggle(); }
+});
+/* пульс чужих документов стареет без событий базы — пересчитываем сами */
+setInterval(() => { if (S.me && Object.keys(CALL.raw).length) callRefresh(false); }, 15e3);
+
 /* ── подписки на данные ─────────────────────── */
 function listen(){
   const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); S.loaded.add(c); schedule(); };
@@ -2849,6 +3310,7 @@ function listen(){
   }, onErr('hub_people')));
   UNSUB.push(col('hub_log').where('at','>',now()-14*86400e3).orderBy('at','desc').limit(150).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
+  UNSUB.push(callListen());
   listenNotifs();
 }
 /* сообщения слушаем только у открытого чата */
@@ -3003,7 +3465,7 @@ function waitApproval(user){
     WAIT_UNSUB(); WAIT_UNSUB = null; enter(user);
   }, e => console.warn('ожидание одобрения', e.code));
 }
-function lock(){ if (WAIT_UNSUB) { WAIT_UNSUB(); WAIT_UNSUB = null; } titleBadge(0); S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
+function lock(){ callLeave(true); CALL.raw = {}; CALL.list = {}; CALL.sig = ''; CALL.first = true; callPaint(); if (WAIT_UNSUB) { WAIT_UNSUB(); WAIT_UNSUB = null; } titleBadge(0); S.me = null; unlisten(); clearInterval(presenceTimer); document.body.classList.add('locked'); closeDrawer(); closeOverlay(); gateBusy = false; paintGate(); }
 applyPrefs();
 try {
   if (!window.firebase || !firebase.auth || !firebase.firestore) throw new Error('sdk');

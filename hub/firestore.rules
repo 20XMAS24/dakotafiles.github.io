@@ -144,6 +144,18 @@ service cloud.firestore {
       allow create: if isMember() && setsMe('by');
       allow update, delete: if isMember() && (isMine('by') || isAdmin());
     }
+    // Звонок: кто сейчас в общем канале. Пишет только сам участник; зависший документ может убрать руководитель
+    match /hub_call/{uid} {
+      allow read: if isMember();
+      allow create, update: if isMember() && request.auth.uid == uid && request.resource.data.sid is string && short('sid', 40);
+      allow delete: if signedIn() && (request.auth.uid == uid || isAdmin());
+    }
+    // Сигналы звонка (предложение и ответ SDP): создаёт отправитель от своего имени, читает и удаляет адресат или отправитель
+    match /hub_rtc/{id} {
+      allow read, delete: if signedIn() && (isMine('to') || isMine('from'));
+      allow create: if isMember() && setsMe('from') && request.resource.data.to is string
+        && request.resource.data.kind in ['offer', 'answer'] && short('sdp', 60000);
+    }
 
     // ── Экономика (/economy/): читать может кто угодно, менять — только участники хаба ──
     // Старая страница /economy/ без входа теперь только показывает данные; править — в хабе.
