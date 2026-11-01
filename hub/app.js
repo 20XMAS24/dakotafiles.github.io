@@ -2103,7 +2103,7 @@ function overlay(html){ UI.pal = null; $('#overlay').innerHTML = `<div class="ov
 function capture(){
   const cur = UI.route.startsWith('d/') ? UI.route.slice(2) : '';
   overlay(`<form class="pal" data-form="capture"><div class="cap"><h2><span class="hi">${ic('Lightbulb')}</span> Записать мысль</h2>
-    <textarea class="input" name="t" placeholder="Что пришло в голову? Разберёшь потом." maxlength="1000"></textarea>
+    <textarea class="input" name="t" placeholder="Что пришло в голову? Разберёшь потом." maxlength="8000"></textarea>
     <div class="dpick" role="group" aria-label="Отдел (необязательно)">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="pick-dept" data-d="${d.id}" aria-pressed="${d.id===cur}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
     <input type="hidden" name="d" value="${cur}">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> сохранить · <kbd>Shift</kbd>+<kbd>Enter</kbd> новая строка · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Во «Входящие»</button></div></div></form>`);
@@ -2242,7 +2242,9 @@ function setStatus(id, s, x, y){
 async function createTask(f){
   const title = clip(f.title.value,160); if (!title) return;
   const ref = col('hub_tasks').doc(), depts = formDepts(f), dept = depts[0]; if (!dept) return;
-  const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details:'', dept, depts, status:f.dataset.status||'todo', size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value), ver:f.ver.value||null, reg:f.dataset.reg||null, links:f.dataset.dec?[f.dataset.dec]:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
+  /* мысль длиннее заголовка уходит в описание целиком */
+  const inb = f.dataset.inbox && S.inbox.find(i=>i.id===f.dataset.inbox), details = inb && inb.text.trim() !== title ? clip(inb.text,8000) : '';
+  const ok = await write(()=>ref.set({title, tldr:clip(f.tldr.value,240), details, dept, depts, status:f.dataset.status||'todo', size:f.size.value, who:f.who.value||null, due:parseDay(f.due.value), ver:f.ver.value||null, reg:f.dataset.reg||null, links:f.dataset.dec?[f.dataset.dec]:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
   if (!ok) return;
   if (f.dataset.inbox) col('hub_inbox').doc(f.dataset.inbox).delete().catch(()=>{});
   /* предложение игрока взяли в работу — статус записи меняется сам */
@@ -2254,7 +2256,7 @@ async function createTask(f){
   gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
 }
 function addInbox(text, dept){
-  write(()=>col('hub_inbox').add({text:clip(text,1000), at:now(), by:S.me, dept:dept||null})).then(ok => ok && gain(2, ic('Lightbulb')+' Записано во «Входящие»'));
+  write(()=>col('hub_inbox').add({text:clip(text,8000), at:now(), by:S.me, dept:dept||null})).then(ok => ok && gain(2, ic('Lightbulb')+' Записано во «Входящие»'));
 }
 function startFocus(id){
   if (!id || !task(id)) { const m = me(); id = (m.top3||[]).find(x=>task(x) && task(x).status!=='done') || (S.tasks.find(t=>t.status!=='done' && t.who===S.me) || S.tasks.find(t=>t.status!=='done' && canEdit(t)) || {}).id || null; }
@@ -2315,7 +2317,7 @@ document.addEventListener('click', e => {
       case 'bugs-hide': UI.bhide = !UI.bhide; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
       case 'inbox-del': write(()=>col('hub_inbox').doc(id).delete()); break;
-      case 'inbox-task': { const it = S.inbox.find(i=>i.id===id); if (it) newTask('inbox', it.dept, it.text, it.id); break; }
+      case 'inbox-task': { const it = S.inbox.find(i=>i.id===id); if (it) newTask('inbox', it.dept, it.text.split('\n')[0], it.id); break; }
       case 'pick-dept': { const f = a.closest('form'); const was = a.getAttribute('aria-pressed')==='true'; f.querySelectorAll('[data-action="pick-dept"]').forEach(b=>b.setAttribute('aria-pressed','false')); if (!was) a.setAttribute('aria-pressed','true'); f.d.value = was?'':a.dataset.d; f.t.focus(); break; }
       case 'pick-depts': { const f = a.closest('form'); let ds = formDepts(f); const on = ds.includes(a.dataset.d);
         if (on && ds.length===1) { toast(ic('CircleAlert')+' Нужен хотя бы один отдел'); break; }
