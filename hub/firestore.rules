@@ -60,10 +60,14 @@ service cloud.firestore {
       allow update: if isMember() && (seesTask() || isAdmin() || isComment());
       allow delete: if isMember() && (seesTask() || isAdmin());
     }
-    // Входящие личные: каждый видит и удаляет только свои
+    // Мысли: личные видит только автор, общие (team == true) — вся команда.
+    // Удаляет автор; менять он может только видимость и ссылки на чат и решение.
     match /hub_inbox/{id} {
-      allow read, delete: if isMember() && isMine('by');
-      allow create: if isMember() && setsMe('by');
+      allow read: if isMember() && (isMine('by') || resource.data.team == true);
+      allow delete: if isMember() && isMine('by');
+      allow create: if isMember() && setsMe('by') && request.resource.data.get('team', false) is bool;
+      allow update: if isMember() && isMine('by') && changed().hasOnly(['team', 'chat', 'dec'])
+        && request.resource.data.get('team', false) is bool;
     }
     // Уведомления: пишет тот, кто сделал действие (by — он сам, адресат — другой), читает и отмечает прочитанным только адресат.
     // Вид и длина текста ограничены: уведомление уходит в пуш.

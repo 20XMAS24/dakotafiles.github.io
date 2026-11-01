@@ -265,7 +265,7 @@ const SEED = {
 /* ── состояние ──────────────────────────────── */
 /* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
 /* edec — решения экономики (коллекция decisions, общая со страницей /economy/): их видно в общем разделе «Решения» */
-const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], pending:[], inbox:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
+const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], pending:[], inbox:[], team:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
 /* dfilt / lfilt / bfilt — фильтр по отделу в «Решениях», «Журнале» и «Багах»; приходит из адреса: #/decisions/econ */
 const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
 const PREFS_KEY = 'kyHubPrefs';
@@ -658,15 +658,16 @@ function reactRow(d){
 }
 function decisionCard(d){
   const votes = d.votes||{}, mine = votes[S.me];
+  const note = d.note ? `<div class="dec-note"><b>Мысль целиком</b>${mdBlock(d.note)}</div>` : '';
   if (d.mode==='react') return `<article class="decision" id="dec-${esc(d.id)}">
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Реакции','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
-    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}
+    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}${note}
     ${reactRow(d)}
     ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">${decTaskBtn(d)}Итог: <b style="color:var(--text)">${esc((d.options[d.chosen]||{}).t||'')}</b> · зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
   </article>`;
   return `<article class="decision" id="dec-${esc(d.id)}">
     <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
-    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}
+    ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}${note}
     <div class="list">${(d.options||[]).map((o,i)=>`<div class="opt${d.chosen===i?' chosen':''}${mine===i?' mine':''}">
       <div><div class="l">${esc(o.t)} ${d.rec===i?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.d?`<div class="d">${mdLine(o.d)}</div>`:''}</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes">${Object.entries(votes).filter(([,v])=>v===i).map(([u])=>av(u,24)).join('')}</span>
@@ -709,11 +710,23 @@ function viewDecisions(dept){
 }
 
 /* ── входящие ───────────────────────────────── */
+const inboxFind = id => S.inbox.find(i=>i.id===id) || S.team.find(i=>i.id===id);
+/* мысль: первая строка — заголовок, остальное — текст; ссылки на чат и решение, куда её вынесли */
+function inboxItem(i){
+  const mine = i.by===S.me, c = i.chat && chat(i.chat), d = i.dec && dec(i.dec);
+  const lines = String(i.text||'').split('\n'), rest = lines.slice(1).join('\n').trim();
+  return `<div class="item inb" style="cursor:default">${mine ? ic('Lightbulb') : av(i.by,26)}<div class="bd"><div class="tt">${mdLine(lines[0])}</div>${rest?`<div class="ds">${mdBlock(rest)}</div>`:''}
+    <div class="mt">${mine?'':`<small style="color:var(--text-2);font-weight:600">${esc(pname(i.by))}</small>`}<small style="color:var(--muted)">${ago(i.at)}</small>${i.dept?dchip(i.dept):''}
+      ${mine?`<button type="button" class="btn sm ghost" data-action="inbox-vis" data-id="${esc(i.id)}" title="Сменить, кто видит мысль">${ic(i.team?'Users':'Lock')} ${i.team?'Видит команда':'Только я'}</button>`:''}
+      ${c?`<a class="ref-chip" href="#/chats/${esc(c.id)}">${ic('MessagesSquare')} ${esc(clip(c.title,40))}</a>`:''}${d?`<button type="button" class="ref-chip" data-action="open-dec" data-id="${esc(d.id)}">${ic('Scale')} ${esc(clip(d.q,40))}</button>`:''}</div></div>
+    <div class="inb-act"><button class="btn sm" data-action="inbox-chat" data-id="${esc(i.id)}">${ic('MessagesSquare')} В чат</button><button class="btn sm" data-action="inbox-dec" data-id="${esc(i.id)}">${ic('Scale')} В решение</button>
+    ${mine?`<button class="btn sm" data-action="inbox-task" data-id="${esc(i.id)}">${ic('ArrowRight')} В задачу</button><button class="icon-btn" data-action="inbox-del" data-id="${esc(i.id)}" aria-label="Удалить" title="Удалить">${ic('Trash2')}</button>`:''}</div></div>`;
+}
 function viewInbox(){
-  const list = [...S.inbox].sort((a,b)=>b.at-a.at);
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A9A8B6">${ic('Inbox')}</span><div><h1>Входящие</h1><p>Твои личные заметки: всё, что записано через <kbd>Q</kbd>. Видишь их только ты. Разбирай раз в день.</p></div></div><button class="btn primary" data-action="capture">${ic('Plus')} Записать мысль</button></div>
-  <div class="list">${list.map(i=>`<div class="item" style="cursor:default">${ic('Lightbulb')}<div class="bd"><div class="tt">${mdLine(i.text)}</div><div class="mt"><small style="color:var(--muted)">${ago(i.at)}</small>${i.dept?dchip(i.dept):''}</div></div>
-    <button class="btn sm" data-action="inbox-task" data-id="${esc(i.id)}">${ic('ArrowRight')} В задачу</button><button class="icon-btn" data-action="inbox-del" data-id="${esc(i.id)}" aria-label="Удалить" title="Удалить">${ic('Trash2')}</button></div>`).join('') || `<div class="empty"><b>Всё разобрано ${ic('Sparkles')}</b>Голова свободна. Новая мысль — <kbd>Q</kbd>.</div>`}</div>`;
+  const list = [...S.inbox].sort((a,b)=>b.at-a.at), team = [...S.team].sort((a,b)=>b.at-a.at);
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#A9A8B6">${ic('Inbox')}</span><div><h1>Входящие</h1><p>Мысли, записанные через <kbd>Q</kbd>. Личные видишь только ты, общие — вся команда. Мысль можно обсудить в чате, вынести на решение или превратить в задачу.</p></div></div><button class="btn primary" data-action="capture">${ic('Plus')} Записать мысль</button></div>
+  <div class="list">${list.map(inboxItem).join('') || `<div class="empty"><b>Всё разобрано ${ic('Sparkles')}</b>Голова свободна. Новая мысль — <kbd>Q</kbd>.</div>`}</div>
+  ${team.length?`<h2 class="inb-h">${ic('Users')} Мысли команды <small>${team.length}</small></h2><div class="list">${team.map(inboxItem).join('')}</div>`:''}`;
 }
 
 /* ── журнал ─────────────────────────────────── */
@@ -2106,6 +2119,8 @@ function capture(){
     <textarea class="input" name="t" placeholder="Что пришло в голову? Разберёшь потом." maxlength="8000"></textarea>
     <div class="dpick" role="group" aria-label="Отдел (необязательно)">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="pick-dept" data-d="${d.id}" aria-pressed="${d.id===cur}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
     <input type="hidden" name="d" value="${cur}">
+    <div class="seg" role="radiogroup" aria-label="Кто видит мысль" style="align-self:flex-start"><button type="button" data-action="pick-vis" data-v="me" aria-pressed="true">${ic('Lock')} Только я</button><button type="button" data-action="pick-vis" data-v="team" aria-pressed="false">${ic('Users')} Видит команда</button></div>
+    <input type="hidden" name="vis" value="me">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint"><kbd>Enter</kbd> сохранить · <kbd>Shift</kbd>+<kbd>Enter</kbd> новая строка · <kbd>Esc</kbd> закрыть</span><span style="flex:1"></span><button class="btn primary">Во «Входящие»</button></div></div></form>`);
 }
 /* from — откуда задача: {reg} запись отдела (фидбек, баг, механика), {dec} принятое решение; tldr — готовая суть */
@@ -2131,6 +2146,8 @@ function newDecision(dept, pre){
   overlay(`<form class="pal" data-form="decision-new" style="max-height:85vh;overflow:auto"><div class="cap"><h2>${ic('Scale')} ${pre.ref ? 'Вынести на решение' : 'Новое решение'}</h2>
     ${pre.ref ? `<div class="ref-chip" style="cursor:default">${ic('Paperclip')} ${esc(pre.refLabel)} — запись останется на месте</div>` : ''}
     <input type="hidden" name="ref" value="${esc(pre.ref ? JSON.stringify(pre.ref) : '')}">
+    ${pre.inbox ? `<div class="ref-chip" style="cursor:default">${ic('Lightbulb')} Из мысли${pre.by && pre.by!==S.me ? ' · '+esc(pname(pre.by)) : ''} — полный текст сохранится в решении</div>` : ''}
+    <input type="hidden" name="inbox" value="${esc(pre.inbox||'')}">
     ${inText('q','Вопрос',pre.q||'','required maxlength="200" placeholder="Например: «Комиссия отмыва денег»"')}
     ${inText('tldr','Суть — почему это важно',pre.tldr||'','maxlength="240"')}
     ${inSelect('dept','Отдел',deptOpts(),dept)}
@@ -2255,8 +2272,17 @@ async function createTask(f){
   if (!depts.some(canSee)) { gain(3, ic('Plus')+' Задача передана: '+depts.map(x=>'«'+esc(D[x].name)+'»').join(', ')+'. Менять её будут участники этих отделов.'); openDrawer('task:'+ref.id); return; }
   gain(3, ic('Plus')+' Задача создана'); openDrawer('task:'+ref.id);
 }
-function addInbox(text, dept){
-  write(()=>col('hub_inbox').add({text:clip(text,8000), at:now(), by:S.me, dept:dept||null})).then(ok => ok && gain(2, ic('Lightbulb')+' Записано во «Входящие»'));
+function addInbox(text, dept, team){
+  write(()=>col('hub_inbox').add({text:clip(text,8000), at:now(), by:S.me, dept:dept||null, team:!!team})).then(ok => ok && gain(2, ic('Lightbulb')+(team ? ' Мысль записана, её видит команда' : ' Записано во «Входящие»')));
+}
+/* обсудить мысль: сообщение в выбранный общий чат или в новый */
+function inboxToChat(it){
+  const first = clip(it.text.split('\n')[0],120);
+  const list = S.chats.filter(c=>!isThread(c)).sort((a,b)=>(b.lastAt||b.createdAt||0)-(a.lastAt||a.createdAt||0));
+  overlay(`<form class="pal" data-form="inbox-chat" data-id="${esc(it.id)}"><div class="cap"><h2>${ic('MessagesSquare')} Обсудить в чате</h2>
+    <div class="ref-chip" style="cursor:default">${ic('Lightbulb')} ${esc(clip(first,80))}</div>
+    ${inSelect('chat','Куда отправить',[['','Новый чат: «'+clip(first,60)+'»'], ...list.map(c=>[c.id, c.title])], it.chat && chat(it.chat) ? it.chat : '')}
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Мысль уйдёт сообщением · чат видит вся команда</span><span style="flex:1"></span><button class="btn primary">Отправить</button></div></div></form>`);
 }
 function startFocus(id){
   if (!id || !task(id)) { const m = me(); id = (m.top3||[]).find(x=>task(x) && task(x).status!=='done') || (S.tasks.find(t=>t.status!=='done' && t.who===S.me) || S.tasks.find(t=>t.status!=='done' && canEdit(t)) || {}).id || null; }
@@ -2317,6 +2343,12 @@ document.addEventListener('click', e => {
       case 'bugs-hide': UI.bhide = !UI.bhide; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
       case 'inbox-del': write(()=>col('hub_inbox').doc(id).delete()); break;
+      case 'inbox-chat': { const it = inboxFind(id); if (it) inboxToChat(it); break; }
+      case 'inbox-dec': { const it = inboxFind(id); if (!it) break; const ls = it.text.split('\n');
+        newDecision(it.dept, {mode:'react', q:clip(ls[0],200), tldr:clip(ls.slice(1).join(' ').trim(),240), inbox:it.id, by:it.by}); break; }
+      case 'inbox-vis': { const it = S.inbox.find(i=>i.id===id); if (!it) break;
+        write(()=>col('hub_inbox').doc(id).update({team:!it.team})).then(ok => ok && toast(ic(it.team?'Lock':'Users')+(it.team ? ' Мысль снова видишь только ты' : ' Мысль теперь видит команда'))); break; }
+      case 'pick-vis': { const f = a.closest('form'); f.vis.value = a.dataset.v; f.querySelectorAll('[data-action="pick-vis"]').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); break; }
       case 'inbox-task': { const it = S.inbox.find(i=>i.id===id); if (it) newTask('inbox', it.dept, it.text.split('\n')[0], it.id); break; }
       case 'pick-dept': { const f = a.closest('form'); const was = a.getAttribute('aria-pressed')==='true'; f.querySelectorAll('[data-action="pick-dept"]').forEach(b=>b.setAttribute('aria-pressed','false')); if (!was) a.setAttribute('aria-pressed','true'); f.d.value = was?'':a.dataset.d; f.t.focus(); break; }
       case 'pick-depts': { const f = a.closest('form'); let ds = formDepts(f); const on = ds.includes(a.dataset.d);
@@ -2415,7 +2447,7 @@ document.addEventListener('change', e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault();
   const k = f.dataset.form;
-  if (k==='capture') { const t = f.t.value.trim(); if (!t) return; closeOverlay(); addInbox(t, f.d.value); }
+  if (k==='capture') { const t = f.t.value.trim(); if (!t) return; closeOverlay(); addInbox(t, f.d.value, f.vis.value==='team'); }
   if (k==='task-new') createTask(f);
   if (k==='chat-new') { const title = clip(f.title.value,120); if (!title) return; const ref = col('hub_chats').doc();
     const ok = await write(()=>ref.set({title, task:null, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''}));
@@ -2441,8 +2473,20 @@ document.addEventListener('submit', async e => {
     const options = mode==='react' ? REACTS : f.options.value.split('\n').map(l=>l.trim()).filter(Boolean).slice(0,8).map(l=>{ const m = l.split(/\s+[—–-]\s+/); return {t:clip(m[0],120), d:clip(m.slice(1).join(' — '),240)}; });
     if (!q) return; if (options.length < 2) { toast(ic('CircleAlert')+' Нужно хотя бы два варианта'); return; }
     const rec = parseInt(f.rec.value,10); const dept = f.dept.value;
-    const ok = await write(()=>col('hub_decisions').add({q, tldr:clip(f.tldr.value,240), dept, mode, options, rec:mode==='options' && rec>=1&&rec<=options.length?rec-1:-1, votes:{}, chosen:null, ref, createdAt:now(), createdBy:S.me}));
-    if (ok) { closeOverlay(); log('вынес(ла) на голосование', q, dept); gain(5, ic('Scale')+' Решение вынесено на голосование'); if (!ref && UI.route!=='decisions' && !UI.route.startsWith('d/')) go('decisions'); } }
+    const inb = f.inbox.value && inboxFind(f.inbox.value), tldr = clip(f.tldr.value,240), flat = x => x.replace(/\s+/g,' ').trim(),
+      note = inb && flat(inb.text) !== flat(q+' '+tldr) ? clip(inb.text,8000) : '', dref = col('hub_decisions').doc();
+    const ok = await write(()=>dref.set({q, tldr, note, dept, mode, options, rec:mode==='options' && rec>=1&&rec<=options.length?rec-1:-1, votes:{}, chosen:null, ref, createdAt:now(), createdBy:S.me}));
+    if (ok && inb && inb.by===S.me) col('hub_inbox').doc(inb.id).update({dec:dref.id}).catch(()=>{});
+    if (ok) { closeOverlay(); log('вынес(ла) на голосование', q, dept); gain(5, ic('Scale')+' Решение вынесено на голосование'); if (!ref && !inb && UI.route!=='decisions' && !UI.route.startsWith('d/')) go('decisions'); } }
+  if (k==='inbox-chat') {
+    const it = inboxFind(f.dataset.id); if (!it) return; let id = f.chat.value;
+    if (!id) { const title = clip(it.text.split('\n')[0],120), ref = col('hub_chats').doc(), body = {title, task:null, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''};
+      if (!await write(()=>ref.set(body))) return;
+      if (!chat(ref.id)) S.chats.push(Object.assign({id:ref.id}, body)); // до прихода снимка из базы
+      id = ref.id; log('создал(а) чат', title); }
+    if (!await sendMsg(id, '💡 Мысль'+(it.by===S.me ? '' : ' · '+pname(it.by))+':\n'+it.text, [])) return;
+    if (it.by===S.me) col('hub_inbox').doc(it.id).update({chat:id}).catch(()=>{});
+    closeOverlay(); go('chats/'+id); }
   if (k==='reg-save') {
     const key = f.dataset.key, r = REGS[key], id = f.dataset.id; const data = {};
     for (const fl of r.fields) data[fl.k] = fl.t==='textarea' ? clip(f[fl.k].value,8000) : fl.t==='url' ? (safeUrl(f[fl.k].value.trim()) || '') : clip(f[fl.k].value,300);
@@ -3321,6 +3365,7 @@ function listen(){
   }, onErr('hub_people')));
   UNSUB.push(col('hub_log').where('at','>',now()-14*86400e3).orderBy('at','desc').limit(150).onSnapshot(sn => { S.log = docs(sn); schedule(); }, onErr('hub_log')));
   UNSUB.push(col('hub_inbox').where('by','==',S.me).onSnapshot(sn => { S.inbox = docs(sn); schedule(); }, onErr('hub_inbox')));
+  UNSUB.push(col('hub_inbox').where('team','==',true).onSnapshot(sn => { S.team = docs(sn).filter(i=>i.by!==S.me); schedule(); }, onErr('hub_inbox_team')));
   UNSUB.push(callListen());
   listenNotifs();
 }

@@ -285,6 +285,15 @@ details.more .body{padding:0 0 14px;color:var(--text-2);font-size:14px;white-spa
 .item .tt{font-weight:700;font-size:14px}
 .item .ds{color:var(--text-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .item .mt{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+/* входящие: мысли, личные и общие */
+.inb .ds{display:block;-webkit-line-clamp:unset;max-height:10em;overflow:auto;font-size:13.5px}
+.inb .mt .btn.sm{height:24px;padding:0 8px;font-size:12px}
+.inb .mt .ref-chip{padding:3px 8px;font-size:12px;text-decoration:none}
+.inb-act{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end;max-width:46%}
+@media (max-width:640px){.item.inb{flex-wrap:wrap}.inb-act{max-width:none;width:100%;justify-content:flex-start}}
+.inb-h{display:flex;gap:8px;align-items:center;font-size:15px;margin:22px 0 10px;color:var(--text-2)}
+.inb-h small{color:var(--muted);font-weight:600}
+.dec-note{font-size:13.5px;color:var(--text-2);max-height:16em;overflow:auto;border-left:2px solid var(--line-2);padding:2px 0 2px 12px}
 .check{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line-2);background:transparent;cursor:pointer;display:grid;place-items:center;color:transparent;margin-top:1px;font-size:12px}
 .check:hover{border-color:var(--acc);color:var(--acc)}
 .check.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc)}
@@ -974,3 +983,4 @@ body.r-call #view,body.r-call .fab{display:none}
 }
 @media (max-width:520px){.cstage-main{grid-template-columns:repeat(var(--mcols),minmax(0,1fr))}.ct-tag{left:8px;bottom:8px;padding:3px 8px;font-size:11.5px}.dock .cbtn[href]{display:none}}
 :root[data-calm="1"] .orb i,:root[data-calm="1"] .orb span,:root[data-calm="1"] .ct-av .av::before{animation:none}
+.dec-note b{font:800 10.5px var(--f-display);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:2px}
