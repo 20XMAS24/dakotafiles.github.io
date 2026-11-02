@@ -5,6 +5,18 @@
 
 /* ── иконки Lucide (ISC), встроены только нужные ── */
 const ICONS = {
+  MousePointer2:'<path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/>',
+  StickyNote:'<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>',
+  Type:'<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
+  Square:'<rect width="18" height="18" x="3" y="3" rx="2"/>',
+  Circle:'<circle cx="12" cy="12" r="10"/>',
+  MoveUpRight:'<path d="M13 5H19V11"/><path d="M19 5L5 19"/>',
+  Minus:'<path d="M5 12h14"/>',
+  Eraser:'<path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/>',
+  Frame:'<line x1="22" x2="2" y1="6" y2="6"/><line x1="22" x2="2" y1="18" y2="18"/><line x1="6" x2="6" y1="2" y2="22"/><line x1="18" x2="18" y1="2" y2="22"/>',
+  Undo2:'<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>',
+  Redo2:'<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5A5.5 5.5 0 0 0 4 14.5A5.5 5.5 0 0 0 9.5 20H13"/>',
+  Presentation:'<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
   Pin:'<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
   ZoomIn:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>',
   ZoomOut:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/>',
@@ -268,9 +280,9 @@ const SEED = {
 /* ── состояние ──────────────────────────────── */
 /* allTasks — задачи, пришедшие из базы (только свои отделы, см. listenTasks), tasks — они же после applyVis */
 /* edec — решения экономики (коллекция decisions, общая со страницей /economy/): их видно в общем разделе «Решения» */
-const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], pending:[], inbox:[], team:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
+const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], edec:[], pending:[], inbox:[], team:[], boards:[], log:[], reg:[], wiki:[], files:[], chats:[], msgs:[], claude:[], notifs:[], up:{}, E:null, loaded:new Set(), errs:{}};
 /* dfilt / lfilt / bfilt — фильтр по отделу в «Решениях», «Журнале» и «Багах»; приходит из адреса: #/decisions/econ */
-const UI = {route:'today', tab:null, chat:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
+const UI = {route:'today', tab:null, chat:null, board:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
 const PREFS_KEY = 'kyHubPrefs';
 const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
@@ -366,10 +378,11 @@ function readHash(){
   if (moved) { history.replaceState(null, '', '#/'+moved); return readHash(); }
   const filt = v => v && (D[v] ? hd(v) : 'all') || 'all';
   if (p[0]==='d' && D[p[1]]) { UI.route = 'd/'+hd(p[1]); UI.tab = p[2] || 'overview'; if (UI.route==='d/qa' && UI.tab==='bugs') UI.bfilt = filt(p[3]); }
-  else { UI.route = ['today','lead','tasks','decisions','inbox','log','people','wiki','chats','claude','call'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
+  else { UI.route = ['today','lead','tasks','decisions','inbox','log','people','wiki','chats','board','claude','call'].includes(p[0]) ? p[0] : 'today'; UI.tab = null; }
   if (UI.route==='decisions') UI.dfilt = filt(p[1]);
   if (UI.route==='log') UI.lfilt = filt(p[1]);
   UI.chat = UI.route==='chats' && p[1] ? decodeURIComponent(p[1]) : null;
+  UI.board = UI.route==='board' && p[1] ? decodeURIComponent(p[1]) : null;
 }
 const go = path => { location.hash = '#/'+path; };
 addEventListener('hashchange', () => { readHash(); if (UI.route==='d/econ') eSyncName(); closeDrawer(); document.body.classList.remove('nav-open'); paint(); afterPaint(); scrollTo(0,0); });
@@ -396,6 +409,7 @@ function sidebar(){
     ${link('log','ScrollText','Журнал', 0, '#A9A8B6')}
     ${isAdmin() && S.pending.length ? link('people','Users','Люди', S.pending.length, '#86D9B0', true) : link('people','Users','Люди', Object.keys(S.people).filter(isOnline).length, '#86D9B0')}
     ${link('chats','MessagesSquare','Чаты', unreadChats(), '#7DD3E8', unreadChats()>0)}
+    ${link('board','Presentation','Доски', 0, '#F2A3C8')}
     ${(n => link('call','Phone','Звонок', CALL.in ? '●' : n, '#7FD6A4', n>0 && !CALL.in))(callCount())}
     ${link('wiki','BookOpen','Вики', 0, '#F5B98A')}
     ${(b => link('claude','Bot','Claude', b ? (b.by===S.me ? 'ты' : 'занят') : '', '#E8B07D', !!b && b.by!==S.me))(claudeAt(now()))}
@@ -811,7 +825,7 @@ async function fileBlob(f){
   return new Blob([u], {type:f.type||'application/octet-stream'});
 }
 async function uploadFiles(list, target){
-  const key = target.task ? 'task:'+target.task : target.reg ? 'reg:'+target.reg : 'chat:'+target.chat, ids = [];
+  const key = target.task ? 'task:'+target.task : target.reg ? 'reg:'+target.reg : target.board ? 'board:'+target.board : 'chat:'+target.chat, ids = [];
   for (const file of list) {
     if (file.size > FILE_MAX) { toast(ic('CircleAlert')+' «'+esc(file.name)+'» больше '+fsize(FILE_MAX)+' — положи его в облако и прикрепи ссылку'); continue; }
     S.up[key] = {name:file.name, pct:0}; schedule();
@@ -967,7 +981,7 @@ async function mkThumb(file){
 }
 /* просмотр картинок на весь экран: листание стрелками, скачивание */
 let LB = null; const FULL = {};
-function imgGroup(f){ const k = f.reg ? 'reg' : f.task ? 'task' : 'chat'; return S.files.filter(x=>x[k] && x[k]===f[k] && isImg(x)).sort((a,b)=>a.at-b.at).map(x=>x.id); }
+function imgGroup(f){ const k = f.reg ? 'reg' : f.task ? 'task' : f.board ? 'board' : 'chat'; return S.files.filter(x=>x[k] && x[k]===f[k] && isImg(x)).sort((a,b)=>a.at-b.at).map(x=>x.id); }
 function lightbox(){
   if (!LB) return;
   const id = LB.ids[LB.i], f = S.files.find(x=>x.id===id); if (!f) { closeOverlay(); return; }
@@ -2124,6 +2138,481 @@ function refreshDrawer(){
   if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
 }
 
+/* ── доски (как FigJam): стикеры, текст, фигуры, стрелки, карандаш, картинки и файлы ──
+   Холст живёт в #boardbox вне #view: общая перерисовка его не трогает, объекты обновляются точечно по id.
+   Каждый объект — документ hub_bitems {board, k, x, y, w, h, c, t, pts, file, z, by}; курсоры — hub_bcur/{доска_uid}. */
+const BCOLORS = ['ink','#FFD43B','#FF8FAB','#74C0FC','#69DB7C','#B197FC','#FFA94D','#FF6B6B'];
+const BTOOLS = [['select','MousePointer2','Выбор','V'],['hand','Hand','Рука — двигать холст','H'],['sticky','StickyNote','Стикер','S'],['text','Type','Текст','T'],
+  ['rect','Square','Прямоугольник','R'],['ellipse','Circle','Эллипс','O'],['arrow','MoveUpRight','Стрелка','A'],['line','Minus','Линия','L'],
+  ['pen','Pencil','Карандаш','P'],['eraser','Eraser','Ластик','E'],['frame','Frame','Секция','F']];
+const BKEYS = {KeyV:'select', KeyH:'hand', KeyS:'sticky', KeyT:'text', KeyR:'rect', KeyO:'ellipse', KeyA:'arrow', KeyL:'line', KeyP:'pen', KeyE:'eraser', KeyF:'frame'};
+const BFS = [[16,'S'],[24,'M'],[36,'L'],[56,'XL']];
+const BB = {id:null, items:{}, unsub:[], built:false, px:0, py:0, z:1, tool:'select', color:'#FFD43B', ink:'ink', sel:new Set(), act:null, edit:null,
+  els:{}, sigs:{}, curs:{}, curT:0, curLast:null, undo:[], redo:[], clip:[], fit:false, touchedAt:0, space:false};
+const bcol = c => c==='ink' || !c ? 'var(--text)' : safeColor(c);
+const bItems = () => Object.values(BB.items).sort((a,b) => ((a.k==='frame' ? 0 : 1) - (b.k==='frame' ? 0 : 1)) || (a.z||0)-(b.z||0));
+const boardOf = id => S.boards.find(b=>b.id===id);
+const isBox = it => ['sticky','text','rect','ellipse','image','file','frame'].includes(it.k);
+const isPath = it => ['pen','arrow','line'].includes(it.k);
+/* рамка объекта в координатах холста */
+function bBox(it){
+  if (it.k==='pen') { const p = it.pts||[]; let x0=0,y0=0,x1=0,y1=0; for (let i=0;i<p.length;i+=2) { x0=Math.min(x0,p[i]); y0=Math.min(y0,p[i+1]); x1=Math.max(x1,p[i]); y1=Math.max(y1,p[i+1]); } return {x:it.x+x0, y:it.y+y0, w:x1-x0, h:y1-y0}; }
+  if (it.k==='arrow' || it.k==='line') return {x:Math.min(it.x, it.x+it.w), y:Math.min(it.y, it.y+it.h), w:Math.abs(it.w), h:Math.abs(it.h)};
+  return {x:it.x, y:it.y, w:it.w||0, h:it.h||0};
+}
+const toWorld = (cx, cy) => { const r = $('#bd-stage').getBoundingClientRect(); return {x:(cx-r.left-BB.px)/BB.z, y:(cy-r.top-BB.py)/BB.z}; };
+
+/* ── список досок (#/board) ── */
+function viewBoards(){
+  const list = [...S.boards].sort((a,b)=>(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0));
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F2A3C8">${ic('Presentation')}</span><div><h1>Доски</h1><p>Общие холсты команды: стикеры, схемы, стрелки, рисунки, скриншоты и файлы. Всё видно всем и сразу.</p></div></div><button class="btn primary" data-action="board-new">${ic('Plus')} Новая доска</button></div>
+  ${list.length ? `<div class="bd-grid">${list.map(b => `<a class="bd-card" href="#/board/${esc(b.id)}" data-pk="b:${esc(b.id)}">
+    <span class="bd-thumb">${ic('Presentation')}</span>
+    <span class="bd-ci"><b>${esc(b.title||'Без названия')}</b><small>${esc(pname(b.by))} · ${ago(b.updatedAt||b.createdAt)}</small></span>
+    ${b.by===S.me || isAdmin() ? `<button type="button" class="mini-x" data-action="board-del" data-id="${esc(b.id)}" title="Удалить доску" aria-label="Удалить доску">${ic('Trash2')}</button>` : ''}</a>`).join('')}</div>`
+  : `<div class="empty"><b>Досок пока нет</b>Набросай схему механики, мудборд или план релиза.<button class="btn sm" data-action="board-new">${ic('Plus')} Новая доска</button></div>`}`;
+}
+function boardNew(){
+  overlay(`<form class="pal" data-form="board-new"><div class="cap"><h2>${ic('Presentation')} Новая доска</h2>
+    <input class="input" name="title" placeholder="Название: «Схема экономики», «Мудборд HUD»…" required maxlength="120" autocomplete="off">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Доску видит и рисует вся команда · <kbd>Enter</kbd> создать</span><span style="flex:1"></span><button class="btn primary">Создать</button></div></div></form>`);
+}
+async function boardCreate(f){
+  const title = clip(f.title.value.trim(),120); if (!title) return;
+  const ref = col('hub_boards').doc();
+  if (!await write(()=>ref.set({title, by:S.me, createdAt:now(), updatedAt:now(), updatedBy:S.me}))) return;
+  closeOverlay(); log('создал(а) доску', title); gain(3, ic('Presentation')+' Доска создана'); go('board/'+ref.id);
+}
+async function boardDelete(id){
+  const b = boardOf(id); if (!b || !confirm('Удалить доску «'+(b.title||'')+'» со всем содержимым?')) return;
+  await write(async () => {
+    const sn = await col('hub_bitems').where('board','==',id).get();
+    const fids = sn.docs.map(d=>d.data().file).filter(Boolean);
+    for (let i=0;i<sn.docs.length;i+=400) { const bt = DB.batch(); sn.docs.slice(i,i+400).forEach(d=>bt.delete(d.ref)); await bt.commit(); }
+    await col('hub_boards').doc(id).delete();
+    await deleteFiles(fids);
+  }) && log('удалил(а) доску', b.title||'');
+}
+
+/* ── подписка на открытую доску ── */
+function boardOpen(id){
+  if (BB.id===id) return;
+  boardLeave();
+  BB.id = id; BB.items = {}; BB.sel = new Set(); BB.undo = []; BB.redo = []; BB.edit = null; BB.loaded = false; BB.fit = true; BB.firstPaint = true;
+  BB.px = 0; BB.py = 0; BB.z = 1; BB.tool = 'select';
+  Object.values(BB.els).forEach(e=>e.remove()); BB.els = {}; BB.sigs = {};
+  BB.unsub.push(col('hub_bitems').where('board','==',id).onSnapshot(sn => {
+    sn.docChanges().forEach(ch => { if (ch.type==='removed') { delete BB.items[ch.doc.id]; BB.sel.delete(ch.doc.id); } else BB.items[ch.doc.id] = Object.assign({id:ch.doc.id}, ch.doc.data()); });
+    BB.loaded = true; boardRender();
+    if (BB.fit) { BB.fit = false; boardFit(true); }
+  }, e => { console.error('hub_bitems', e); BB.err = errText(e); boardStatus(); }));
+  BB.unsub.push(col('hub_bcur').where('board','==',id).onSnapshot(sn => { BB.curs = {}; sn.docs.forEach(d => { const c = d.data(); if (c.uid!==S.me) BB.curs[c.uid] = c; }); boardCursors(); }, e => console.warn('hub_bcur', e.code)));
+}
+function boardLeave(){
+  BB.unsub.forEach(u => { try { u(); } catch (e) {} }); BB.unsub = [];
+  if (BB.id && S.me) col('hub_bcur').doc(BB.id+'_'+S.me).delete().catch(()=>{});
+  BB.id = null; BB.curs = {}; BB.err = null;
+}
+
+/* ── каркас: верхняя панель, холст, панель инструментов ── */
+function boardShell(){
+  const el = $('#boardbox'); BB.built = true;
+  el.innerHTML = `<div class="bd-top"><a class="icon-btn" href="#/board" title="Все доски" aria-label="Все доски">${ic('ChevronLeft')}</a>
+      <input class="bd-title" id="bd-title" maxlength="120" aria-label="Название доски" spellcheck="false">
+      <span class="bd-who" id="bd-who"></span><span style="flex:1"></span>
+      <div class="bd-zoom"><button class="icon-btn" data-b="undo" title="Отменить (Ctrl+Z)" aria-label="Отменить">${ic('Undo2')}</button><button class="icon-btn" data-b="redo" title="Вернуть (Ctrl+Shift+Z)" aria-label="Вернуть">${ic('Redo2')}</button>
+      <button class="icon-btn" data-b="zout" title="Отдалить" aria-label="Отдалить">${ic('ZoomOut')}</button><button class="bd-pct" data-b="z100" title="100%"><span id="bd-pct">100%</span></button><button class="icon-btn" data-b="zin" title="Приблизить" aria-label="Приблизить">${ic('ZoomIn')}</button><button class="icon-btn" data-b="fit" title="Показать всё (Shift+1)" aria-label="Показать всё">${ic('Maximize')}</button></div></div>
+    <div class="bd-stage" id="bd-stage" tabindex="0" aria-label="Холст доски">
+      <div class="bd-world" id="bd-world"><div class="bd-items" id="bd-items"></div><svg class="bd-svg" id="bd-svg" width="1" height="1"><g id="bd-paths"></g><g id="bd-draft"></g></svg><div class="bd-selbox" id="bd-selbox" hidden><i class="bd-h" data-h="se"></i></div></div>
+      <div class="bd-curs" id="bd-curs"></div><div class="bd-marq" id="bd-marq" hidden></div>
+      <div class="bd-msg" id="bd-msg" hidden></div><div class="bd-drop" id="bd-drop" hidden>${ic('Image')} Отпусти — картинки и файлы лягут на доску</div></div>
+    <div class="bd-bar" id="bd-bar"></div>
+    <input type="file" id="bd-file" multiple hidden>`;
+  const st = $('#bd-stage');
+  st.addEventListener('pointerdown', bDown); st.addEventListener('pointermove', bMove); st.addEventListener('pointerup', bUp); st.addEventListener('pointercancel', bUp);
+  st.addEventListener('wheel', bWheel, {passive:false});
+  st.addEventListener('dblclick', bDbl);
+  st.addEventListener('dragover', e => { if (!dragFiles(e)) return; e.preventDefault(); $('#bd-drop').hidden = false; });
+  st.addEventListener('dragleave', e => { if (!st.contains(e.relatedTarget)) $('#bd-drop').hidden = true; });
+  st.addEventListener('drop', e => { if (!dragFiles(e)) return; e.preventDefault(); $('#bd-drop').hidden = true; const p = toWorld(e.clientX, e.clientY); boardFiles([...e.dataTransfer.files], p.x, p.y); });
+  st.addEventListener('pointerleave', () => { if (BB.id) curSend(null); });
+  el.addEventListener('click', bClick);
+  $('#bd-title').addEventListener('change', e => { const t = clip(e.target.value.trim(),120); if (t && BB.id) write(()=>col('hub_boards').doc(BB.id).update(Object.assign({title:t}, stamp()))); });
+  $('#bd-title').addEventListener('keydown', e => { if (e.key==='Enter') e.target.blur(); });
+  $('#bd-file').addEventListener('change', e => { const fs_ = [...e.target.files]; e.target.value = ''; const c = bCenter(); boardFiles(fs_, c.x, c.y); });
+}
+const bCenter = () => { const r = $('#bd-stage').getBoundingClientRect(); return toWorld(r.left+r.width/2, r.top+r.height/2); };
+/* вызывается из paint(): показать/спрятать доску, обновить шапку */
+function boardPaint(){
+  const el = $('#boardbox'); if (!el) return;
+  const on = !!(S.me && UI.route==='board' && UI.board && !document.body.classList.contains('locked'));
+  el.hidden = !on;
+  if (!on) { if (BB.id) boardLeave(); return; }
+  if (!BB.built) boardShell();
+  boardOpen(UI.board);
+  const b = boardOf(UI.board), t = $('#bd-title');
+  if (t && document.activeElement!==t) t.value = b ? b.title||'' : '';
+  boardRender();
+}
+/* подсказки поверх холста, панель инструментов, кто на доске */
+function boardStatus(){
+  const msg = $('#bd-msg'); if (!msg) return; msg.classList.remove('soft'); const b = boardOf(UI.board);
+  if (BB.err) { msg.hidden = false; msg.innerHTML = `<div class="banner err">${ic('CircleAlert')}<div><b>Доска недоступна: ${esc(BB.err)}.</b><br><small>В правилах Firestore нужны коллекции hub_boards, hub_bitems, hub_bcur.</small></div></div>`; }
+  else if (S.loaded.has('hub_boards') && !b) { msg.hidden = false; msg.innerHTML = `<div class="empty"><b>Доска не найдена</b>Возможно, её удалили.<a class="btn sm" href="#/board">К списку</a></div>`; }
+  else if (!BB.loaded) { msg.hidden = false; msg.innerHTML = '<div class="loading"><span class="spin"></span>Открываем доску…</div>'; }
+  else if (!Object.keys(BB.items).length) { msg.hidden = false; msg.innerHTML = `<div class="bd-hint"><b>Пустая доска</b>Выбери инструмент внизу или нажми <kbd>S</kbd> — стикер, <kbd>T</kbd> — текст, <kbd>P</kbd> — карандаш. Картинку можно вставить через <kbd>Ctrl</kbd>+<kbd>V</kbd> или перетащить.</div>`; msg.classList.add('soft'); }
+  else msg.hidden = true;
+  boardBar(); boardWho();
+}
+function boardWho(){
+  const w = $('#bd-who'); if (!w) return;
+  const ids = Object.values(BB.curs).filter(c => c.at > now()-60e3).map(c=>c.uid);
+  w.innerHTML = [S.me, ...ids].slice(0,6).map(id=>av(id,26)).join('') + (ids.length ? `<small>${ids.length+1} на доске</small>` : '');
+}
+function boardBar(){
+  const bar = $('#bd-bar'); if (!bar) return;
+  const sel = [...BB.sel].map(id=>BB.items[id]).filter(Boolean), texts = sel.filter(it=>it.k==='text');
+  const cur = sel.length ? (sel[0].c||'ink') : BB.tool==='sticky' ? BB.color : BB.ink;
+  const html = `<div class="bd-tools" role="toolbar" aria-label="Инструменты">${BTOOLS.map(([k,icn,t,key])=>`<button data-b="tool" data-v="${k}" aria-pressed="${BB.tool===k}" title="${t} (${key})" aria-label="${t}">${ic(icn)}</button>`).join('')}
+    <span class="bd-sep"></span><button data-b="file" title="Картинка или файл" aria-label="Картинка или файл">${ic('Paperclip')}</button></div>
+    <div class="bd-tools bd-props">${BCOLORS.map(c=>`<button class="bd-sw" data-b="color" data-v="${c}" aria-pressed="${cur===c}" title="${c==='ink'?'Цвет текста':c}" style="--sw:${bcol(c)}"></button>`).join('')}
+    ${texts.length ? `<span class="bd-sep"></span>${BFS.map(([n,l])=>`<button class="bd-fs" data-b="fs" data-v="${n}" aria-pressed="${texts[0].fs===n || (!texts[0].fs && n===24)}">${l}</button>`).join('')}` : ''}
+    ${sel.length ? `<span class="bd-sep"></span><button data-b="front" title="На передний план" aria-label="На передний план">${ic('ArrowUp')}</button><button data-b="dup" title="Дублировать (Ctrl+D)" aria-label="Дублировать">${ic('Copy')}</button><button data-b="del" title="Удалить (Delete)" aria-label="Удалить">${ic('Trash2')}</button>` : ''}</div>`;
+  if (bar.innerHTML !== html) bar.innerHTML = html;
+}
+
+/* ── отрисовка объектов: только изменившиеся ── */
+function bView(){ const w = $('#bd-world'), st = $('#bd-stage'); if (!w) return;
+  w.style.transform = `translate(${BB.px}px,${BB.py}px) scale(${BB.z})`;
+  const g = 24*BB.z; st.style.backgroundSize = `${g}px ${g}px`; st.style.backgroundPosition = `${BB.px}px ${BB.py}px`;
+  st.style.setProperty('--z', BB.z); const p = $('#bd-pct'); if (p) p.textContent = Math.round(BB.z*100)+'%';
+}
+function bFileHtml(it){
+  const f = S.files.find(x=>x.id===it.file);
+  if (!f) return `<div class="bd-ph">${ic('Image')}<small>Загружается…</small></div>`;
+  if (it.k==='image') { const src = thumb(f); return src ? `<img src="${src}" alt="${esc(f.name)}" draggable="false">` : `<div class="bd-ph"><span class="spin"></span></div>`; }
+  return `<div class="bd-fc">${ic('Paperclip')}<span><b>${esc(f.name)}</b><small>${fsize(f.size||0)} · двойной клик — скачать</small></span></div>`;
+}
+function bHtml(it){
+  if (it.k==='sticky') return `<div class="bd-tx">${esc(it.t||'')}</div><small class="bd-by">${esc(pname(it.by).split(' ')[0])}</small>`;
+  if (it.k==='text' || it.k==='rect' || it.k==='ellipse') return `<div class="bd-tx">${esc(it.t||'')}</div>`;
+  if (it.k==='frame') return `<span class="bd-ft">${esc(it.t||'Секция')}</span>`;
+  return bFileHtml(it);
+}
+function bPathD(it){
+  if (it.k==='pen') { const p = it.pts||[]; let d = `M${it.x+p[0]} ${it.y+p[1]}`; for (let i=2;i<p.length;i+=2) d += `L${it.x+p[i]} ${it.y+p[i+1]}`; return d; }
+  return bLineD(it.x, it.y, it.x+it.w, it.y+it.h, it.k==='arrow');
+}
+function bLineD(x0, y0, x1, y1, head){
+  let d = `M${x0} ${y0}L${x1} ${y1}`; if (!head) return d;
+  const a = Math.atan2(y1-y0, x1-x0), L = 14;
+  return d + `M${x1-L*Math.cos(a-.45)} ${y1-L*Math.sin(a-.45)}L${x1} ${y1}L${x1-L*Math.cos(a+.45)} ${y1-L*Math.sin(a+.45)}`;
+}
+function boardRender(){
+  if (!BB.id || !$('#bd-items')) return;
+  const box = $('#bd-items'), paths = $('#bd-paths'), seen = new Set();
+  bItems().forEach((it, i) => {
+    const d = BB.drag && BB.drag.pos[it.id], x = d ? d.x : it.x, y = d ? d.y : it.y, r = BB.drag && BB.drag.size && BB.drag.size.id===it.id ? BB.drag.size : null;
+    const v = Object.assign({}, it, {x, y}, r ? {w:r.w, h:r.h} : {});
+    const f = (it.k==='image'||it.k==='file') && S.files.find(q=>q.id===it.file);
+    const sig = JSON.stringify([v.k,v.x,v.y,v.w,v.h,v.c,v.t,v.fs,v.pts&&v.pts.length,v.file, f ? f.id+(THUMBS[f.id]||'') : '', i]);
+    seen.add(it.id);
+    if (BB.sigs[it.id]===sig || BB.edit===it.id) return;
+    BB.sigs[it.id] = sig;
+    let el = BB.els[it.id];
+    if (isPath(it)) {
+      if (!el) { el = document.createElementNS('http://www.w3.org/2000/svg','g'); el.dataset.id = it.id; el.innerHTML = '<path class="bd-hit"/><path class="bd-ln"/>'; BB.els[it.id] = el; }
+      const dd = bPathD(v);
+      el.firstChild.setAttribute('d', dd); el.lastChild.setAttribute('d', dd);
+      el.lastChild.style.stroke = bcol(v.c); el.lastChild.style.strokeWidth = v.sw || (it.k==='pen' ? 3 : 2.5);
+    } else {
+      if (!el) { el = document.createElement('div'); el.dataset.id = it.id; BB.els[it.id] = el; if (!BB.firstPaint) el.classList.add('pop'); }
+      el.className = 'bd-it k-'+it.k + (el.classList.contains('pop') ? ' pop' : '');
+      el.style.cssText = `left:${v.x}px;top:${v.y}px;width:${v.w||0}px;${it.k==='text'?'':'height:'+(v.h||0)+'px;'}--c:${bcol(v.c)};${it.k==='text'?'font-size:'+(v.fs||24)+'px;':''}`;
+      el.innerHTML = bHtml(v);
+    }
+  });
+  for (const id of Object.keys(BB.els)) if (!seen.has(id)) { BB.els[id].remove(); delete BB.els[id]; delete BB.sigs[id]; }
+  /* порядок слоёв: двигаем в DOM только то, что стоит не на месте */
+  const order = bItems(); let hp = null, sp = null;
+  order.forEach(it => { const el = BB.els[it.id]; if (!el) return; const host = isPath(it) ? paths : box, prev = isPath(it) ? sp : hp, want = prev ? prev.nextSibling : host.firstChild;
+    if (el.parentNode!==host || el!==want) host.insertBefore(el, want); if (isPath(it)) sp = el; else hp = el; });
+  if (BB.loaded) BB.firstPaint = false;
+  bSel(); boardStatus();
+}
+/* рамка выделения и ручка размера */
+function bSel(){
+  const sb = $('#bd-selbox'); if (!sb) return;
+  Object.entries(BB.els).forEach(([id, el]) => el.classList.toggle('sel', BB.sel.has(id)));
+  const its = [...BB.sel].map(id=>BB.items[id]).filter(Boolean);
+  if (!its.length || BB.edit) { sb.hidden = true; return; }
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  its.forEach(it => { const d = BB.drag && BB.drag.pos[it.id], s = BB.drag && BB.drag.size && BB.drag.size.id===it.id ? BB.drag.size : null;
+    const b = bBox(Object.assign({}, it, d||{}, s ? {w:s.w, h:s.h} : {}));
+    const h = it.k==='text' && BB.els[it.id] ? BB.els[it.id].offsetHeight : b.h;
+    x0=Math.min(x0,b.x); y0=Math.min(y0,b.y); x1=Math.max(x1,b.x+b.w); y1=Math.max(y1,b.y+h); });
+  sb.hidden = false; sb.style.cssText = `left:${x0-4}px;top:${y0-4}px;width:${x1-x0+8}px;height:${y1-y0+8}px`;
+  sb.firstChild.hidden = !(its.length===1 && isBox(its[0]));
+}
+/* курсоры команды */
+function boardCursors(){
+  const box = $('#bd-curs'); if (!box) return;
+  box.innerHTML = Object.values(BB.curs).filter(c => c.at > now()-20e3 && c.x!=null).map(c => { const p = S.people[c.uid] || {};
+    return `<div class="bd-cur" data-uid="${esc(c.uid)}" style="transform:translate(${c.x*BB.z+BB.px}px,${c.y*BB.z+BB.py}px);--c:${safeColor(p.color)||'#B197FC'}"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M4 3l7 17 2.5-7L21 10.5z"/></svg><span>${esc(pname(c.uid).split(' ')[0])}</span></div>`; }).join('');
+  boardWho();
+}
+/* свой курсор в базу — не чаще 4 раз в секунду */
+function curSend(p){
+  if (!BB.id || !S.me) return;
+  BB.curLast = p; if (BB.curT) return;
+  BB.curT = setTimeout(() => { BB.curT = 0; const q = BB.curLast; if (!BB.id) return;
+    col('hub_bcur').doc(BB.id+'_'+S.me).set(Object.assign({board:BB.id, uid:S.me, x:q ? Math.round(q.x) : null, y:q ? Math.round(q.y) : null, at:now()}, expireIn(1))).catch(()=>{}); }, 250);
+}
+
+/* ── запись в базу и отмена ── */
+const BFIELDS = ['k','x','y','w','h','c','t','fs','pts','sw','file','z'];
+const bSnap = it => { const o = {}; BFIELDS.forEach(k => { if (it[k]!==undefined) o[k] = it[k]; }); return o; };
+async function bCommit(op, record){
+  /* op: {add:[{id,...}], del:[{id,...}], upd:[{id, before, after}]} — применяем сразу локально, потом в базу */
+  (op.add||[]).forEach(it => { BB.items[it.id] = Object.assign({id:it.id, board:BB.id, by:S.me, at:now()}, BB.items[it.id]||{}, it); });
+  (op.del||[]).forEach(it => { delete BB.items[it.id]; BB.sel.delete(it.id); });
+  (op.upd||[]).forEach(u => { if (BB.items[u.id]) Object.assign(BB.items[u.id], u.after); });
+  if (record!==false) { BB.undo.push(op); if (BB.undo.length > 80) BB.undo.shift(); BB.redo = []; }
+  boardRender();
+  const ok = await write(async () => {
+    const b = DB.batch();
+    (op.add||[]).forEach(it => b.set(col('hub_bitems').doc(it.id), Object.assign({board:BB.id, by:it.by||S.me, at:it.at||now()}, bSnap(it))));
+    (op.del||[]).forEach(it => b.delete(col('hub_bitems').doc(it.id)));
+    (op.upd||[]).forEach(u => b.update(col('hub_bitems').doc(u.id), u.after));
+    await b.commit();
+  });
+  if (ok && now()-BB.touchedAt > 60e3 && BB.id) { BB.touchedAt = now(); col('hub_boards').doc(BB.id).update(stamp()).catch(()=>{}); }
+  return ok;
+}
+const bInv = op => ({add:(op.del||[]).map(x=>Object.assign({}, x)), del:(op.add||[]).map(x=>({id:x.id})), upd:(op.upd||[]).map(u=>({id:u.id, before:u.after, after:u.before}))});
+function bUndo(redo){
+  const from = redo ? BB.redo : BB.undo, to = redo ? BB.undo : BB.redo, op = from.pop(); if (!op) return;
+  /* объект мог исчезнуть у других — отменяем только то, что ещё на месте */
+  const inv = bInv(op); inv.upd = inv.upd.filter(u=>BB.items[u.id]); inv.del = inv.del.filter(d=>BB.items[d.id]);
+  inv.add = inv.add.map(a => Object.assign({}, a, a.by ? {} : {by:S.me}));
+  to.push(op); bCommit(inv, false);
+}
+function bNew(k, x, y, extra){ return Object.assign({id:col('hub_bitems').doc().id, k, x:Math.round(x), y:Math.round(y), z:now(), by:S.me, at:now()}, extra); }
+function bUpdate(ids, fn){
+  const upd = ids.map(id => BB.items[id]).filter(Boolean).map(it => { const after = fn(it); const before = {}; Object.keys(after).forEach(k => before[k] = it[k]===undefined ? null : it[k]); return {id:it.id, before, after}; });
+  if (upd.length) bCommit({upd});
+}
+function bDelete(ids){ const del = ids.map(id=>BB.items[id]).filter(Boolean).map(it=>Object.assign({}, it)); if (del.length) bCommit({del}); }
+function bDup(ids, dx, dy){
+  const src = (ids || [...BB.sel]).map(id=>BB.items[id]).filter(Boolean); if (!src.length) return;
+  const add = src.map((it, i) => Object.assign(bSnap(it), {id:col('hub_bitems').doc().id, x:it.x+(dx==null?24:dx), y:it.y+(dy==null?24:dy), z:now()+i, by:S.me, at:now()}));
+  bCommit({add}); BB.sel = new Set(add.map(a=>a.id)); bSel(); boardBar();
+}
+
+/* картинки и файлы: загружаем через общий механизм файлов хаба */
+async function boardFiles(list, x, y){
+  if (!BB.id || !list.length) return;
+  const board = BB.id, files = list.map(shotName).filter(f => f.size <= FILE_MAX || (toast(ic('CircleAlert')+' «'+esc(f.name)+'» больше '+fsize(FILE_MAX)), false));
+  if (!files.length) return;
+  const dims = await Promise.all(files.map(f => isImg(f) && window.createImageBitmap ? createImageBitmap(f).then(b => ({w:b.width, h:b.height})).catch(()=>null) : null));
+  toast(ic('Paperclip')+' Загружаю '+plural(files.length,'файл','файла','файлов')+'…');
+  const ids = await uploadFiles(files, {board});
+  if (BB.id!==board) return;
+  const add = ids.map((fid, i) => { const file = files[i] || {}, img = isImg(file), d = dims[i];
+    const w = img ? Math.min(420, (d && d.w) || 320) : 240, h = img ? Math.round(w * (d && d.w ? d.h/d.w : .66)) : 64;
+    return bNew(img ? 'image' : 'file', x - w/2 + i*28, y - h/2 + i*28, {w, h, file:fid}); });
+  if (add.length) { bCommit({add}); BB.sel = new Set(add.map(a=>a.id)); toast(ic('Image')+' На доске: '+plural(add.length,'файл','файла','файлов')); }
+}
+
+/* ── ввод: мышь, перо, тач ── */
+const bHitId = e => { const at = e.type==='pointermove' ? document.elementFromPoint(e.clientX, e.clientY) : e.target, t = at && at.closest && at.closest('[data-id]'); return t && $('#bd-world').contains(t) ? t.dataset.id : null; };
+function bDown(e){
+  if (!BB.id || BB.edit) { if (BB.edit && !e.target.closest('[contenteditable]')) bEndEdit(); return; }
+  const st = $('#bd-stage'); st.focus({preventScroll:true});
+  const p = toWorld(e.clientX, e.clientY), id = bHitId(e), tool = BB.tool;
+  st.setPointerCapture(e.pointerId);
+  if (e.button===1 || tool==='hand' || BB.space) { BB.act = {k:'pan', sx:e.clientX, sy:e.clientY, px:BB.px, py:BB.py}; st.classList.add('panning'); return; }
+  if (e.button!==0) return;
+  if (tool==='select') {
+    if (e.target.dataset.h) { const it = BB.items[[...BB.sel][0]]; BB.act = {k:'size', id:it.id, p, w:it.w, h:it.h}; BB.drag = {pos:{}, size:{id:it.id, w:it.w, h:it.h}}; return; }
+    if (id) {
+      if (e.shiftKey) { BB.sel.has(id) ? BB.sel.delete(id) : BB.sel.add(id); }
+      else if (!BB.sel.has(id)) BB.sel = new Set([id]);
+      /* секция тащит за собой всё, что целиком внутри неё */
+      const ids = new Set(BB.sel);
+      [...BB.sel].map(i=>BB.items[i]).filter(it=>it && it.k==='frame').forEach(fr => Object.values(BB.items).forEach(it => { const b = bBox(it);
+        if (it.id!==fr.id && b.x>=fr.x && b.y>=fr.y && b.x+b.w<=fr.x+fr.w && b.y+b.h<=fr.y+fr.h) ids.add(it.id); }));
+      BB.act = {k:'move', p, ids:[...ids], moved:false}; BB.drag = {pos:{}};
+      bSel(); boardBar(); return;
+    }
+    if (e.pointerType==='touch') { BB.act = {k:'pan', sx:e.clientX, sy:e.clientY, px:BB.px, py:BB.py}; return; }
+    if (!e.shiftKey) BB.sel = new Set();
+    BB.act = {k:'marq', p, base:new Set(BB.sel)}; bSel(); boardBar(); return;
+  }
+  if (tool==='eraser') { BB.act = {k:'erase', ids:new Set()}; if (id) { BB.act.ids.add(id); bErase(id); } return; }
+  if (tool==='pen') { BB.act = {k:'pen', p, pts:[0,0]}; bDraft(); return; }
+  if (tool==='arrow' || tool==='line') { BB.act = {k:'line', p, q:p}; bDraft(); return; }
+  if (['rect','ellipse','frame','sticky','text'].includes(tool)) { BB.act = {k:'shape', p, q:p}; bDraft(); return; }
+}
+function bMove(e){
+  if (!BB.id) return;
+  const p = toWorld(e.clientX, e.clientY);
+  if (e.pointerType!=='touch') curSend(p);
+  const a = BB.act; if (!a) return;
+  if (a.k==='pan') { BB.px = a.px + e.clientX - a.sx; BB.py = a.py + e.clientY - a.sy; bView(); boardCursors(); return; }
+  if (a.k==='move') { const dx = p.x-a.p.x, dy = p.y-a.p.y; if (!a.moved && Math.hypot(dx,dy)*BB.z < 3) return; a.moved = true;
+    a.ids.forEach(id => { const it = BB.items[id]; if (it) BB.drag.pos[id] = {x:Math.round(it.x+dx), y:Math.round(it.y+dy)}; }); boardRender(); return; }
+  if (a.k==='size') { BB.drag.size = {id:a.id, w:Math.max(40, Math.round(a.w + p.x-a.p.x)), h:Math.max(30, Math.round(a.h + p.y-a.p.y))};
+    const it = BB.items[a.id]; if (it && it.k==='image' && it.w && it.h && !e.shiftKey) BB.drag.size.h = Math.round(BB.drag.size.w * it.h/it.w); boardRender(); return; }
+  if (a.k==='marq') { const m = $('#bd-marq'), x0 = Math.min(a.p.x,p.x), y0 = Math.min(a.p.y,p.y), x1 = Math.max(a.p.x,p.x), y1 = Math.max(a.p.y,p.y);
+    m.hidden = false; m.style.cssText = `left:${x0*BB.z+BB.px}px;top:${y0*BB.z+BB.py}px;width:${(x1-x0)*BB.z}px;height:${(y1-y0)*BB.z}px`;
+    BB.sel = new Set(a.base); Object.values(BB.items).forEach(it => { const b = bBox(it); if (b.x<x1 && b.x+b.w>x0 && b.y<y1 && b.y+b.h>y0) BB.sel.add(it.id); }); bSel(); return; }
+  if (a.k==='erase') { const id = bHitId(e); if (id && !a.ids.has(id)) { a.ids.add(id); bErase(id); } return; }
+  if (a.k==='pen') { const n = a.pts.length, lx = a.pts[n-2], ly = a.pts[n-1], dx = p.x-a.p.x, dy = p.y-a.p.y;
+    if (Math.hypot(dx-lx, dy-ly)*BB.z >= 2 && n < 6000) { a.pts.push(Math.round(dx*10)/10, Math.round(dy*10)/10); bDraft(); } return; }
+  if (a.k==='line' || a.k==='shape') { a.q = p; bDraft(); }
+}
+function bErase(id){ const el = BB.els[id]; if (el) el.classList.add('erasing'); }
+function bUp(e){
+  const a = BB.act; BB.act = null; $('#bd-stage').classList.remove('panning'); if (!a) return;
+  if (a.k==='move') { const pos = BB.drag.pos; BB.drag = null;
+    if (a.moved) bCommit({upd:Object.keys(pos).map(id => ({id, before:{x:BB.items[id].x, y:BB.items[id].y}, after:pos[id]}))}); else boardRender();
+    return; }
+  if (a.k==='size') { const s = BB.drag.size; BB.drag = null; const it = BB.items[s.id]; if (it && (s.w!==it.w || s.h!==it.h)) bCommit({upd:[{id:s.id, before:{w:it.w, h:it.h}, after:{w:s.w, h:s.h}}]}); else boardRender(); return; }
+  if (a.k==='marq') { $('#bd-marq').hidden = true; boardBar(); return; }
+  if (a.k==='erase') { bDelete([...a.ids]); return; }
+  $('#bd-draft').innerHTML = '';
+  const color = BB.tool==='sticky' ? BB.color : BB.ink;
+  if (a.k==='pen') { if (a.pts.length >= 4) bCommit({add:[bNew('pen', a.p.x, a.p.y, {pts:a.pts, c:color, sw:3})]}); return; }
+  if (a.k==='line') { const w = Math.round(a.q.x-a.p.x), h = Math.round(a.q.y-a.p.y); if (Math.hypot(w,h) < 6) return;
+    bCommit({add:[bNew(BB.tool, a.p.x, a.p.y, {w, h, c:color})]}); bSetTool('select'); return; }
+  if (a.k==='shape') {
+    let x = Math.min(a.p.x,a.q.x), y = Math.min(a.p.y,a.q.y), w = Math.abs(a.q.x-a.p.x), h = Math.abs(a.q.y-a.p.y);
+    const k = BB.tool, small = w*BB.z < 8 && h*BB.z < 8;
+    const def = {sticky:[200,200], text:[260,40], rect:[180,120], ellipse:[160,160], frame:[640,420]}[k];
+    if (small) { w = def[0]; h = def[1]; x -= w/2; y -= h/2; }
+    if (k==='sticky' && !small) { const m = Math.max(w,h,120); w = h = m; }
+    const it = bNew(k, x, y, Object.assign({w:Math.round(w), h:Math.round(h), c: k==='sticky' ? (BB.color==='ink' ? '#FFD43B' : BB.color) : k==='frame' ? 'ink' : color, t: k==='frame' ? 'Секция' : ''}, k==='text' ? {fs:24} : {}));
+    if (k==='frame') it.z = 0;
+    bCommit({add:[it]}); BB.sel = new Set([it.id]); bSetTool('select');
+    if (k==='sticky' || k==='text' || k==='frame') setTimeout(() => bEdit(it.id), 30);
+  }
+}
+/* черновик рисования поверх холста */
+function bDraft(){
+  const a = BB.act, g = $('#bd-draft'); if (!a) { g.innerHTML = ''; return; }
+  const c = bcol(BB.tool==='sticky' ? BB.color : BB.ink);
+  if (a.k==='pen') { let d = `M${a.p.x} ${a.p.y}`; for (let i=2;i<a.pts.length;i+=2) d += `L${a.p.x+a.pts[i]} ${a.p.y+a.pts[i+1]}`; g.innerHTML = `<path d="${d}" class="bd-ln" style="stroke:${c};stroke-width:3"/>`; return; }
+  if (a.k==='line') { g.innerHTML = `<path d="${bLineD(a.p.x, a.p.y, a.q.x, a.q.y, BB.tool==='arrow')}" class="bd-ln" style="stroke:${c};stroke-width:2.5"/>`; return; }
+  const x = Math.min(a.p.x,a.q.x), y = Math.min(a.p.y,a.q.y), w = Math.abs(a.q.x-a.p.x), h = Math.abs(a.q.y-a.p.y);
+  g.innerHTML = BB.tool==='ellipse' ? `<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" class="bd-dr"/>` : `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" class="bd-dr"/>`;
+}
+function bWheel(e){
+  if (!BB.id) return; e.preventDefault();
+  if (e.ctrlKey || e.metaKey) { const r = $('#bd-stage').getBoundingClientRect(); bZoom(BB.z * Math.exp(-e.deltaY*0.01), e.clientX-r.left, e.clientY-r.top); }
+  else { BB.px -= e.deltaX; BB.py -= e.deltaY; bView(); boardCursors(); }
+}
+function bZoom(z, cx, cy){
+  const r = $('#bd-stage').getBoundingClientRect(); if (cx==null) { cx = r.width/2; cy = r.height/2; }
+  z = Math.min(4, Math.max(.1, z)); const wx = (cx-BB.px)/BB.z, wy = (cy-BB.py)/BB.z;
+  BB.z = z; BB.px = cx - wx*z; BB.py = cy - wy*z; bView(); boardCursors();
+}
+function boardFit(first){
+  const its = Object.values(BB.items), st = $('#bd-stage'); if (!st) return;
+  const r = st.getBoundingClientRect();
+  if (!its.length) { BB.z = 1; BB.px = r.width/2; BB.py = r.height/2; bView(); return; }
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity; its.forEach(it => { const b = bBox(it); x0=Math.min(x0,b.x); y0=Math.min(y0,b.y); x1=Math.max(x1,b.x+b.w); y1=Math.max(y1,b.y+Math.max(b.h,40)); });
+  const z = Math.min(first ? 1 : 2, Math.max(.1, Math.min((r.width-120)/(x1-x0||1), (r.height-160)/(y1-y0||1))));
+  BB.z = z; BB.px = r.width/2 - (x0+x1)/2*z; BB.py = (r.height-60)/2 - (y0+y1)/2*z; bView(); boardCursors();
+}
+/* редактирование текста: двойной клик по стикеру, тексту, фигуре или названию секции */
+function bDbl(e){
+  const id = bHitId(e); if (!id) { if (BB.tool==='select') { const p = toWorld(e.clientX, e.clientY); const it = bNew('sticky', p.x-100, p.y-100, {w:200, h:200, c:BB.color==='ink'?'#FFD43B':BB.color, t:''}); bCommit({add:[it]}); BB.sel = new Set([it.id]); setTimeout(()=>bEdit(it.id), 30); } return; }
+  const it = BB.items[id]; if (!it) return;
+  if (it.k==='image') return openImg(it.file);
+  if (it.k==='file') return downloadFile(it.file);
+  if (['sticky','text','rect','ellipse','frame'].includes(it.k)) bEdit(id);
+}
+function bEdit(id){
+  const it = BB.items[id], el = BB.els[id]; if (!it || !el) return;
+  BB.edit = id; bSel();
+  const t = el.querySelector(it.k==='frame' ? '.bd-ft' : '.bd-tx'); if (!t) return;
+  t.textContent = it.t || ''; try { t.contentEditable = 'plaintext-only'; } catch (e) {} if (t.contentEditable!=='plaintext-only') t.contentEditable = 'true';
+  t.focus(); const r = document.createRange(); r.selectNodeContents(t); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+  t.addEventListener('blur', bEndEdit, {once:true});
+  t.addEventListener('keydown', e => { if (e.key==='Escape' || (e.key==='Enter' && (e.ctrlKey||e.metaKey))) { e.preventDefault(); e.stopPropagation(); t.blur(); } e.stopPropagation(); });
+}
+function bEndEdit(){
+  const id = BB.edit; if (!id) return; BB.edit = null;
+  const it = BB.items[id], el = BB.els[id]; if (!it || !el) return boardRender();
+  const t = el.querySelector('[contenteditable]'); const v = t ? clip(t.innerText.replace(/\n{3,}/g,'\n\n').trim(), 4000) : it.t;
+  if (t) t.removeAttribute('contenteditable');
+  delete BB.sigs[id];
+  if ((it.k==='text') && !v) { bDelete([id]); return; }
+  if (v !== (it.t||'')) bCommit({upd:[{id, before:{t:it.t||''}, after:{t:v}}]}); else boardRender();
+}
+function bSetTool(t){ BB.tool = t; const st = $('#bd-stage'); if (st) st.dataset.tool = t; if (t!=='select') { BB.sel = new Set(); bSel(); } boardBar(); }
+function bClick(e){
+  const b = e.target.closest('[data-b]'); if (!b) return;
+  const a = b.dataset.b, v = b.dataset.v, ids = [...BB.sel];
+  if (a==='tool') bSetTool(v);
+  else if (a==='file') $('#bd-file').click();
+  else if (a==='color') {
+    if (ids.length) bUpdate(ids, it => ({c: it.k==='sticky' && v==='ink' ? '#F1F3F5' : v}));
+    if (BB.tool==='sticky' || (ids.length && BB.items[ids[0]] && BB.items[ids[0]].k==='sticky')) BB.color = v==='ink' ? '#F1F3F5' : v; else BB.ink = v;
+    boardBar();
+  }
+  else if (a==='fs') bUpdate(ids.filter(id=>BB.items[id] && BB.items[id].k==='text'), () => ({fs:Number(v)}));
+  else if (a==='front') bUpdate(ids, (it) => ({z:now()+ids.indexOf(it.id)}));
+  else if (a==='dup') bDup();
+  else if (a==='del') bDelete(ids);
+  else if (a==='undo') bUndo(false);
+  else if (a==='redo') bUndo(true);
+  else if (a==='zin') bZoom(BB.z*1.25);
+  else if (a==='zout') bZoom(BB.z/1.25);
+  else if (a==='z100') bZoom(1);
+  else if (a==='fit') boardFit(false);
+}
+/* клавиши доски перехватываем раньше общих (V у звонка — камера, Q — мысль) */
+document.addEventListener('keydown', e => {
+  if (!BB.id || UI.route!=='board' || $('#overlay').innerHTML || BB.edit) return;
+  const t = e.target; if (t && (/INPUT|TEXTAREA|SELECT/.test(t.tagName) || t.isContentEditable)) return;
+  const mod = e.ctrlKey || e.metaKey, ids = [...BB.sel];
+  const stop = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+  if (e.code==='Space') { if (!BB.space) { BB.space = true; $('#bd-stage').classList.add('space'); } stop(); return; }
+  if (mod && e.code==='KeyZ') { stop(); bUndo(e.shiftKey); return; }
+  if (mod && e.code==='KeyY') { stop(); bUndo(true); return; }
+  if (mod && e.code==='KeyD') { stop(); bDup(); return; }
+  if (mod && e.code==='KeyA') { stop(); BB.sel = new Set(Object.keys(BB.items)); bSel(); boardBar(); return; }
+  if (mod && e.code==='KeyC' && ids.length) { BB.clip = ids.map(id=>BB.items[id]).filter(Boolean).map(it=>Object.assign({}, it)); return; }
+  if ((e.key==='Delete' || e.key==='Backspace') && ids.length) { stop(); bDelete(ids); return; }
+  if (e.key==='Escape') { stop(); BB.sel = new Set(); bSetTool('select'); bSel(); return; }
+  if (e.key==='Enter' && ids.length===1) { stop(); bEdit(ids[0]); return; }
+  if (e.shiftKey && e.code==='Digit1') { stop(); boardFit(false); return; }
+  if (e.key.startsWith('Arrow') && ids.length) { stop(); const d = e.shiftKey ? 10 : 1, dx = e.key==='ArrowLeft'?-d:e.key==='ArrowRight'?d:0, dy = e.key==='ArrowUp'?-d:e.key==='ArrowDown'?d:0;
+    bUpdate(ids, it => ({x:it.x+dx, y:it.y+dy})); return; }
+  if (mod && (e.key==='=' || e.key==='+')) { stop(); bZoom(BB.z*1.25); return; }
+  if (mod && e.key==='-') { stop(); bZoom(BB.z/1.25); return; }
+  if (mod && e.key==='0') { stop(); bZoom(1); return; }
+  if (!mod && !e.altKey && BKEYS[e.code]) { stop(); bSetTool(BKEYS[e.code]); return; }
+}, true);
+document.addEventListener('keyup', e => { if (e.code==='Space' && BB.space) { BB.space = false; const st = $('#bd-stage'); if (st) st.classList.remove('space'); } });
+/* вставка: картинки из буфера или скопированные объекты доски */
+document.addEventListener('paste', e => {
+  if (!BB.id || UI.route!=='board' || BB.edit || $('#overlay').innerHTML) return;
+  const t = e.target; if (t && (/INPUT|TEXTAREA/.test(t.tagName) || t.isContentEditable)) return;
+  const files = [...(e.clipboardData && e.clipboardData.files || [])];
+  const p = BB.curLast || bCenter();
+  if (files.length) { e.preventDefault(); boardFiles(files, p.x, p.y); return; }
+  const text = e.clipboardData && e.clipboardData.getData('text');
+  if (BB.clip.length) { e.preventDefault(); const c = BB.clip; let x0 = Infinity, y0 = Infinity; c.forEach(it=>{ x0 = Math.min(x0, it.x); y0 = Math.min(y0, it.y); });
+    const add = c.map((it,i) => Object.assign(bSnap(it), {id:col('hub_bitems').doc().id, x:Math.round(p.x+it.x-x0), y:Math.round(p.y+it.y-y0), z:now()+i, by:S.me, at:now()}));
+    bCommit({add}); BB.sel = new Set(add.map(a=>a.id)); return; }
+  if (text && text.trim()) { e.preventDefault(); const it = bNew('sticky', p.x-100, p.y-100, {w:200, h:200, c:BB.color==='ink'?'#FFD43B':BB.color, t:clip(text.trim(),4000)}); bCommit({add:[it]}); }
+});
+addEventListener('resize', () => { if (BB.id) bView(); });
+setInterval(() => { if (BB.id && Object.keys(BB.curs).length) boardCursors(); }, 10e3);
+
 /* ── оверлеи: палитра, захват, формы, настройки ── */
 function closeOverlay(){ $('#overlay').innerHTML = ''; UI.pal = null; LB = null; }
 function overlay(html){ UI.pal = null; $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg">${html}</div>`; const f = $('#overlay input:not([type=hidden]),#overlay textarea'); if (f) f.focus(); }
@@ -2191,7 +2680,7 @@ function palItems(q){
     ['Leaf','Спокойный режим вкл/выкл','',()=>{ P.calm = !P.calm; applyPrefs(); savePrefs(); toast(P.calm?'Спокойный режим: без конфетти и всплывающих XP':'Спокойный режим выключен'); }],
     ['Settings','Профиль и настройки','',()=>settings()]
   ].map(c=>({g:'Команды', ico:c[0], t:c[1], r:c[2], run:c[3]}));
-  const pages = [['today','Sun','Мой день'],['inbox','Inbox','Входящие'],['tasks','LayoutGrid','Задачи'],['decisions','Scale','Решения'],['log','ScrollText','Журнал'],['people','Users','Люди'],['chats','MessagesSquare','Чаты'],['call','Phone','Звонок'],['wiki','BookOpen','Вики'],['claude','Bot','Claude — график']]
+  const pages = [['today','Sun','Мой день'],['inbox','Inbox','Входящие'],['tasks','LayoutGrid','Задачи'],['decisions','Scale','Решения'],['log','ScrollText','Журнал'],['people','Users','Люди'],['chats','MessagesSquare','Чаты'],['board','Presentation','Доски'],['call','Phone','Звонок'],['wiki','BookOpen','Вики'],['claude','Bot','Claude — график']]
     .map(p=>({g:'Разделы', ico:p[1], t:p[2], run:()=>go(p[0])}))
     .concat(DEPTS.flatMap(d=>[{g:'Разделы', ico:d.icon, t:d.name, run:()=>go('d/'+d.id)}].concat(d.tabs.slice(1).map(([id,n])=>({g:'Разделы', ico:d.icon, t:d.name+' → '+n, run:()=>go('d/'+d.id+'/'+id)})))));
   const tasks = S.tasks.map(t=>({g:'Задачи', ico:(D[t.dept]||DEPTS[0]).icon, t:t.title, r:colName(t.status), extra:t.tldr, run:()=>openDrawer('task:'+t.id)}));
@@ -2358,6 +2847,8 @@ document.addEventListener('click', e => {
       case 'bugs-hide': UI.bhide = !UI.bhide; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
       case 'inbox-del': write(()=>col('hub_inbox').doc(id).delete()); break;
+      case 'board-new': boardNew(); break;
+      case 'board-del': e.preventDefault(); boardDelete(id); break;
       case 'inbox-chat': { const it = inboxFind(id); if (it) inboxToChat(it); break; }
       case 'inbox-dec': { const it = inboxFind(id); if (!it) break; const ls = it.text.split('\n');
         newDecision(it.dept, {mode:'react', q:clip(ls[0],200), tldr:clip(ls.slice(1).join(' ').trim(),240), inbox:it.id, by:it.by}); break; }
@@ -2463,6 +2954,7 @@ document.addEventListener('change', e => {
 document.addEventListener('submit', async e => {
   const f = e.target; if (!f.dataset.form) return; e.preventDefault();
   const k = f.dataset.form;
+  if (k==='board-new') boardCreate(f);
   if (k==='capture') { const t = f.t.value.trim(); if (!t) return; closeOverlay(); addInbox(t, f.d.value, f.vis.value==='team'); }
   if (k==='task-new') createTask(f);
   if (k==='chat-new') { const title = clip(f.title.value,120); if (!title) return; const ref = col('hub_chats').doc();
@@ -2595,6 +3087,7 @@ function viewRoute(){
   if (r==='people') return viewPeople();
   if (r==='wiki') return viewWiki();
   if (r==='chats') return viewChats();
+  if (r==='board') return UI.board ? '' : viewBoards();
   listenChat(null);
   if (r==='call') return '';
   if (r==='claude') return viewClaude();
@@ -2642,7 +3135,7 @@ function paint(){
   /* боковую панель пересобираем, только когда она правда изменилась: иначе каждое обновление данных сбрасывает её прокрутку */
   const sh = sidebar(); if (sh !== SIDE_HTML) { const ss = $('#side-scroll'), st = ss ? ss.scrollTop : 0; $('#side').innerHTML = SIDE_HTML = sh; const ns = $('#side-scroll'); if (ns) ns.scrollTop = st; }
   const th = topbar(); if (th !== TOP_HTML) $('#topbar').innerHTML = TOP_HTML = th;
-  const vh = view(), vr = UI.route+'|'+(UI.tab||'')+'|'+(UI.chat||''), v = $('#view');
+  const vh = view(), vr = UI.route+'|'+(UI.tab||'')+'|'+(UI.chat||'')+'|'+(UI.board||''), v = $('#view');
   if (vh !== VIEW_HTML) {
     const same = vr === VIEW_ROUTE;
     if (same) v.classList.remove('enter'); // данные пришли во время входа — без повторной анимации
@@ -2651,7 +3144,8 @@ function paint(){
   }
   document.body.classList.toggle('r-chats', UI.route==='chats');
   document.body.classList.toggle('r-call', UI.route==='call');
-  callPaint();
+  document.body.classList.toggle('r-board', UI.route==='board' && !!UI.board);
+  callPaint(); boardPaint();
   const ms2 = $('#msgs'); if (ms2) ms2.scrollTop = !mst || mst.end || mst.chat!==UI.chat ? ms2.scrollHeight : mst.top;
   if (fk) { const el = document.querySelector('#side '+fk+',#topbar '+fk+',#view '+fk); if (el) { el.focus({preventScroll:true}); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
   if (scrollY !== sy) scrollTo(0, sy);
@@ -3371,7 +3865,7 @@ setInterval(() => { if (S.me && Object.keys(CALL.raw).length) callRefresh(false)
 function listen(){
   const onErr = c => e => { console.error(c, e); S.errs[c] = errText(e); S.loaded.add(c); schedule(); };
   const docs = sn => sn.docs.map(d=>Object.assign({id:d.id}, d.data()));
-  const simple = [['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki'],['hub_files','files'],['hub_chats','chats']];
+  const simple = [['hub_decisions','decisions'],['hub_reg','reg'],['hub_wiki','wiki'],['hub_files','files'],['hub_chats','chats'],['hub_boards','boards']];
   for (const [c,k] of simple) UNSUB.push(col(c).onSnapshot(sn => { S[k] = docs(sn); S.loaded.add(c); schedule(); }, onErr(c)));
   /* вопросы экономики — часть общего раздела «Решения»; без них хаб работает, поэтому ошибка не ломает страницу */
   UNSUB.push(col('decisions').onSnapshot(sn => { S.edec = docs(sn).filter(x=>x.question); S.loaded.add('decisions'); schedule(); }, e => { console.warn('decisions', e); S.loaded.add('decisions'); schedule(); }));
@@ -3439,7 +3933,7 @@ function normalizeDepts(){
     if (want.some(x => !cur.includes(x))) col('hub_people').doc(uid).update({depts:want}).catch(e => console.warn('отделы', uid, e.code));
   }
 }
-function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; listenChat(null);
+function unlisten(){ UNSUB.forEach(u => { try { u(); } catch (e) {} }); UNSUB = []; listenChat(null); boardLeave();
   Object.values(TASK_UNSUB).forEach(u => { try { u(); } catch (e) {} }); TASK_UNSUB = {}; S.tdept = {}; S.allTasks = []; S.tasks = []; S.notifs = []; S.E = null; S.loaded = new Set(); S.errs = {}; }
 
 /* стартовое наполнение — один раз на всю команду */

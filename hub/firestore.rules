@@ -126,7 +126,8 @@ service cloud.firestore {
       return f.get('by', null) == request.auth.uid || isAdmin()
         || (f.get('chat', null) is string && get(dpath('hub_chats', f.chat)).data.get('by', null) == request.auth.uid)
         || (f.get('task', null) is string && !exists(dpath('hub_tasks', f.task)))
-        || (f.get('reg', null) is string && !exists(dpath('hub_reg', f.reg)));
+        || (f.get('reg', null) is string && !exists(dpath('hub_reg', f.reg)))
+        || (f.get('board', null) is string && !exists(dpath('hub_boards', f.board)));
     }
     match /hub_files/{id} {
       allow read: if isMember();
@@ -142,6 +143,27 @@ service cloud.firestore {
       allow read: if isMember();
       allow create: if isMember() && setsMe('by') && short('th', 400000);
       allow delete: if isMember() && (!exists(dpath('hub_files', id)) || dropFile(get(dpath('hub_files', id)).data));
+    }
+    // Доски: рисуют все участники. Удалить доску — автор или руководитель, объект на доске — любой участник.
+    match /hub_boards/{id} {
+      allow read: if isMember();
+      allow create: if isMember() && setsMe('by') && short('title', 120);
+      allow update: if isMember() && changed().hasOnly(['title', 'updatedAt', 'updatedBy']) && short('title', 120);
+      allow delete: if isMember() && (isMine('by') || isAdmin());
+    }
+    match /hub_bitems/{id} {
+      allow read, delete: if isMember();
+      allow create: if isMember() && setsMe('by') && request.resource.data.board is string
+        && short('t', 4000) && request.resource.data.get('pts', []).size() <= 6000;
+      allow update: if isMember() && request.resource.data.board == resource.data.board && request.resource.data.by == resource.data.by
+        && short('t', 4000) && request.resource.data.get('pts', []).size() <= 6000;
+    }
+    // Курсоры на доске: каждый пишет только свой документ {доска}_{uid}
+    match /hub_bcur/{id} {
+      allow read: if isMember();
+      allow create, update: if isMember() && request.resource.data.uid == request.auth.uid
+        && id == request.resource.data.board + '_' + request.auth.uid;
+      allow delete: if isMember() && isMine('uid');
     }
     match /hub_claude/{id} {
       allow read: if isMember();
