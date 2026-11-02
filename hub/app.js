@@ -355,7 +355,7 @@ function confetti(x, y, n=28){
 function toast(html, xp){
   const el = document.createElement('div'); el.className = 'toast';
   el.innerHTML = `<span>${html}</span>${xp?`<span class="xp">${esc(xp)}</span>`:''}`;
-  $('#toasts').appendChild(el); setTimeout(()=>el.remove(), 3400);
+  $('#toasts').appendChild(el); setTimeout(()=>el.classList.add('out'), 3150); setTimeout(()=>el.remove(), 3400);
 }
 
 /* ── маршрутизация ──────────────────────────── */
@@ -727,7 +727,7 @@ const inboxFind = id => S.inbox.find(i=>i.id===id) || S.team.find(i=>i.id===id);
 function inboxItem(i){
   const mine = i.by===S.me, c = i.chat && chat(i.chat), d = i.dec && dec(i.dec);
   const lines = String(i.text||'').split('\n'), rest = lines.slice(1).join('\n').trim();
-  return `<div class="item inb" style="cursor:default">${mine ? ic('Lightbulb') : av(i.by,26)}<div class="bd"><div class="tt">${mdLine(lines[0])}</div>${rest?`<div class="ds">${mdBlock(rest)}</div>`:''}
+  return `<div class="item inb" style="cursor:default" data-pk="i:${esc(i.id)}">${mine ? ic('Lightbulb') : av(i.by,26)}<div class="bd"><div class="tt">${mdLine(lines[0])}</div>${rest?`<div class="ds">${mdBlock(rest)}</div>`:''}
     <div class="mt">${mine?'':`<small style="color:var(--text-2);font-weight:600">${esc(pname(i.by))}</small>`}<small style="color:var(--muted)">${ago(i.at)}</small>${i.dept?dchip(i.dept):''}
       ${mine?`<button type="button" class="btn sm ghost" data-action="inbox-vis" data-id="${esc(i.id)}" title="Сменить, кто видит мысль">${ic(i.team?'Users':'Lock')} ${i.team?'Видит команда':'Только я'}</button>`:''}
       ${c?`<a class="ref-chip" href="#/chats/${esc(c.id)}">${ic('MessagesSquare')} ${esc(clip(c.title,40))}</a>`:''}${d?`<button type="button" class="ref-chip" data-action="open-dec" data-id="${esc(d.id)}">${ic('Scale')} ${esc(clip(d.q,40))}</button>`:''}</div></div>
@@ -1053,7 +1053,7 @@ function chatItem(c){
 function msgHtml(m, prev, thread){
   const same = prev && prev.by===m.by && m.at-prev.at < 5*60e3;
   const files = (m.files||[]).map(id=>fileChip(S.files.find(f=>f.id===id), true)).join('');
-  return `<div class="msg${m.by===S.me?' me':''}${same?' cont':''}">${same?'<span class="av-sp"></span>':av(m.by,30)}<div class="bd">
+  return `<div class="msg${m.by===S.me?' me':''}${same?' cont':''}" data-pk="m:${esc(m.id||'')}">${same?'<span class="av-sp"></span>':av(m.by,30)}<div class="bd">
     ${same?'':`<div class="mh"><b>${esc(pname(m.by))}</b><small title="${esc(dayf.format(m.at)+', '+dtf.format(m.at))}">${thread ? ago(m.at) : dtf.format(m.at)}</small></div>`}
     ${m.text?`<div class="tx">${mdBlock(m.text)}</div>`:''}${files?`<div class="mf">${files}</div>`:''}</div>
     ${m.by===S.me && !m.old?`<button class="mini-x" data-action="msg-del" data-id="${esc(m.id)}" aria-label="Удалить сообщение" title="Удалить">${ic('Trash2')}</button>`:''}</div>`;
@@ -1140,7 +1140,7 @@ function threadBlock(k, id){
 function paintThread(){
   const el = $('#thread'); if (!el) return;
   const k = el.dataset.k, id = el.dataset.id, c = threadChat(k, id), n = threadCount(k, id);
-  $('#thread-list').innerHTML = threadList(k, id);
+  swapHtml($('#thread-list'), threadList(k, id), true);
   $('#thread-n').textContent = n ? ' · '+n : '';
   const g = $('#thread-go'); g.hidden = !(c || n); g.setAttribute('href', '#/chats/'+(c ? c.id : 'task:'+id));
   $('#thread-up').innerHTML = c ? upBar('chat:'+c.id) : '';
@@ -2117,7 +2117,7 @@ function refreshDrawer(){
   const keep = {}; document.querySelectorAll('#drawer form[data-form] input[name], #drawer form[data-form] textarea[name]').forEach(i => { if (i.value) keep[i.form.dataset.form+'/'+i.name] = i.value; });
   const sel = inside && 'selectionStart' in a ? [a.selectionStart, a.selectionEnd] : null;
   const sb = $('#drawer .dr-b'), st = sb ? sb.scrollTop : 0; // перерисовка не должна уводить к началу карточки
-  paintDrawer();
+  paintDrawer(); repop($('#drawer'));
   { const nb = $('#drawer .dr-b'); if (nb) nb.scrollTop = st; }
   for (const [k,v] of Object.entries(keep)) { const [f,n] = k.split('/'); const i = $(`#drawer form[data-form="${f}"] [name="${n}"]`); if (i && !i.value) i.value = v; }
   const el = form ? $(`#drawer form[data-form="${form}"] [name="${name}"]`) : act ? $(`#drawer [data-action="${act}"]`) : null;
@@ -2607,7 +2607,32 @@ function focusKey(el){
   for (const a of ['data-open','data-go','data-action']) if (el.hasAttribute && el.hasAttribute(a)) return `[${a}="${CSS.escape(el.getAttribute(a))}"]` + (el.dataset.id?`[data-id="${CSS.escape(el.dataset.id)}"]`:'') + (el.dataset.s?`[data-s="${CSS.escape(el.dataset.s)}"]`:'');
   return null;
 }
-let SIDE_HTML = '';
+let SIDE_HTML = '', TOP_HTML = '', VIEW_HTML = '', VIEW_ROUTE = '', enterT = 0;
+/* новые элементы списков (пришли из базы или только что созданы) мягко всплывают.
+   Ключ элемента — data-pk, data-open, id решения или id карточки задачи */
+const POP_SEL = '[data-pk],[data-open],.card[data-id],article.decision[id]';
+const popKey = el => el.dataset.pk || el.dataset.open || el.id || el.dataset.id, POPPED = new Map();
+/* перерисовка посреди всплывания: анимацию продолжаем с того же места, а не обрываем */
+function repop(el){
+  const t = now();
+  if (POPPED.size) el.querySelectorAll(POP_SEL).forEach(x => { const p = POPPED.get(popKey(x)); if (p && t-p < 340) { x.classList.add('pop'); x.style.animationDelay = (p-t)+'ms'; } });
+  return t;
+}
+function swapHtml(el, html, pop){
+  const old = pop ? new Set([...el.querySelectorAll(POP_SEL)].map(popKey)) : null;
+  el.innerHTML = html;
+  const t = repop(el);
+  if (!old || !old.size) return;
+  const fresh = [...el.querySelectorAll(POP_SEL)].filter(x => !old.has(popKey(x)));
+  if (fresh.length > 6) return; // массовая подгрузка — без анимации
+  fresh.forEach(x => { x.classList.add('pop'); POPPED.set(popKey(x), t); });
+  if (POPPED.size > 50) POPPED.clear();
+}
+/* вход в раздел: блоки страницы появляются лесенкой */
+function enterView(v){
+  v.classList.remove('enter'); void v.offsetWidth; v.classList.add('enter');
+  clearTimeout(enterT); enterT = setTimeout(() => v.classList.remove('enter'), 600);
+}
 function paint(){
   if (document.body.classList.contains('locked')) return;
   /* данные экономики грузим, только когда их открыли: сама экономика, общий список багов и журнал */
@@ -2616,8 +2641,14 @@ function paint(){
   const ms = $('#msgs'), mst = ms ? {top:ms.scrollTop, end:ms.scrollHeight-ms.scrollTop-ms.clientHeight < 60, chat:UI.chat} : null;
   /* боковую панель пересобираем, только когда она правда изменилась: иначе каждое обновление данных сбрасывает её прокрутку */
   const sh = sidebar(); if (sh !== SIDE_HTML) { const ss = $('#side-scroll'), st = ss ? ss.scrollTop : 0; $('#side').innerHTML = SIDE_HTML = sh; const ns = $('#side-scroll'); if (ns) ns.scrollTop = st; }
-  $('#topbar').innerHTML = topbar();
-  $('#view').innerHTML = view();
+  const th = topbar(); if (th !== TOP_HTML) $('#topbar').innerHTML = TOP_HTML = th;
+  const vh = view(), vr = UI.route+'|'+(UI.tab||'')+'|'+(UI.chat||''), v = $('#view');
+  if (vh !== VIEW_HTML) {
+    const same = vr === VIEW_ROUTE;
+    if (same) v.classList.remove('enter'); // данные пришли во время входа — без повторной анимации
+    swapHtml(v, vh, same); VIEW_HTML = vh; VIEW_ROUTE = vr;
+    if (!same) enterView(v);
+  }
   document.body.classList.toggle('r-chats', UI.route==='chats');
   document.body.classList.toggle('r-call', UI.route==='call');
   callPaint();
