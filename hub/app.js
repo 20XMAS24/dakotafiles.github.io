@@ -5,6 +5,9 @@
 
 /* ── иконки Lucide (ISC), встроены только нужные ── */
 const ICONS = {
+  Pin:'<path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/>',
+  ZoomIn:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>',
+  ZoomOut:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/>',
   ArrowDown:'<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
   ArrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
   ArrowUp:'<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
@@ -383,6 +386,7 @@ function sidebar(){
   const xpIn = (m.xp||0) % 100;
   return `
   <div class="brand"><span class="mark">KS</span><div><b>Kentucky Hub</b><small>рабочее место команды</small></div></div>
+  <div class="side-scroll" id="side-scroll">
   <nav class="nav">
     ${link('today','Sun','Мой день', myTop, '#F5B971')}
     ${isAdmin() ? (n => link('lead','Gauge','Обзор', n, '#F49A9A', n>0))(leadAlerts()) : ''}
@@ -400,6 +404,7 @@ function sidebar(){
   <nav class="nav">
     ${sideDepts().map(d => link('d/'+d.id, d.icon, d.name, S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done').length || '', d.color)).join('')}
   </nav>
+  </div>
   <div class="me-card">
     <div class="me-row">${av(S.me,30)}<div style="min-width:0;flex:1"><b style="font-size:14px">${esc(m.name||'')}</b><br><small>${esc(m.role || '@'+(m.login||''))}</small></div><span class="streak" title="Дней подряд с действием">${ic('Flame')} ${streak()}</span><button class="icon-btn" data-action="logout" title="Выйти" aria-label="Выйти" style="width:30px;height:30px">${ic('LogOut')}</button></div>
     <div class="me-row"><span class="lvl">Ур. ${level()}</span><div class="xpbar" style="flex:1"><i style="width:${xpIn}%"></i></div><small class="mono">${xpIn}/100</small></div>
@@ -656,17 +661,22 @@ function reactRow(d){
     return `<div class="react${mine===i?' mine':''}${d.chosen===i?' chosen':''}"><button class="react-b" ${open?`data-action="vote" data-id="${esc(d.id)}" data-i="${i}"`:'disabled'} aria-pressed="${mine===i}" title="${esc(who.map(pname).join(', ')||'Пока никого')}">${esc(o.t)} <b>${who.length}</b></button><span class="votes">${who.map(u=>av(u,22)).join('')}</span>
       ${open && who.length ? `<button class="btn sm ghost" data-action="accept" data-id="${esc(d.id)}" data-i="${i}" title="Зафиксировать итог">Принять</button>` : ''}</div>`; }).join('')}</div>`;
 }
+/* закреплённые решения — свои у каждого (поле pins в hub_people), висят наверху раздела, чтобы не искать их в списке */
+const myPins = () => Array.isArray(me().pins) ? me().pins : [];
+const isPinned = id => myPins().includes(id);
+const pinBtn = id => { const on = isPinned(id);
+  return `<button class="mini-x pin-b${on?' on':''}" data-action="dec-pin" data-id="${esc(id)}" aria-pressed="${on}" title="${on?'Открепить':'Закрепить наверху'}" aria-label="${on?'Открепить решение':'Закрепить решение'}" style="margin:0">${ic('Pin')}</button>`; };
 function decisionCard(d){
   const votes = d.votes||{}, mine = votes[S.me];
   const note = d.note ? `<div class="dec-note"><b>Мысль целиком</b>${mdBlock(d.note)}</div>` : '';
-  if (d.mode==='react') return `<article class="decision" id="dec-${esc(d.id)}">
-    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Реакции','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
+  if (d.mode==='react') return `<article class="decision${isPinned(d.id)?' pinned':''}" id="dec-${esc(d.id)}">
+    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${pinBtn(d.id)}${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Реакции','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
     ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}${note}
     ${reactRow(d)}
     ${d.chosen!=null?`<div class="meta-line" style="font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap">${decTaskBtn(d)}Итог: <b style="color:var(--text)">${esc((d.options[d.chosen]||{}).t||'')}</b> · зафиксировал(а) ${esc(pname(d.chosenBy))} · ${ago(d.chosenAt)} <button class="btn sm ghost" data-action="reopen" data-id="${esc(d.id)}">${ic('RotateCcw')} Переоткрыть</button></div>`:''}
   </article>`;
-  return `<article class="decision" id="dec-${esc(d.id)}">
-    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
+  return `<article class="decision${isPinned(d.id)?' pinned':''}" id="dec-${esc(d.id)}">
+    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(d.q)}</h3><div style="display:flex;gap:6px;align-items:center">${pinBtn(d.id)}${dchip(d.dept)}${d.chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-action="dec-del" data-id="${esc(d.id)}" title="Удалить решение" aria-label="Удалить решение" style="margin:0">${ic('Trash2')}</button></div></div>
     ${refChip(d)}${d.tldr?`<div class="tldr"><b>Суть</b>${mdLine(d.tldr)}</div>`:''}${note}
     <div class="list">${(d.options||[]).map((o,i)=>`<div class="opt${d.chosen===i?' chosen':''}${mine===i?' mine':''}">
       <div><div class="l">${esc(o.t)} ${d.rec===i?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.d?`<div class="d">${mdLine(o.d)}</div>`:''}</div>
@@ -700,10 +710,12 @@ function deptSeg(base, cur, counts){
 function viewDecisions(dept){
   const f = dept || UI.dfilt, every = allDecs();
   const list = every.filter(d=>f==='all'||decDept(d)===f).sort((a,b)=>decAt(b)-decAt(a));
-  const open = list.filter(decOpen), closed = list.filter(d=>!decOpen(d));
+  const pins = myPins(), pinned = pins.map(id=>list.find(d=>d.id===id)).filter(Boolean), rest = list.filter(d=>!pins.includes(d.id));
+  const open = rest.filter(decOpen), closed = rest.filter(d=>!decOpen(d));
   const counts = {}; every.forEach(d => { const k = decDept(d); if (k) counts[k] = (counts[k]||0)+1; });
   return `${dept?'':`<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#B9A3FF">${ic('Scale')}</span><div><h1>Решения</h1><p>Все спорные вопросы команды, включая экономику: варианты, голоса, итог. Принятое не теряется в чатах.</p></div></div><button class="btn primary" data-action="new-decision" data-dept="${f==='all'?'':f}">${ic('Plus')} Решение</button></div>
   <div class="toolbar">${deptSeg('decisions', f, counts)}</div>`}
+  ${pinned.length?`<h2 class="sub-h">${ic('Pin')} Закреплено · ${pinned.length}</h2>${pinned.map(decCard).join('')}`:''}
   ${open.length?`<h2 class="sub-h">Голосуем · ${open.length}</h2>${open.map(decCard).join('')}`:''}
   ${closed.length?`<h2 class="sub-h">Принято · ${closed.length}</h2>${closed.map(decCard).join('')}`:''}
   ${!list.length?`<div class="empty"><b>Решений пока нет</b>Спорный вопрос? Вынеси его на голосование.<button class="btn sm" data-action="new-decision" data-dept="${f==='all'?'':f}">${ic('Plus')} Решение</button></div>`:''}`;
@@ -959,14 +971,16 @@ function imgGroup(f){ const k = f.reg ? 'reg' : f.task ? 'task' : 'chat'; return
 function lightbox(){
   if (!LB) return;
   const id = LB.ids[LB.i], f = S.files.find(x=>x.id===id); if (!f) { closeOverlay(); return; }
-  if (!FULL[id] && THUMBS[id] && THUMBS[id]!=='…') FULL[id] = THUMBS[id];
+  /* в THUMBS у больших картинок лежит сжатое превью (480px) — оригиналом оно считается, только если это сам файл (blob:) */
+  if (!FULL[id] && /^blob:/.test(THUMBS[id]||'')) FULL[id] = THUMBS[id];
   if (!FULL[id]) { FULL[id] = '…'; fileBlob(f).then(b => { FULL[id] = URL.createObjectURL(b); if (LB && LB.ids[LB.i]===id) lightbox(); }).catch(() => { FULL[id] = ''; }); }
-  const full = FULL[id] && FULL[id]!=='…' ? FULL[id] : '', src = full || safeImg(f.th), n = LB.ids.length;
+  const full = FULL[id] && FULL[id]!=='…' ? FULL[id] : '', src = full || safeImg(f.th) || safeImg(THUMBS[id]), n = LB.ids.length;
   overlay('<div class="lb" role="dialog" aria-label="'+esc(f.name)+'"><div class="lb-h"><b>'+esc(f.name)+'</b><small>'+fsize(f.size)+(f.w?' · '+Number(f.w)+'×'+Number(f.h):'')+(n>1?' · '+(LB.i+1)+' из '+n:'')+'</small><span class="sp"></span>'
+    +(full?'<button class="icon-btn" data-action="lb-zoom" title="Масштаб: по экрану / 100% (клик по картинке)" aria-label="Масштаб" aria-pressed="'+!!LB.z+'">'+ic(LB.z?'ZoomOut':'ZoomIn')+'</button>':'')
     +'<button class="icon-btn" data-action="file-dl" data-id="'+esc(id)+'" title="Скачать" aria-label="Скачать">'+ic('Download')+'</button>'
     +'<button class="icon-btn" data-action="close-overlay" aria-label="Закрыть">'+ic('X')+'</button></div>'
-    +'<div class="lb-b" data-action="lb-bg">'+(n>1?'<button class="icon-btn lb-nav prev" data-action="lb-go" data-v="-1" aria-label="Предыдущее">'+ic('ChevronLeft')+'</button>':'')
-    +(src?'<img src="'+src+'" alt="'+esc(f.name)+'">':'<span class="spin"></span>')+(!full && src?'<span class="lb-load"><span class="spin"></span></span>':'')
+    +'<div class="lb-b'+(LB.z && full?' z':'')+'" data-action="lb-bg">'+(n>1?'<button class="icon-btn lb-nav prev" data-action="lb-go" data-v="-1" aria-label="Предыдущее">'+ic('ChevronLeft')+'</button>':'')
+    +(src?'<img src="'+src+'" alt="'+esc(f.name)+'"'+(full?' data-action="lb-zoom"':'')+'>':'<span class="spin"></span>')+(!full && src?'<span class="lb-load"><span class="spin"></span></span>':'')
     +(n>1?'<button class="icon-btn lb-nav next" data-action="lb-go" data-v="1" aria-label="Следующее">'+ic('ChevronRight')+'</button>':'')+'</div></div>');
 }
 function openImg(id){ const f = S.files.find(x=>x.id===id); if (!f) return; const ids = imgGroup(f); LB = {ids, i:Math.max(0, ids.indexOf(id))}; lightbox(); }
@@ -1594,8 +1608,8 @@ function eStages(){
 function eDecCard(x){
   const opts = Array.isArray(x.options) ? x.options : [], votes = x.votes || {};
   const chosen = (x.chosen===null||x.chosen===undefined||x.chosen==='') ? null : Number(x.chosen), rec = Number(x.recommended)||0;
-  return `<article class="decision" id="dec-${esc(x.id)}">
-    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(x.question)}</h3><div style="display:flex;gap:6px;align-items:center">${dchip('econ')}${chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-open="eedit:decisions:${esc(x.id)}" title="Изменить вопрос" aria-label="Изменить вопрос" style="margin:0">${ic('Pencil')}</button></div></div>
+  return `<article class="decision${isPinned(x.id)?' pinned':''}" id="dec-${esc(x.id)}">
+    <div style="display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap"><h3>${esc(x.question)}</h3><div style="display:flex;gap:6px;align-items:center">${pinBtn(x.id)}${dchip('econ')}${chosen!=null?chip('Принято','ok'):chip('Голосуем','info')}<button class="mini-x" data-open="eedit:decisions:${esc(x.id)}" title="Изменить вопрос" aria-label="Изменить вопрос" style="margin:0">${ic('Pencil')}</button></div></div>
     <div class="list">${opts.map((o,i) => { const voters = Object.keys(votes).filter(k => votes[k]===i), mine = votes[S.me]===i;
       return `<div class="opt${chosen===i?' chosen':''}${mine?' mine':''}"><div><div class="l">${esc(o.label)} ${rec===i+1?'<span class="chip t-violet" style="margin-left:4px">рекомендуем</span>':''}</div>${o.desc?`<div class="d">${mdLine(o.desc)}</div>`:''}</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="votes" title="${esc(voters.map(epname).join(', '))}">${voters.map(v=>eav(v,24)).join('')}</span>
@@ -2332,6 +2346,7 @@ document.addEventListener('click', e => {
       case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; if (d.ref) { const it = regItem(d.ref.id); if (it) log('итог по записи «'+it.name+'»: '+d.options[i].t, d.q, d.dept); } const r = a.getBoundingClientRect();
         write(()=>col('hub_decisions').doc(id).update({chosen:i, chosenBy:S.me, chosenAt:now(), updatedAt:now()})).then(ok => { if (ok) { log('принял(а) решение', d.q+' → '+d.options[i].t, d.dept); confetti(r.left, r.top); gain(10, ic('Scale')+' Решение принято'); } }); break; }
       case 'reopen': { const d = dec(id); write(()=>col('hub_decisions').doc(id).update({chosen:null, chosenBy:null, chosenAt:null})).then(ok => ok && log('переоткрыл(а) решение', d.q, d.dept)); break; }
+      case 'dec-pin': { const on = isPinned(id); patchMe({pins: on ? FV().arrayRemove(id) : FV().arrayUnion(id)}).then(ok => ok && toast(ic('Pin')+(on?' Откреплено':' Закреплено наверху «Решений»'))); break; }
       case 'dec-del': { const d = dec(id); if (!confirm('Удалить решение «'+d.q+'»?')) break; write(()=>col('hub_decisions').doc(id).delete()).then(ok => ok && log('удалил(а) решение', d.q, d.dept)); break; }
       case 'new-task': newTask(a.dataset.status, a.dataset.dept); break;
       case 'new-decision': newDecision(a.dataset.dept); break;
@@ -2388,6 +2403,7 @@ document.addEventListener('click', e => {
         f.querySelector('.dec-opts').hidden = a.dataset.v!=='options'; f.querySelector('.dec-react-hint').hidden = a.dataset.v!=='react'; break; }
       case 'lb-go': lbGo(Number(a.dataset.v)); break;
       case 'lb-bg': if (e.target===a) closeOverlay(); break;
+      case 'lb-zoom': if (LB) { LB.z = !LB.z; lightbox(); } break;
       case 'reg-unpend': { const p = REG_PENDING.splice(Number(a.dataset.i), 1)[0]; if (p && p.url) URL.revokeObjectURL(p.url); paintRegGal(); break; }
       case 'check-reset': { const items = S.reg.filter(x=>x.key===a.dataset.key && x.done); if (!confirm('Снять все отметки чеклиста?')) break; const b = DB.batch(); items.forEach(x=>b.update(col('hub_reg').doc(x.id), {done:false})); write(()=>b.commit()); break; }
       case 'wiki-new': UI.wikiPre = null; openDrawer('wikinew:', true); break;
@@ -2591,13 +2607,15 @@ function focusKey(el){
   for (const a of ['data-open','data-go','data-action']) if (el.hasAttribute && el.hasAttribute(a)) return `[${a}="${CSS.escape(el.getAttribute(a))}"]` + (el.dataset.id?`[data-id="${CSS.escape(el.dataset.id)}"]`:'') + (el.dataset.s?`[data-s="${CSS.escape(el.dataset.s)}"]`:'');
   return null;
 }
+let SIDE_HTML = '';
 function paint(){
   if (document.body.classList.contains('locked')) return;
   /* данные экономики грузим, только когда их открыли: сама экономика, общий список багов и журнал */
   if (UI.route.startsWith('d/econ') || UI.route==='log' || UI.route==='lead' || (UI.route==='d/qa' && UI.tab==='bugs')) econListen();
   const ae = document.activeElement, fk = focusKey(ae), sy = scrollY, sel = ae && ae.id && 'selectionStart' in ae ? [ae.selectionStart, ae.selectionEnd] : null;
   const ms = $('#msgs'), mst = ms ? {top:ms.scrollTop, end:ms.scrollHeight-ms.scrollTop-ms.clientHeight < 60, chat:UI.chat} : null;
-  $('#side').innerHTML = sidebar();
+  /* боковую панель пересобираем, только когда она правда изменилась: иначе каждое обновление данных сбрасывает её прокрутку */
+  const sh = sidebar(); if (sh !== SIDE_HTML) { const ss = $('#side-scroll'), st = ss ? ss.scrollTop : 0; $('#side').innerHTML = SIDE_HTML = sh; const ns = $('#side-scroll'); if (ns) ns.scrollTop = st; }
   $('#topbar').innerHTML = topbar();
   $('#view').innerHTML = view();
   document.body.classList.toggle('r-chats', UI.route==='chats');

@@ -68,9 +68,9 @@ kbd{font:600 11px var(--f-mono);padding:2px 7px;border-radius:6px;border:1px sol
 
 /* ── скроллбар ── */
 *{scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
-::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar{width:12px;height:12px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:99px;border:3px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:99px;border:3px solid transparent;background-clip:padding-box;min-height:40px}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted);background-clip:padding-box;border-width:2px}
 ::-webkit-scrollbar-corner{background:transparent}
 
@@ -120,8 +120,12 @@ body:not(.locked) .gate{display:none}
 /* ── каркас ── */
 .shell{display:grid;grid-template-columns:256px minmax(0,1fr);min-height:100dvh;gap:0}
 .side{position:sticky;top:0;height:100dvh;padding:14px 0 14px 14px}
-.side-in{height:100%;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card);box-shadow:var(--edge);
+/* шапка и профиль стоят на месте, прокручивается только список разделов между ними */
+.side-in{height:100%;overflow:hidden;border:1px solid var(--line);border-radius:var(--r);background:var(--card);box-shadow:var(--edge);
   display:flex;flex-direction:column;gap:2px;padding:14px 10px}
+.side-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;margin:0 -6px 8px -10px;padding:0 6px 6px 10px;scrollbar-gutter:stable}
+.side-scroll::-webkit-scrollbar{width:8px}
+.side-scroll::-webkit-scrollbar-thumb{border-width:2px}
 .main{min-width:0;display:flex;flex-direction:column}
 .wrap{max-width:1260px;width:100%;margin:0 auto;padding:calc(18px*var(--pad)) 22px 96px;display:flex;flex-direction:column;gap:calc(16px*var(--pad))}
 @media (max-width:900px){
@@ -153,9 +157,7 @@ body:not(.locked) .gate{display:none}
 .nav .n.hot{color:var(--on-acc);background:var(--acc);padding:1px 7px;border-radius:99px}
 
 /* профиль прилипает к низу меню: виден всегда, даже если отделов много */
-.me-card{margin-top:auto;position:sticky;bottom:0;z-index:1;border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px;background:var(--panel-2);box-shadow:0 -14px 18px -6px var(--panel)}
-/* полоса под карточкой закрывает пункты меню, прокручиваемые под ней */
-.me-card::after{content:"";position:absolute;left:-12px;right:-12px;top:100%;height:30px;background:var(--panel)}
+.me-card{flex:none;border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px;background:var(--panel-2)}
 .me-card .me-row:first-child>div{overflow:hidden}
 .me-card .me-row:first-child small,.me-card .me-row:first-child b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .me-card .me-row:first-child br{display:none}
@@ -777,13 +779,18 @@ details.mdp>.md{margin-top:8px;padding:10px 12px;border:1px dashed var(--line-2)
 .tile-img{margin:-16px -18px 4px;height:150px;overflow:hidden;border-radius:var(--r) var(--r) 0 0;background:var(--panel-3)}
 .tile-img img,.thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb img{position:absolute;inset:0}
-.lb{width:min(1200px,100%);height:min(92vh,100%);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
-.lb-h{display:flex;gap:10px;align-items:center;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line)}
+/* картинка открывается на весь экран; клик по ней — оригинальный размер с прокруткой */
+.overlay:has(>.lb){padding:0;align-items:stretch;background:#000}
+.lb{width:100%;height:100dvh;display:flex;flex-direction:column;background:#08090C;overflow:hidden}
+.lb-h{display:flex;gap:10px;align-items:center;padding:10px 12px 10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
 .lb-h b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lb-h small{color:var(--muted);white-space:nowrap}
 .lb-h .sp{flex:1}
 .lb-b{position:relative;flex:1;min-height:0;display:grid;place-items:center;padding:12px;background:#08090C}
-.lb-b img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px}
+.lb-b img{max-width:100%;max-height:100%;object-fit:contain;cursor:zoom-in}
+.lb-b.z{display:block;overflow:auto;text-align:center}
+.lb-b.z img{max-width:none;max-height:none;cursor:zoom-out}
+.lb-b.z .lb-nav{position:fixed;top:55%}
 .lb-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:1;background:var(--panel)}
 .lb-nav.prev{left:12px}.lb-nav.next{right:12px}
 .lb-load{position:absolute;right:14px;bottom:14px}
@@ -816,6 +823,9 @@ details.mdp>.md{margin-top:8px;padding:10px 12px;border:1px dashed var(--line-2)
 .dec-mark{display:inline-flex;margin-left:6px;vertical-align:-2px;color:var(--muted)}
 .dec-mark.open{color:var(--acc)}
 .dec-mark .ic{width:14px;height:14px}
+.decision.pinned{border-color:var(--acc-line)}
+.pin-b.on{color:var(--acc-2)}
+.pin-b.on:hover,.pin-b:hover{color:var(--acc-2)}
 .decision.flash{outline:2px solid var(--acc);outline-offset:3px;transition:outline-color .4s}
 
 /* ── уведомления и сроки ── */
