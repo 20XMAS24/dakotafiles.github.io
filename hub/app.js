@@ -9,6 +9,7 @@ const ICONS = {
   StickyNote:'<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>',
   Type:'<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
   Square:'<rect width="18" height="18" x="3" y="3" rx="2"/>',
+  Upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
   Layers:'<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
   Circle:'<circle cx="12" cy="12" r="10"/>',
   MoveUpRight:'<path d="M13 5H19V11"/><path d="M19 5L5 19"/>',
@@ -285,7 +286,7 @@ const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], ed
 /* dfilt / lfilt / bfilt — фильтр по отделу в «Решениях», «Журнале» и «Багах»; приходит из адреса: #/decisions/econ */
 const UI = {route:'today', tab:null, chat:null, board:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
 const PREFS_KEY = 'kyHubPrefs';
-const P = Object.assign({theme:'auto', bg:'off', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
+const P = Object.assign({theme:'auto', bg:'off', snow:'auto', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
 
 const task = id => S.tasks.find(t=>t.id===id);
@@ -2822,6 +2823,7 @@ function palItems(q){
     ['MessagesSquare','Новый чат','',()=>newChat()],
     ['Bot','Забронировать Claude','',()=>{ go('claude'); setTimeout(claudeBookForm, 80); }],
     ['SunMoon','Сменить тему','',()=>{ P.theme = {auto:'dark',dark:'light',light:'auto'}[P.theme]; applyPrefs(); savePrefs(); toast('Тема: '+{auto:'как в системе',dark:'тёмная',light:'светлая'}[P.theme]); }],
+    ['Sparkles','Снежинки вкл/выкл','',()=>{ const on = document.documentElement.hasAttribute('data-snow'); P.snow = on ? 'off' : 'on'; applyPrefs(); savePrefs(); toast(on ? 'Снежинки выключены' : 'Снежинки включены'); }],
     ['Sparkles','Сменить фон','',()=>{ const i = BGS.findIndex(b=>b[0]===P.bg); P.bg = BGS[(i+1)%BGS.length][0]; applyPrefs(); savePrefs(); toast('Фон: '+BGS.find(b=>b[0]===P.bg)[1]); }],
     ['Leaf','Спокойный режим вкл/выкл','',()=>{ P.calm = !P.calm; applyPrefs(); savePrefs(); toast(P.calm?'Спокойный режим: без конфетти и всплывающих XP':'Спокойный режим выключен'); }],
     ['Settings','Профиль и настройки','',()=>settings()]
@@ -2876,7 +2878,9 @@ function settings(){
     <div class="set-row"><div>Цель недели<small>Сколько задач закрывать за неделю. Волонтёру хватит трёх.</small></div><div class="seg">${WEEK_GOALS.map(n=>`<button data-action="week-goal" data-v="${n}" aria-pressed="${weekGoal()===n}">${n}</button>`).join('')}</div></div>
     <h2 style="margin-top:8px">${ic('Settings')} Отображение</h2>
     <div class="set-row"><div>Тема</div>${seg('theme',[['auto','Авто'],['dark','Тёмная'],['light','Светлая']])}</div>
-    <div class="set-row bg-row"><div>Фон и стекло<small>Цветной фон, панели как матовое стекло</small></div><div class="bg-pick">${BGS.map(([v,n,t])=>`<button data-action="pref" data-k="bg" data-v="${v}" aria-pressed="${P.bg===v}" title="${t}"><i class="bgsw bgsw-${v}"></i><span>${n}</span></button>`).join('')}</div></div>
+    <div class="set-row bg-row"><div>Фон и стекло<small>Цветной фон, панели как матовое стекло</small></div><div class="bg-pick">${BGS.map(([v,n,t])=>`<button data-action="pref" data-k="bg" data-v="${v}" aria-pressed="${P.bg===v}" title="${t}" ${v==='custom' && !customBg() ? 'disabled' : ''}><i class="bgsw bgsw-${v}"${v==='custom' && customBg() ? ` style="background-image:url('${customBg()}')"` : ''}></i><span>${n}</span></button>`).join('')}</div>
+      <div class="bg-own"><label class="btn sm">${ic('Upload')} ${customBg() ? 'Заменить своё фото' : 'Загрузить своё фото'}<input type="file" accept="image/*" data-action="bg-upload" hidden></label>${customBg() ? `<button class="btn sm ghost" data-action="bg-drop">${ic('Trash2')} Убрать</button>` : ''}<small>Фото хранится только в этом браузере, другим не видно</small></div></div>
+    <div class="set-row"><div>Снежинки<small>Падающий снег на фоне. В спокойном режиме выключен</small></div>${seg('snow',[['auto','На «Зиме»'],['on','Всегда'],['off','Выкл']])}</div>
     <div class="set-row"><div>Размер текста</div>${seg('fs',[['s','S'],['m','M'],['l','L']])}</div>
     <div class="set-row"><div>Плотность</div>${seg('density',[['normal','Свободно'],['compact','Плотно']])}</div>
     <div class="set-row"><div>Спокойный режим<small>Без конфетти и всплывающих XP. Прогресс остаётся.</small></div>${seg('calm',[[false,'Выкл'],[true,'Вкл']])}</div>
@@ -2885,13 +2889,55 @@ function settings(){
 }
 /* фон и «жидкое стекло»: полупрозрачные панели с размытием поверх цветного фона. off — прежний строгий вид */
 const BGS = [['off','Классика','Без стекла, как раньше'],['orbit','Орбита','Оранжевая планета и бирюза'],['aurora','Сияние','Зелёно-фиолетовые волны'],['ocean','Глубина','Синий и голубой'],['sunset','Закат','Розовый и фиолетовый'],['frost','Лёд','Светлое матовое стекло на бирюзе, тёмное меню — всегда светлая тема'],['frostnight','Ночной лёд','«Лёд» в тёмных тонах — всегда тёмная тема'],
-  ['home','Вечер дома','Уютная гостиная с тёплым светом (фото Unsplash)'],['sunroom','Светлая комната','Комната с большим окном (фото Unsplash)'],['city','Ночной город','Огни города (фото Unsplash)'],['lake','Озеро','Горное озеро в тумане (фото Unsplash)']];
+  ['home','Вечер дома','Уютная гостиная с тёплым светом (фото Unsplash)'],['sunroom','Светлая комната','Комната с большим окном (фото Unsplash)'],['city','Ночной город','Огни города (фото Unsplash)'],['lake','Озеро','Горное озеро в тумане (фото Unsplash)'],['winter','Зима','Домик в заснеженном лесу, падает снег (фото Unsplash)'],['custom','Своё фото','Загрузи свою картинку — она хранится только в этом браузере']];
+/* своё фото фона: уменьшаем до 1920 px и храним в браузере (localStorage), на сервер не уходит */
+const BG_KEY = 'kyHubBg';
+const customBg = () => { try { return localStorage.getItem(BG_KEY) || ''; } catch (e) { return ''; } };
+async function setCustomBg(file){
+  if (!/^image\//.test(file.type)) { toast(ic('CircleAlert')+' Это не картинка'); return; }
+  try {
+    const bmp = await createImageBitmap(file), k = Math.min(1, 1920/Math.max(bmp.width, bmp.height));
+    const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width*k); cv.height = Math.round(bmp.height*k);
+    cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+    let q = .82, url = cv.toDataURL('image/jpeg', q);
+    while (url.length > 2.4e6 && q > .4) { q -= .12; url = cv.toDataURL('image/jpeg', q); }
+    localStorage.setItem(BG_KEY, url);
+  } catch (e) { console.warn('свой фон', e); toast(ic('CircleAlert')+' Не получилось сохранить картинку — возможно, браузер запретил хранилище'); return; }
+  P.bg = 'custom'; savePrefs(); applyPrefs(); if ($('#overlay .settings')) settings(); toast(ic('Image')+' Фон обновлён');
+}
+function dropCustomBg(){ try { localStorage.removeItem(BG_KEY); } catch (e) {} if (P.bg==='custom') { P.bg = 'off'; savePrefs(); } applyPrefs(); if ($('#overlay .settings')) settings(); }
+/* падающий снег для зимнего фона: холст под контентом, замирает в фоновой вкладке; в спокойном режиме и при «уменьшить движение» выключен */
+let SNOW = null;
+function snow(on){
+  if (on && matchMedia('(prefers-reduced-motion: reduce)').matches) on = false;
+  if (!on) { if (SNOW) { cancelAnimationFrame(SNOW.raf); SNOW.cv.remove(); SNOW = null; } return; }
+  if (SNOW) return;
+  const cv = document.createElement('canvas'); cv.className = 'snow'; cv.setAttribute('aria-hidden', 'true'); document.body.prepend(cv);
+  const ctx = cv.getContext('2d'), S = SNOW = {cv, raf:0, flakes:[], w:0, h:0};
+  const fit = () => { const d = Math.min(2, devicePixelRatio||1); S.w = innerWidth; S.h = innerHeight; cv.width = S.w*d; cv.height = S.h*d; ctx.setTransform(d,0,0,d,0,0);
+    const n = Math.round(Math.min(160, S.w*S.h/9000)); while (S.flakes.length < n) S.flakes.push(flake(true)); S.flakes.length = n; };
+  const flake = top => ({x:Math.random()*S.w, y:top ? Math.random()*S.h : -10, r:.8+Math.random()*2.6, v:.35+Math.random()*1.1, sw:Math.random()*Math.PI*2, a:.45+Math.random()*.5});
+  let last = performance.now();
+  const step = t => { if (SNOW!==S) return; const dt = Math.min(50, t-last)/16.7; last = t;
+    ctx.clearRect(0, 0, S.w, S.h); ctx.fillStyle = '#fff';
+    for (const f of S.flakes) { f.y += f.v*dt; f.sw += .012*dt; f.x += Math.sin(f.sw)*.45*dt;
+      if (f.y > S.h+10) Object.assign(f, flake(false)); if (f.x < -10) f.x = S.w+10; if (f.x > S.w+10) f.x = -10;
+      ctx.globalAlpha = f.a; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI*2); ctx.fill(); }
+    ctx.globalAlpha = 1; S.raf = requestAnimationFrame(step); };
+  fit(); addEventListener('resize', () => { if (SNOW===S) fit(); });
+  S.raf = requestAnimationFrame(step);
+}
 function applyPrefs(){
   const r = document.documentElement;
   const th = P.bg==='frost' ? 'light' : P.bg==='frostnight' ? 'dark' : P.theme; // «Лёд» задуман светлым, «Ночной лёд» — тёмным
   if (th==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', th);
   if (!BGS.some(b=>b[0]===P.bg)) P.bg = 'off';
+  if (P.bg==='custom' && !customBg()) P.bg = 'off'; // своё фото удалили или браузер его не сохранил
   if (P.bg==='off') r.removeAttribute('data-bg'); else r.setAttribute('data-bg', P.bg);
+  if (P.bg==='custom') r.style.setProperty('--photo', 'url("'+customBg()+'")'); else r.style.removeProperty('--photo');
+  /* снежинки: auto — только на «Зиме», on — на любом фоне, off — никогда; в спокойном режиме выключены */
+  const sn = !P.calm && (P.snow==='on' || (P.snow!=='off' && P.bg==='winter'));
+  r.toggleAttribute('data-snow', sn); snow(sn);
   r.setAttribute('data-fs', P.fs); r.setAttribute('data-density', P.density); r.setAttribute('data-calm', P.calm?'1':'0');
 }
 
@@ -2996,6 +3042,7 @@ document.addEventListener('click', e => {
       case 'dec-pin': { const on = isPinned(id); patchMe({pins: on ? FV().arrayRemove(id) : FV().arrayUnion(id)}).then(ok => ok && toast(ic('Pin')+(on?' Откреплено':' Закреплено наверху «Решений»'))); break; }
       case 'dec-del': { const d = dec(id); if (!confirm('Удалить решение «'+d.q+'»?')) break; write(()=>col('hub_decisions').doc(id).delete()).then(ok => ok && log('удалил(а) решение', d.q, d.dept)); break; }
       case 'new-task': newTask(a.dataset.status, a.dataset.dept); break;
+      case 'bg-drop': dropCustomBg(); break;
       case 'merge-mode': UI.merge = UI.merge ? null : []; schedule(); break;
       case 'merge-go': if (UI.merge && UI.merge.length>1) mergeDialog(UI.merge); break;
       case 'kid-out': { const t = task(id); if (!t) break; updTask(id, {parent:FV().delete()}).then(ok => ok && toast(ic('Layers')+' «'+esc(clip(t.title,60))+'» снова отдельная задача')); break; }
@@ -3097,6 +3144,7 @@ document.addEventListener('click', e => {
 document.addEventListener('change', e => {
   const a = e.target;
   if (a.dataset.action==='filt-dept') { UI.filt.dept = a.value; paint(); }
+  if (a.dataset.action==='bg-upload' && a.files.length) { const f = a.files[0]; a.value = ''; setCustomBg(f); }
   if (a.dataset.action==='md-local' && a.files.length) { const file = a.files[0]; a.value = '';
     if (file.size > MD_MAX) toast(ic('CircleAlert')+' Файл больше '+fsize(MD_MAX));
     else file.text().then(t => openMd(file.name, t)).catch(e => toast(ic('CircleAlert')+' Не открылось: '+esc(errText(e)))); }

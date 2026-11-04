@@ -1318,7 +1318,7 @@ form.pal{overflow-y:auto}
 :root[data-theme][data-bg="frost"] .wrap{margin:2px auto 16px;border-radius:26px;border:1px solid rgba(255,255,255,.45);
   background:linear-gradient(160deg,rgba(236,247,250,.72),rgba(226,242,247,.55) 50%,rgba(236,247,250,.66));
   -webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 30px 60px rgba(0,20,30,.25)}
-@media (min-width:901px){:root[data-theme][data-bg="frost"] .wrap{width:calc(100% - 16px);margin-right:16px}}
+@media (min-width:901px){:root[data-theme][data-bg="frost"] .wrap{width:calc(100% - 32px)}}
 :root[data-theme][data-bg="frost"] .topbar .search{color:#E6F4F8}
 :root[data-theme][data-bg="frost"] .topbar :is(.search,.btn:not(.primary),.icon-btn,.focus-pill,.claude-pill){background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#F2FAFC;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
 :root[data-theme][data-bg="frost"] .topbar kbd{background:rgba(255,255,255,.15);color:#E6F4F8;border-color:rgba(255,255,255,.25)}
@@ -1383,7 +1383,7 @@ form.pal{overflow-y:auto}
 :root[data-theme][data-bg="frostnight"] .wrap{margin:2px auto 16px;border-radius:26px;border:1px solid rgba(140,220,240,.18);
   background:linear-gradient(160deg,rgba(40,110,130,.32),rgba(8,30,40,.38) 50%,rgba(30,90,110,.28));
   -webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);box-shadow:inset 0 1px 0 rgba(180,240,255,.18),0 30px 60px rgba(0,10,15,.4)}
-@media (min-width:901px){:root[data-theme][data-bg="frostnight"] .wrap{width:calc(100% - 16px);margin-right:16px}}
+@media (min-width:901px){:root[data-theme][data-bg="frostnight"] .wrap{width:calc(100% - 32px)}}
 :root[data-theme][data-bg="frostnight"] :is(.panel,.tile,.kpi,.tbl-wrap,.colm,.decision,.erow,.lead-hero,.chat-list,.chat-main){
   background:linear-gradient(160deg,rgba(160,230,245,.11),rgba(160,230,245,.03) 55%,rgba(160,230,245,.06)),rgba(4,22,30,.42);border-color:rgba(140,220,240,.16);box-shadow:inset 0 1px 0 rgba(180,240,255,.16),0 10px 28px rgba(0,10,15,.3)}
 :root[data-theme][data-bg="frostnight"] .card{background:linear-gradient(160deg,rgba(160,230,245,.1),rgba(160,230,245,.03)),rgba(4,22,30,.5);border-color:rgba(140,220,240,.13)}
@@ -1396,3 +1396,24 @@ form.pal{overflow-y:auto}
 :root[data-theme][data-bg="frostnight"] .fab{background:#EAF6FA;color:#031820}
 :root[data-theme][data-bg="frostnight"] .ph :is(h1,p){text-shadow:none}
 .bgsw-frostnight{background:linear-gradient(90deg,rgba(1,12,17,.9) 0 28%,transparent 28%),linear-gradient(160deg,rgba(60,140,160,.6),rgba(10,40,52,.6)) 34% 18%/62% 64% no-repeat,linear-gradient(135deg,#021219,#06303F 40%,#0B4A5E 65%,#04202B)}
+
+/* верхняя панель в стеклянных стилях: ни фона, ни размытия, ни обводки — прокручивается вместе со страницей, поэтому ничего под неё не заезжает */
+:root[data-bg] .topbar{position:relative;background:none;border-bottom:0;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
+
+/* ── «Зима» (фото Unsplash + падающий снег) и «Своё фото» (картинка из браузера, задаётся в --photo) ── */
+:root[data-bg="winter"]{--photo:url("https://images.unsplash.com/photo-1741948924635-13a7ddbc6a05?auto=format&fit=crop&w=2400&q=75");
+  --acc:#7DB7FF;--acc-2:#B5D6FF;--acc-deep:#3E86E8;--acc-bg:rgba(125,183,255,.15);--acc-line:rgba(125,183,255,.45);--on-acc:#06121F}
+:root:is([data-bg="winter"],[data-bg="custom"]){--orbs:linear-gradient(180deg,rgba(4,6,10,.45),rgba(4,6,10,.62)),var(--photo) center/cover no-repeat}
+:root:is([data-bg="winter"],[data-bg="custom"]) body::before{animation:none;inset:0}
+:root[data-theme="light"]:is([data-bg="winter"],[data-bg="custom"]){--orbs:linear-gradient(180deg,rgba(240,242,246,.5),rgba(240,242,246,.62)),var(--photo) center/cover no-repeat}
+:root[data-theme="light"]:is([data-bg="winter"],[data-bg="custom"]) body::before{opacity:1}
+.snow{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;pointer-events:none}
+.bgsw-winter{background:url("https://images.unsplash.com/photo-1741948924635-13a7ddbc6a05?auto=format&fit=crop&w=200&q=60") center/cover}
+.bgsw-custom{background:repeating-linear-gradient(45deg,var(--panel-2) 0 6px,transparent 6px 12px);background-size:cover;background-position:center}
+.bg-pick button:disabled{opacity:.45;cursor:default}
+.bg-own{display:flex;align-items:center;gap:8px;flex-wrap:wrap;width:100%;margin-top:10px}
+.bg-own small{color:var(--muted);font-size:12px}
+.bg-own label.btn{cursor:pointer}
+/* снег на «Классике»: фон страницы переносим с body на html, иначе он перекрывает холст со снегом */
+:root[data-snow]:not([data-bg]){background:radial-gradient(900px 520px at 78% -8%,var(--glow),transparent 70%) fixed,var(--bg)}
+:root[data-snow]:not([data-bg]) body{background:none}
