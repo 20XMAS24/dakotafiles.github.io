@@ -2884,10 +2884,12 @@ function settings(){
     <div style="display:flex;justify-content:flex-end"><button class="btn" data-action="close-overlay">Готово</button></div></div></div>`);
 }
 /* фон и «жидкое стекло»: полупрозрачные панели с размытием поверх цветного фона. off — прежний строгий вид */
-const BGS = [['off','Классика','Без стекла, как раньше'],['orbit','Орбита','Оранжевая планета и бирюза'],['aurora','Сияние','Зелёно-фиолетовые волны'],['ocean','Глубина','Синий и голубой'],['sunset','Закат','Розовый и фиолетовый']];
+const BGS = [['off','Классика','Без стекла, как раньше'],['orbit','Орбита','Оранжевая планета и бирюза'],['aurora','Сияние','Зелёно-фиолетовые волны'],['ocean','Глубина','Синий и голубой'],['sunset','Закат','Розовый и фиолетовый'],['frost','Лёд','Светлое матовое стекло на бирюзе, тёмное меню — всегда светлая тема'],['frostnight','Ночной лёд','«Лёд» в тёмных тонах — всегда тёмная тема'],
+  ['home','Вечер дома','Уютная гостиная с тёплым светом (фото Unsplash)'],['sunroom','Светлая комната','Комната с большим окном (фото Unsplash)'],['city','Ночной город','Огни города (фото Unsplash)'],['lake','Озеро','Горное озеро в тумане (фото Unsplash)']];
 function applyPrefs(){
   const r = document.documentElement;
-  if (P.theme==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', P.theme);
+  const th = P.bg==='frost' ? 'light' : P.bg==='frostnight' ? 'dark' : P.theme; // «Лёд» задуман светлым, «Ночной лёд» — тёмным
+  if (th==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', th);
   if (!BGS.some(b=>b[0]===P.bg)) P.bg = 'off';
   if (P.bg==='off') r.removeAttribute('data-bg'); else r.setAttribute('data-bg', P.bg);
   r.setAttribute('data-fs', P.fs); r.setAttribute('data-density', P.density); r.setAttribute('data-calm', P.calm?'1':'0');
