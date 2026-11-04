@@ -9,6 +9,7 @@ const ICONS = {
   StickyNote:'<path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"/><path d="M15 3v4a2 2 0 0 0 2 2h4"/>',
   Type:'<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
   Square:'<rect width="18" height="18" x="3" y="3" rx="2"/>',
+  Layers:'<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
   Circle:'<circle cx="12" cy="12" r="10"/>',
   MoveUpRight:'<path d="M13 5H19V11"/><path d="M19 5L5 19"/>',
   Minus:'<path d="M5 12h14"/>',
@@ -288,6 +289,9 @@ const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hid
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
 
 const task = id => S.tasks.find(t=>t.id===id);
+/* большая задача: у задач внутри неё поле parent = id большой. Вложенность одна — внутри большой задачи только обычные */
+const kids = id => S.tasks.filter(x=>x.parent===id && x.id!==id).sort(byOrder);
+const isKid = t => !!(t && t.parent && t.parent!==t.id && task(t.parent));
 const dec = id => S.decisions.find(d=>d.id===id);
 const regItem = id => S.reg.find(r=>r.id===id);
 const wikiItem = id => S.wiki.find(w=>w.id===id);
@@ -546,16 +550,19 @@ function filteredTasks(dept){
 }
 function card(t){
   const d = D[t.dept] || DEPTS[0]; const sub = t.sub||[], sd = sub.filter(s=>s.done).length;
-  return `<div class="card${canEdit(t)?'':' ro'}" tabindex="0" draggable="${canEdit(t)}" data-id="${esc(t.id)}" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
+  const ks = kids(t.id), kd = ks.filter(k=>k.status==='done').length, picked = UI.merge && UI.merge.includes(t.id);
+  return `<div class="card${canEdit(t)?'':' ro'}${ks.length?' big':''}${picked?' picked':''}" tabindex="0" draggable="${canEdit(t) && !UI.merge}" data-id="${esc(t.id)}" data-open="task:${esc(t.id)}" style="--dc:${d.color}">
+    ${UI.merge ? `<span class="pick" aria-hidden="true">${picked?ic('Check'):''}</span>` : ''}
     <div class="tt">${esc(t.title)}</div>
     ${t.tldr?`<div class="tl">${mdLine(t.tldr)}</div>`:''}${blockedNote(t)}
+    ${ks.length?`<div class="grp" title="${esc(ks.map(k=>'• '+k.title).join('\n'))}">${ic('Layers')} ${plural(ks.length,'задача','задачи','задач')} внутри<span class="sp"></span><small>${kd}/${ks.length}</small></div><div class="mini-bar"><i style="width:${Math.round(kd/ks.length*100)}%"></i></div>`:''}
     ${sub.length?`<div class="mini-bar"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
     <div class="mt">${tDepts(t).map(x=>D[x]).map(x=>`<span class="dchip" style="--dc:${x.color}" title="${esc(x.name)}">${ic(x.icon)}</span>`).join('')}<span class="size">${esc(t.size||'M')}</span>${dueChip(t)}${canEdit(t)?'':`<span title="Только просмотр: задача другого отдела" style="color:var(--muted)">${ic('Lock')}</span>`}${(me().top3||[]).includes(t.id)?`<span title="В «Моём дне»" style="color:var(--warn)">${ic('Sun')}</span>`:''}<span class="sp"></span>${(n => n?`<small style="color:var(--muted)">${ic('Paperclip')} ${n}</small>`:'')(S.files.filter(f=>f.task===t.id).length)}${(n => n?`<small style="color:var(--muted)" title="Сообщений в обсуждении">${ic('MessageSquare')} ${n}</small>`:'')((t.comments||[]).length + ((threadChat('task', t.id)||{}).n||0))}${av(t.who,22)}</div>
   </div>`;
 }
 function board(dept){
-  const list = filteredTasks(dept).sort(byOrder);
-  return `<div class="board">${COLS.map(([id,name,color]) => { const items = list.filter(t=>t.status===id);
+  const list = filteredTasks(dept).filter(t=>!isKid(t)).sort(byOrder); // задачи внутри большой показываем в её карточке
+  return `${mergeBar()}<div class="board${UI.merge?' merging':''}">${COLS.map(([id,name,color]) => { const items = list.filter(t=>t.status===id);
     return `<div class="colm" data-col="${id}"><div class="colm-h"><span class="dot" style="background:${color}"></span>${name}<span class="n">${items.length}</span></div>${items.map(card).join('')}
     ${id==='inbox'||id==='todo' ? `<button class="btn sm ghost" data-action="new-task" data-status="${id}" data-dept="${dept||''}">${ic('Plus')} Задача</button>`:''}</div>`; }).join('')}</div>`;
 }
@@ -564,8 +571,51 @@ function filters(withDept){
   return `<div class="toolbar">
     ${withDept ? `<select class="select" data-action="filt-dept" aria-label="Отдел">${myDepts().length && !seesAll() ? `<option value="mine" ${f.dept==='mine'?'selected':''}>Мои отделы</option>`:''}<option value="all" ${f.dept==='all'?'selected':''}>Все отделы</option>${DEPTS.map(d=>`<option value="${d.id}" ${f.dept===d.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`:''}
     <div class="seg"><button data-action="filt-small" aria-pressed="${f.small}">${ic('Zap')} Только ≤ 15 мин</button><button data-action="filt-mine" aria-pressed="${f.mine}">${ic('Sun')} Только мои</button></div>
-    <small style="color:var(--muted)">Перетаскивайте карточки между колонками</small>
+    <button class="btn sm" data-action="merge-mode" aria-pressed="${!!UI.merge}" title="Выбрать несколько карточек и собрать их в одну большую задачу">${ic('Layers')} Объединить</button>
+    <small style="color:var(--muted)">Перетаскивайте карточки между колонками, а на другую карточку — чтобы вложить в неё</small>
   </div>`;
+}
+/* режим выбора карточек для объединения */
+function mergeBar(){
+  if (!UI.merge) return '';
+  const n = UI.merge.length;
+  return `<div class="merge-bar">${ic('Layers')}<span>${n ? 'Выбрано: <b>'+n+'</b>' : 'Нажимай на карточки, которые нужно собрать в одну задачу'}</span><span class="sp"></span>
+    <button class="btn sm primary" data-action="merge-go" ${n<2?'disabled':''}>Объединить${n>1?' ('+n+')':''}</button><button class="btn sm ghost" data-action="merge-mode">Отмена</button></div>`;
+}
+function mergeDialog(ids){
+  const list = ids.map(task).filter(Boolean);
+  const opts = [['', 'Новая большая задача'], ...list.map(t=>[t.id, 'В задачу «'+clip(t.title,60)+'»'])];
+  overlay(`<form class="pal" data-form="merge"><div class="cap"><h2>${ic('Layers')} Объединить ${plural(list.length,'задачу','задачи','задач')}</h2>
+    <div class="links">${list.map(t=>`<span class="link">${esc(clip(t.title,48))}</span>`).join('')}</div>
+    ${inSelect('into','Куда собрать',opts,'')}
+    ${inText('title','Название большой задачи','', 'maxlength="160" placeholder="Например: Запустить систему бизнесов"')}
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Задачи не удаляются — они станут частью большой, их можно вынести обратно</span><span style="flex:1"></span><button class="btn primary">${ic('Layers')} Объединить</button></div></div></form>`);
+}
+/* собрать задачи в одну: into — id существующей большой задачи или null (тогда создаём новую с названием title) */
+async function mergeTasks(ids, into, title){
+  const target = into && task(into);
+  if (into && !target) return false;
+  let list = [...new Set(ids)].map(task).filter(t => t && t.id!==into);
+  /* вложенность одна: задачи из вложенных групп переезжают в новую группу вместе с ними */
+  list = [...new Set([...list, ...list.flatMap(t=>kids(t.id))])].filter(t => t.id!==into);
+  if (!list.length) return false;
+  const ro = list.filter(t=>!canEdit(t));
+  if (ro.length) { toast(ic('Lock')+' Нельзя вложить чужие задачи: '+ro.map(t=>'«'+esc(clip(t.title,40))+'»').join(', ')+'. Их меняют участники своих отделов.'); return false; }
+  const b = DB.batch(); let pid = into;
+  if (!target) {
+    const ref = col('hub_tasks').doc(); pid = ref.id;
+    const depts = [...new Set(list.flatMap(tDepts))].filter(canSee), dues = list.map(t=>t.due).filter(Boolean);
+    const st = list.every(t=>t.status==='done') ? 'done' : list.some(t=>t.status==='doing'||t.status==='review') ? 'doing' : 'todo';
+    const name = clip((title||'').trim(),160) || clip(list[0].title,160);
+    b.set(ref, {title:name, tldr:'', details:'', dept:depts[0], depts, status:st, size:'L', who:list[0].who||S.me, due:dues.length?Math.min(...dues):null, ver:null, reg:null, links:[], sub:[], comments:[], createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me});
+  } else if (target.parent) b.update(col('hub_tasks').doc(target.id), Object.assign({parent:FV().delete()}, stamp()));
+  list.forEach((t,i) => b.update(col('hub_tasks').doc(t.id), Object.assign({parent:pid, order:now()+i}, stamp())));
+  const ok = await write(()=>b.commit());
+  if (!ok) return false;
+  const pt = target || {title:clip((title||'').trim(),160) || list[0].title, dept:list[0].dept};
+  log('объединил(а) '+plural(list.length,'задачу','задачи','задач')+' в большую', pt.title, pt.dept);
+  toast(ic('Layers')+' '+(target ? 'Добавлено в «'+esc(clip(target.title,60))+'»' : 'Собрано в большую задачу «'+esc(clip(pt.title,60))+'»'));
+  return pid;
 }
 /* задачи отдела видят только те, у кого этот отдел отмечен в профиле */
 const askAdmin = () => isAdmin() ? `<a class="btn sm" href="#/people">${ic('Users')} Назначить отделы</a>`
@@ -2023,7 +2073,7 @@ function drawerTask(t){
     ${ro ? `<div class="ro-note">${roMsg(t)}</div>` : ''}
     ${t.tldr?`<div class="tldr"><b>Суть</b>${mdLine(t.tldr)}</div>`:''}
     <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}" ${ro?'disabled':''}>${n}</button>`).join('')}</div>
-    <dl class="kv"><dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
+    <dl class="kv">${isKid(t)?`<dt>Часть задачи</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="link" data-open="task:${esc(t.parent)}" style="cursor:pointer">${ic('Layers')} ${esc(clip(task(t.parent).title,60))}</span>${ro?'':`<button class="btn sm ghost" data-action="kid-out" data-id="${esc(t.id)}">Вынести отдельно</button>`}</dd>`:''}<dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
       <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me && !ro?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
       ${t.status==='blocked'?`<dt>Заблокировано</dt><dd>${blockedNote(t)}</dd>`:''}
       ${t.ver?`<dt>Версия</dt><dd><span class="link" data-go="d/qa/versions">${ic('Rocket')} ${esc(t.ver)}</span></dd>`:''}
@@ -2038,6 +2088,7 @@ function drawerTask(t){
     </div>
     <div><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><p class="sub-h" style="margin:0">Файлы${files.length?` · ${files.length}`:''}</p><span style="flex:1"></span>${ro ? '' : attachBtn('task-attach', t.id, 'Прикрепить')}</div>
       ${upBar('task:'+t.id)}<div class="files">${files.map(f=>fileChip(f, true)).join('') || '<small style="color:var(--muted)">Макеты, логи, скриншоты — до '+fsize(FILE_MAX)+' на файл.</small>'}</div></div>
+    ${isKid(t) ? '' : kidsBlock(t, ro)}
     <div><p class="sub-h">Шаги${sub.length?` · ${sd}/${sub.length}`:''}</p>${sub.length?`<div class="mini-bar" style="margin:8px 0"><i style="width:${Math.round(sd/sub.length*100)}%"></i></div>`:''}
       <div class="cl">${sub.map((s,i)=>`<div class="row"><label class="${s.done?'done':''}"><input type="checkbox" data-action="step" data-id="${esc(t.id)}" data-i="${i}" ${s.done?'checked':''} ${ro?'disabled':''}><span>${mdLine(s.t)}</span></label>${ro?'':`<button class="mini-x" data-action="step-del" data-id="${esc(t.id)}" data-i="${i}" aria-label="Удалить шаг">${ic('X')}</button>`}</div>`).join('')}${ro && !sub.length ? '<small style="color:var(--muted)">Шагов нет.</small>' : ''}</div>
       ${ro ? '' : `<form class="inline-add" data-form="step-add" data-id="${esc(t.id)}" style="margin-top:6px"><input class="input" name="s" placeholder="Добавить шаг — маленький и конкретный" autocomplete="off" maxlength="160"><button class="btn sm" aria-label="Добавить шаг">${ic('Plus')}</button></form>`}</div>
@@ -2046,6 +2097,16 @@ function drawerTask(t){
       ${linkable.length && !ro?`<select class="input" data-action="link-add" data-id="${esc(t.id)}" aria-label="Связать" style="margin-top:8px"><option value="">${'＋ Связать с задачей или решением…'}</option>${linkable.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>`:''}</div>
     ${threadBlock('task', t.id)}
   </div>`;
+}
+/* задачи внутри большой: список со статусами, добавить существующую или создать новую прямо здесь */
+function kidsBlock(t, ro){
+  const ks = kids(t.id), kd = ks.filter(k=>k.status==='done').length;
+  if (ro && !ks.length) return '';
+  const addable = S.tasks.filter(x => x.id!==t.id && x.parent!==t.id && canEdit(x) && !isKid(x)).sort(byOrder);
+  return `<div><p class="sub-h">${ic('Layers')} Задачи внутри${ks.length?` · ${kd}/${ks.length}`:''}</p>${ks.length?`<div class="mini-bar" style="margin:8px 0"><i style="width:${Math.round(kd/ks.length*100)}%"></i></div>`:''}
+    <div class="cl kids">${ks.map(k=>`<div class="row"><input type="checkbox" data-action="kid-done" data-id="${esc(k.id)}" ${k.status==='done'?'checked':''} ${canEdit(k)?'':'disabled'} aria-label="Готово: ${esc(k.title)}"><span class="kid-t${k.status==='done'?' done':''}" data-open="task:${esc(k.id)}" tabindex="0">${esc(k.title)}</span>${chip(colName(k.status), k.status==='done'?'ok':k.status==='blocked'?'red':k.status==='doing'||k.status==='review'?'warn':'muted')}${k.who?av(k.who,20):''}${canEdit(k)?`<button class="mini-x" data-action="kid-out" data-id="${esc(k.id)}" aria-label="Вынести из большой задачи" title="Вынести отдельно">${ic('X')}</button>`:''}</div>`).join('') || (ro ? '' : '<small style="color:var(--muted)">Собери сюда связанные задачи — получится одна большая с общим прогрессом.</small>')}</div>
+    ${ro ? '' : `${addable.length?`<select class="input" data-action="kid-add" data-id="${esc(t.id)}" aria-label="Добавить задачу внутрь" style="margin-top:8px"><option value="">＋ Добавить существующую задачу…</option>${addable.map(x=>`<option value="${esc(x.id)}">${esc(clip(x.title,70))}${kids(x.id).length?' (+'+kids(x.id).length+')':''}</option>`).join('')}</select>`:''}
+      <form class="inline-add" data-form="kid-new" data-id="${esc(t.id)}" style="margin-top:6px"><input class="input" name="s" placeholder="Новая задача внутри — начни с глагола" autocomplete="off" maxlength="160"><button class="btn sm" aria-label="Создать задачу внутри">${ic('Plus')}</button></form>`}</div>`;
 }
 function regDecBlock(it){
   const ds = regDecs(it.id);
@@ -2795,12 +2856,14 @@ const updTask = (id, patch) => { const t = task(id); if (t && !canEdit(t) && Obj
 
 document.addEventListener('click', e => {
   if (document.body.classList.contains('locked')) return;
+  /* режим объединения: нажатие на карточку выбирает её, а не открывает */
+  if (UI.merge) { const c = e.target.closest('.board .card'); if (c) { e.preventDefault(); e.stopPropagation(); const id = c.dataset.id, i = UI.merge.indexOf(id); if (i>=0) UI.merge.splice(i,1); else if (!canEdit(task(id))) toast(roMsg(task(id))); else UI.merge.push(id); schedule(); return; } }
   const a = e.target.closest('[data-action]'), go_ = e.target.closest('[data-go]'), op = e.target.closest('[data-open]'), pi = e.target.closest('[data-pal]');
   if (pi) { runPal(Number(pi.dataset.pal)); return; }
   if (a && a.tagName!=='SELECT') {
     const k = a.dataset.action, id = a.dataset.id;
     if (k==='overlay-bg') { if (e.target===a) closeOverlay(); return; }
-    if (k==='check' || k==='step') return; // обрабатываются в change
+    if (k==='check' || k==='step' || k==='kid-done') return; // обрабатываются в change
     e.stopPropagation();
     switch (k) {
       case 'open-nav': document.body.classList.add('nav-open'); break;
@@ -2829,7 +2892,7 @@ document.addEventListener('click', e => {
         patchMe({top3:top}); break; }
       case 'step-del': { const t = task(id); const sub = (t.sub||[]).filter((_,i)=>i!==Number(a.dataset.i)); updTask(id, {sub}); break; }
       case 'link-del': { const t = task(UI.drawer.slice(5)); if (t) updTask(t.id, {links:(t.links||[]).filter(x=>x!==a.dataset.l)}); break; }
-      case 'task-del': { const t = task(id); if (!canEdit(t)) { toast(roMsg(t)); break; } if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.')) break; write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
+      case 'task-del': { const t = task(id); if (!canEdit(t)) { toast(roMsg(t)); break; } if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.'+(kids(id).length ? '\n\nЗадачи внутри ('+kids(id).length+') не удалятся — они вернутся на доску отдельными.' : ''))) break; const ks = kids(id); write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); ks.filter(canEdit).forEach(k=>col('hub_tasks').doc(k.id).update(Object.assign({parent:FV().delete()}, stamp())).catch(()=>{})); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
       case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const cur = (d.votes||{})[S.me];
         write(()=>col('hub_decisions').doc(id).update({['votes.'+S.me]: cur===i ? FV().delete() : i, updatedAt:now()})).then(ok => { if (ok && cur==null) { log('проголосовал(а) в решении', d.q, d.dept); gain(5, ic('Vote')+' Голос учтён'); } }); break; }
       case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; if (d.ref) { const it = regItem(d.ref.id); if (it) log('итог по записи «'+it.name+'»: '+d.options[i].t, d.q, d.dept); } const r = a.getBoundingClientRect();
@@ -2838,6 +2901,9 @@ document.addEventListener('click', e => {
       case 'dec-pin': { const on = isPinned(id); patchMe({pins: on ? FV().arrayRemove(id) : FV().arrayUnion(id)}).then(ok => ok && toast(ic('Pin')+(on?' Откреплено':' Закреплено наверху «Решений»'))); break; }
       case 'dec-del': { const d = dec(id); if (!confirm('Удалить решение «'+d.q+'»?')) break; write(()=>col('hub_decisions').doc(id).delete()).then(ok => ok && log('удалил(а) решение', d.q, d.dept)); break; }
       case 'new-task': newTask(a.dataset.status, a.dataset.dept); break;
+      case 'merge-mode': UI.merge = UI.merge ? null : []; schedule(); break;
+      case 'merge-go': if (UI.merge && UI.merge.length>1) mergeDialog(UI.merge); break;
+      case 'kid-out': { const t = task(id); if (!t) break; updTask(id, {parent:FV().delete()}).then(ok => ok && toast(ic('Layers')+' «'+esc(clip(t.title,60))+'» снова отдельная задача')); break; }
       case 'new-decision': newDecision(a.dataset.dept); break;
       case 'filt-small': UI.filt.small = !UI.filt.small; paint(); break;
       case 'side-all': UI.allDepts = !UI.allDepts; paint(); break;
@@ -2949,6 +3015,8 @@ document.addEventListener('change', e => {
   if (a.dataset.action==='mock-hand') { const it = regItem(a.dataset.id); if (it) write(()=>col('hub_reg').doc(it.id).update(Object.assign({['hand.'+a.dataset.h]:a.checked}, stamp()))); }
   if (a.dataset.action==='check') { const it = regItem(a.dataset.id); write(()=>col('hub_reg').doc(a.dataset.id).update({done:a.checked, updatedAt:now(), updatedBy:S.me})).then(ok => { if (ok && a.checked) { log('отметил(а) пункт', it.name, it.key.split('/')[0]); gain(2, ic('ListChecks')+' Отмечено'); } }); }
   if (a.dataset.action==='step') { const t = task(a.dataset.id); const sub = (t.sub||[]).map((s,i)=>i===Number(a.dataset.i)?{t:s.t, done:a.checked}:s); updTask(t.id, {sub}).then(ok => ok && a.checked && gain(2, ic('ListChecks')+' Шаг выполнен')); }
+  if (a.dataset.action==='kid-add' && a.value) { const v = a.value; a.value = ''; mergeTasks([v], a.dataset.id); }
+  if (a.dataset.action==='kid-done') { const k = task(a.dataset.id); if (k) { const r = a.getBoundingClientRect(); setStatus(k.id, a.checked ? 'done' : 'todo', r.left+10, r.top+10); } }
   if (a.dataset.action==='link-add' && a.value) { const t = task(a.dataset.id); updTask(t.id, {links:[...new Set([...(t.links||[]), a.value])]}); }
 });
 document.addEventListener('submit', async e => {
@@ -2957,6 +3025,13 @@ document.addEventListener('submit', async e => {
   if (k==='board-new') boardCreate(f);
   if (k==='capture') { const t = f.t.value.trim(); if (!t) return; closeOverlay(); addInbox(t, f.d.value, f.vis.value==='team'); }
   if (k==='task-new') createTask(f);
+  if (k==='merge') { const ids = (UI.merge||[]).slice(); if (ids.length<2) { closeOverlay(); return; } const into = f.into.value || null;
+    const pid = await mergeTasks(ids, into, f.title.value); if (pid) { UI.merge = null; closeOverlay(); schedule(); openDrawer('task:'+pid); } }
+  if (k==='kid-new') { const title = clip(f.s.value.trim(),160), p = task(f.dataset.id); if (!title || !p) return; f.s.value = '';
+    const depts = tDepts(p).filter(canSee), dept = depts[0] || myDepts()[0]; if (!dept) { toast(roMsg(p)); return; }
+    const ref = col('hub_tasks').doc();
+    const ok = await write(()=>ref.set({title, tldr:'', details:'', dept, depts:depts.length?depts:[dept], status:'todo', size:'M', who:null, due:null, ver:null, reg:null, links:[], sub:[], comments:[], parent:p.id, order:now(), createdAt:now(), createdBy:S.me, updatedAt:now(), updatedBy:S.me}));
+    if (ok) { log('создал(а) задачу внутри «'+clip(p.title,60)+'»', title, dept); setTimeout(()=>{ const i = $('#drawer [data-form="kid-new"] input'); if (i) i.focus(); }, 60); } else f.s.value = title; }
   if (k==='chat-new') { const title = clip(f.title.value,120); if (!title) return; const ref = col('hub_chats').doc();
     const ok = await write(()=>ref.set({title, task:null, by:S.me, createdAt:now(), lastAt:null, lastBy:null, lastText:''}));
     if (ok) { closeOverlay(); log('создал(а) чат', title); go('chats/'+ref.id); } }
@@ -3065,9 +3140,13 @@ document.addEventListener('keydown', e => {
 /* перетаскивание карточек между колонками */
 let dragId = null;
 document.addEventListener('dragstart', e => { const c = e.target.closest && e.target.closest('.card'); if (!c || c.classList.contains('ro')) return; dragId = c.dataset.id; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-document.addEventListener('dragend', () => { document.querySelectorAll('.dragging,.drop').forEach(x=>x.classList.remove('dragging','drop')); dragId = null; });
-document.addEventListener('dragover', e => { const c = e.target.closest && e.target.closest('.colm'); if (!c || !dragId) return; e.preventDefault(); document.querySelectorAll('.drop').forEach(x=>x!==c&&x.classList.remove('drop')); c.classList.add('drop'); });
-document.addEventListener('drop', e => { const c = e.target.closest && e.target.closest('.colm'); if (!c || !dragId) return; e.preventDefault(); setStatus(dragId, c.dataset.col, e.clientX, e.clientY); });
+document.addEventListener('dragend', () => { document.querySelectorAll('.dragging,.drop,.merge-drop').forEach(x=>x.classList.remove('dragging','drop','merge-drop')); dragId = null; });
+/* карточку бросили на другую карточку — вкладываем в неё (большая задача) */
+const dropCard = e => { const c = e.target.closest && e.target.closest('.board .card'); return c && dragId && c.dataset.id!==dragId ? c : null; };
+document.addEventListener('dragover', e => { const k = dropCard(e); document.querySelectorAll('.merge-drop').forEach(x=>x!==k&&x.classList.remove('merge-drop')); if (k) { e.preventDefault(); k.classList.add('merge-drop'); document.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop')); return; }
+  const c = e.target.closest && e.target.closest('.colm'); if (!c || !dragId) return; e.preventDefault(); document.querySelectorAll('.drop').forEach(x=>x!==c&&x.classList.remove('drop')); c.classList.add('drop'); });
+document.addEventListener('drop', e => { const k = dropCard(e); if (k) { e.preventDefault(); const a = task(dragId), b = task(k.dataset.id); k.classList.remove('merge-drop'); if (a && b && confirm('Вложить «'+a.title+'» в задачу «'+b.title+'»?\n\nПолучится одна большая задача, вынести обратно можно в её карточке.')) mergeTasks([a.id], b.id); return; }
+  const c = e.target.closest && e.target.closest('.colm'); if (!c || !dragId) return; e.preventDefault(); setStatus(dragId, c.dataset.col, e.clientX, e.clientY); });
 
 /* ── отрисовка ──────────────────────────────── */
 function view(){
