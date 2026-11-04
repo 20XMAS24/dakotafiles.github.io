@@ -602,6 +602,8 @@ function mergeDialog(ids){
     ${inText('title','Название большой задачи','', 'maxlength="160" placeholder="Например: Запустить систему бизнесов"')}
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Задачи не удаляются — они станут частью большой, их можно вынести обратно</span><span style="flex:1"></span><button class="btn primary">${ic('Layers')} Объединить</button></div></div></form>`);
 }
+let downOnBg = false;
+document.addEventListener('pointerdown', e => { downOnBg = !!(e.target.matches && e.target.matches('.overlay[data-action="overlay-bg"]')); }, true);
 /* удаление задачи с отменой: документ удаляется сразу (у всех пропадает), копия живёт UNDO_MS в этой вкладке.
    Файлы задачи стираем только когда время вышло — иначе восстанавливать было бы нечего */
 const PENDING_FILES = new Map();
@@ -2896,7 +2898,9 @@ document.addEventListener('click', e => {
   if (pi) { runPal(Number(pi.dataset.pal)); return; }
   if (a && a.tagName!=='SELECT') {
     const k = a.dataset.action, id = a.dataset.id;
-    if (k==='overlay-bg') { if (e.target===a) closeOverlay(); return; }
+    /* закрываем, только если и нажали, и отпустили на фоне: иначе растягивание поля или выделение текста
+       с отпусканием мыши за окном закрывало его вместе с недописанным */
+    if (k==='overlay-bg') { if (e.target===a && downOnBg) closeOverlay(); return; }
     if (k==='check' || k==='step' || k==='kid-done') return; // обрабатываются в change
     e.stopPropagation();
     switch (k) {

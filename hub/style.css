@@ -1132,3 +1132,6 @@ body.r-board .main{height:100vh;height:100dvh;display:flex;flex-direction:column
 .toast.undo .btn small{color:var(--muted);min-width:1.4em;text-align:right}
 .toast.undo .undo-bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--acc);transform-origin:left;animation:undoBar linear forwards}
 @keyframes undoBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+/* поле в окнах вроде «Записать мысль»: тянется, но не выталкивает кнопки за край окна */
+.cap textarea{max-height:max(76px,calc(70vh - 270px))}
+form.pal{overflow-y:auto}
