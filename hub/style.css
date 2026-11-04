@@ -1125,3 +1125,10 @@ body.r-board .main{height:100vh;height:100dvh;display:flex;flex-direction:column
 .cl.kids .kid-t:hover{color:var(--acc)}
 .cl.kids .kid-t.done{color:var(--muted);text-decoration:line-through}
 .cl.kids .chip{flex:none}
+/* уведомление «Задача удалена · Восстановить» */
+.toast.undo{pointer-events:auto;position:relative;overflow:hidden;padding-right:10px}
+.toast.undo>span{flex:1;min-width:0}
+.toast.undo .btn{flex:none}
+.toast.undo .btn small{color:var(--muted);min-width:1.4em;text-align:right}
+.toast.undo .undo-bar{position:absolute;left:0;bottom:0;height:3px;width:100%;background:var(--acc);transform-origin:left;animation:undoBar linear forwards}
+@keyframes undoBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}

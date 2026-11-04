@@ -373,6 +373,17 @@ function toast(html, xp){
   el.innerHTML = `<span>${html}</span>${xp?`<span class="xp">${esc(xp)}</span>`:''}`;
   $('#toasts').appendChild(el); setTimeout(()=>el.classList.add('out'), 3150); setTimeout(()=>el.remove(), 3400);
 }
+/* уведомление с кнопкой «Восстановить», как у удалённых сообщений в мессенджерах; полоска внизу показывает, сколько осталось */
+const UNDO_MS = 15000;
+function undoToast(html, onUndo, ms=UNDO_MS){
+  const el = document.createElement('div'); el.className = 'toast undo';
+  el.innerHTML = `<span>${html}</span><button class="btn sm" type="button">${ic('Undo2')} Восстановить <small class="mono">${Math.round(ms/1000)}</small></button><i class="undo-bar" style="animation-duration:${ms}ms"></i>`;
+  const sec = el.querySelector('small'), end = now()+ms;
+  const tick = setInterval(() => { sec.textContent = Math.max(0, Math.ceil((end-now())/1000)); }, 250);
+  const close = () => { clearInterval(tick); el.classList.add('out'); setTimeout(()=>el.remove(), 260); };
+  el.querySelector('button').addEventListener('click', e => { e.stopPropagation(); close(); onUndo(); });
+  $('#toasts').appendChild(el); setTimeout(close, ms);
+}
 
 /* ── маршрутизация ──────────────────────────── */
 function readHash(){
@@ -591,6 +602,29 @@ function mergeDialog(ids){
     ${inText('title','Название большой задачи','', 'maxlength="160" placeholder="Например: Запустить систему бизнесов"')}
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="hint">Задачи не удаляются — они станут частью большой, их можно вынести обратно</span><span style="flex:1"></span><button class="btn primary">${ic('Layers')} Объединить</button></div></div></form>`);
 }
+/* удаление задачи с отменой: документ удаляется сразу (у всех пропадает), копия живёт UNDO_MS в этой вкладке.
+   Файлы задачи стираем только когда время вышло — иначе восстанавливать было бы нечего */
+const PENDING_FILES = new Map();
+function deleteTask(t){
+  const id = t.id, data = Object.assign({}, t); delete data.id;
+  const ks = kids(id).filter(canEdit).map(k=>k.id), fids = S.files.filter(f=>f.task===id).map(f=>f.id);
+  write(()=>col('hub_tasks').doc(id).delete()).then(ok => {
+    if (!ok) return;
+    log('удалил(а) задачу', t.title, t.dept); if (UI.drawer==='task:'+id) closeDrawer();
+    ks.forEach(k=>col('hub_tasks').doc(k).update(Object.assign({parent:FV().delete()}, stamp())).catch(()=>{}));
+    if (fids.length) PENDING_FILES.set(id, fids);
+    const timer = setTimeout(() => { const f = PENDING_FILES.get(id); PENDING_FILES.delete(id); if (f) deleteFiles(f).catch(()=>{}); }, UNDO_MS);
+    undoToast(ic('Trash2')+' Задача «'+esc(clip(t.title,50))+'» удалена', async () => {
+      clearTimeout(timer); PENDING_FILES.delete(id);
+      const ok = await write(()=>col('hub_tasks').doc(id).set(Object.assign(data, stamp())));
+      if (!ok) return;
+      ks.forEach(k=>col('hub_tasks').doc(k).update(Object.assign({parent:id}, stamp())).catch(()=>{}));
+      log('восстановил(а) задачу', t.title, t.dept); toast(ic('Undo2')+' Задача восстановлена');
+    });
+  });
+}
+/* вкладку закрыли, пока шёл отсчёт, — удаление окончательное, дочищаем файлы */
+addEventListener('pagehide', () => { for (const f of PENDING_FILES.values()) deleteFiles(f).catch(()=>{}); PENDING_FILES.clear(); });
 /* собрать задачи в одну: into — id существующей большой задачи или null (тогда создаём новую с названием title) */
 async function mergeTasks(ids, into, title){
   const target = into && task(into);
@@ -2892,7 +2926,7 @@ document.addEventListener('click', e => {
         patchMe({top3:top}); break; }
       case 'step-del': { const t = task(id); const sub = (t.sub||[]).filter((_,i)=>i!==Number(a.dataset.i)); updTask(id, {sub}); break; }
       case 'link-del': { const t = task(UI.drawer.slice(5)); if (t) updTask(t.id, {links:(t.links||[]).filter(x=>x!==a.dataset.l)}); break; }
-      case 'task-del': { const t = task(id); if (!canEdit(t)) { toast(roMsg(t)); break; } if (!confirm('Удалить задачу «'+t.title+'»? Это нельзя отменить.'+(kids(id).length ? '\n\nЗадачи внутри ('+kids(id).length+') не удалятся — они вернутся на доску отдельными.' : ''))) break; const ks = kids(id); write(()=>col('hub_tasks').doc(id).delete()).then(ok => { if (ok) { log('удалил(а) задачу', t.title, t.dept); closeDrawer(); ks.filter(canEdit).forEach(k=>col('hub_tasks').doc(k.id).update(Object.assign({parent:FV().delete()}, stamp())).catch(()=>{})); deleteFiles(S.files.filter(f=>f.task===id).map(f=>f.id)).catch(()=>{}); } }); break; }
+      case 'task-del': { const t = task(id); if (!canEdit(t)) { toast(roMsg(t)); break; } deleteTask(t); break; }
       case 'vote': { const d = dec(id); const i = Number(a.dataset.i); const cur = (d.votes||{})[S.me];
         write(()=>col('hub_decisions').doc(id).update({['votes.'+S.me]: cur===i ? FV().delete() : i, updatedAt:now()})).then(ok => { if (ok && cur==null) { log('проголосовал(а) в решении', d.q, d.dept); gain(5, ic('Vote')+' Голос учтён'); } }); break; }
       case 'accept': { const d = dec(id); const i = Number(a.dataset.i); if (!confirm('Зафиксировать «'+d.options[i].t+'» как итог?')) break; if (d.ref) { const it = regItem(d.ref.id); if (it) log('итог по записи «'+it.name+'»: '+d.options[i].t, d.q, d.dept); } const r = a.getBoundingClientRect();
