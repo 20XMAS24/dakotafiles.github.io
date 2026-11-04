@@ -2715,7 +2715,7 @@ function closeOverlay(){ $('#overlay').innerHTML = ''; UI.pal = null; LB = null;
 function overlay(html){ UI.pal = null; $('#overlay').innerHTML = `<div class="overlay" data-action="overlay-bg">${html}</div>`; const f = $('#overlay input:not([type=hidden]),#overlay textarea'); if (f) f.focus(); }
 function capture(){
   const cur = UI.route.startsWith('d/') ? UI.route.slice(2) : '';
-  overlay(`<form class="pal" data-form="capture"><div class="cap"><h2><span class="hi">${ic('Lightbulb')}</span> Записать мысль</h2>
+  overlay(`<form class="pal" data-form="capture" data-keep><div class="cap"><h2><span class="hi">${ic('Lightbulb')}</span> Записать мысль<span style="flex:1"></span><button type="button" class="icon-btn" data-action="close-overlay" aria-label="Закрыть" title="Закрыть (Esc)">${ic('X')}</button></h2>
     <textarea class="input" name="t" placeholder="Что пришло в голову? Разберёшь потом." maxlength="8000"></textarea>
     <div class="dpick" role="group" aria-label="Отдел (необязательно)">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="pick-dept" data-d="${d.id}" aria-pressed="${d.id===cur}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div>
     <input type="hidden" name="d" value="${cur}">
@@ -2900,7 +2900,8 @@ document.addEventListener('click', e => {
     const k = a.dataset.action, id = a.dataset.id;
     /* закрываем, только если и нажали, и отпустили на фоне: иначе растягивание поля или выделение текста
        с отпусканием мыши за окном закрывало его вместе с недописанным */
-    if (k==='overlay-bg') { if (e.target===a && downOnBg) closeOverlay(); return; }
+    /* окна с data-keep (запись мысли) по фону не закрываются вовсе — только крестиком или Esc */
+    if (k==='overlay-bg') { if (e.target===a && downOnBg && !a.querySelector('[data-keep]')) closeOverlay(); return; }
     if (k==='check' || k==='step' || k==='kid-done') return; // обрабатываются в change
     e.stopPropagation();
     switch (k) {
