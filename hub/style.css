@@ -1150,21 +1150,21 @@ form.pal{overflow-y:auto}
 }
 :root[data-bg="orbit"]{--acc:#4C8DFF;--acc-2:#8DB6FF;--acc-deep:#1F63F0;--acc-bg:rgba(76,141,255,.14);--acc-line:rgba(76,141,255,.45);--on-acc:#fff;
   --orbs:radial-gradient(circle at 50% 50%,#F6B25A 0,#E08A2E 38%,#9A4F14 62%,transparent 63%) 88% -14%/520px 520px no-repeat,
-    radial-gradient(closest-side,rgba(40,210,200,.55),transparent) 104% 100%/760px 620px no-repeat,
-    radial-gradient(closest-side,rgba(40,110,255,.5),transparent) -8% 92%/620px 560px no-repeat,
-    radial-gradient(closest-side,rgba(60,200,120,.28),transparent) 45% 120%/700px 420px no-repeat}
+    radial-gradient(circle closest-side,rgba(40,210,200,.55),transparent) 104% 100%/690px 690px no-repeat,
+    radial-gradient(circle closest-side,rgba(40,110,255,.5),transparent) -8% 92%/590px 590px no-repeat,
+    radial-gradient(circle closest-side,rgba(60,200,120,.28),transparent) 45% 120%/560px 560px no-repeat}
 :root[data-bg="aurora"]{--acc:#3FD6A8;--acc-2:#8AF0CF;--acc-deep:#12A57C;--acc-bg:rgba(63,214,168,.13);--acc-line:rgba(63,214,168,.45);--on-acc:#03140E;
-  --orbs:radial-gradient(closest-side,rgba(40,220,160,.45),transparent) 10% -10%/900px 520px no-repeat,
-    radial-gradient(closest-side,rgba(130,90,255,.45),transparent) 95% 15%/760px 640px no-repeat,
-    radial-gradient(closest-side,rgba(30,170,220,.35),transparent) 40% 110%/900px 560px no-repeat}
+  --orbs:radial-gradient(circle closest-side,rgba(40,220,160,.45),transparent) 10% -10%/710px 710px no-repeat,
+    radial-gradient(circle closest-side,rgba(130,90,255,.45),transparent) 95% 15%/700px 700px no-repeat,
+    radial-gradient(circle closest-side,rgba(30,170,220,.35),transparent) 40% 110%/730px 730px no-repeat}
 :root[data-bg="ocean"]{--acc:#38BDF8;--acc-2:#8FDAFB;--acc-deep:#0E8FCF;--acc-bg:rgba(56,189,248,.13);--acc-line:rgba(56,189,248,.45);--on-acc:#03121C;
-  --orbs:radial-gradient(closest-side,rgba(30,90,255,.55),transparent) 85% -5%/820px 640px no-repeat,
-    radial-gradient(closest-side,rgba(20,200,255,.38),transparent) -5% 70%/700px 620px no-repeat,
-    radial-gradient(closest-side,rgba(80,60,220,.35),transparent) 70% 115%/760px 520px no-repeat}
+  --orbs:radial-gradient(circle closest-side,rgba(30,90,255,.55),transparent) 85% -5%/730px 730px no-repeat,
+    radial-gradient(circle closest-side,rgba(20,200,255,.38),transparent) -5% 70%/660px 660px no-repeat,
+    radial-gradient(circle closest-side,rgba(80,60,220,.35),transparent) 70% 115%/640px 640px no-repeat}
 :root[data-bg="sunset"]{--acc:#F472B6;--acc-2:#F9A8D4;--acc-deep:#DB2777;--acc-bg:rgba(244,114,182,.13);--acc-line:rgba(244,114,182,.45);--on-acc:#1E0612;
-  --orbs:radial-gradient(closest-side,rgba(255,120,60,.5),transparent) 90% 0%/720px 560px no-repeat,
-    radial-gradient(closest-side,rgba(230,60,160,.45),transparent) 5% 20%/680px 620px no-repeat,
-    radial-gradient(closest-side,rgba(120,60,240,.45),transparent) 60% 115%/860px 560px no-repeat}
+  --orbs:radial-gradient(circle closest-side,rgba(255,120,60,.5),transparent) 90% 0%/640px 640px no-repeat,
+    radial-gradient(circle closest-side,rgba(230,60,160,.45),transparent) 5% 20%/650px 650px no-repeat,
+    radial-gradient(circle closest-side,rgba(120,60,240,.45),transparent) 60% 115%/710px 710px no-repeat}
 :root[data-bg]{background:var(--bg)}
 :root[data-bg] body{background:transparent}
 :root[data-bg] body::before{content:"";position:fixed;inset:-6%;z-index:-1;pointer-events:none;background:var(--orbs);animation:orbsDrift 38s ease-in-out infinite alternate}
@@ -1264,3 +1264,37 @@ form.pal{overflow-y:auto}
 .dc-h .ic{color:var(--dc)} .dc-h .sp{flex:1}
 .dc-n{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
 .dc-n b{color:var(--text);font-size:14px}
+
+/* ── стекло посильнее: прозрачнее, блик по кромке, глянец сверху, стеклянные кнопки ── */
+:root[data-bg]{
+  --card:linear-gradient(155deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.04) 38%,rgba(255,255,255,.015) 62%,rgba(255,255,255,.05) 100%),rgba(14,15,24,.30);
+  --panel-2:rgba(255,255,255,.075); --panel-3:rgba(255,255,255,.13);
+  --line:rgba(255,255,255,.12); --line-2:rgba(255,255,255,.2);
+  --edge:inset 0 1px 0 rgba(255,255,255,.26),inset 1px 0 0 rgba(255,255,255,.07),inset -1px 0 0 rgba(255,255,255,.03),inset 0 -1px 0 rgba(255,255,255,.05);
+  --glass:blur(26px) saturate(190%) brightness(1.06);
+}
+:root[data-bg] :is(.side-in,.panel,.tile,.kpi,.tbl-wrap,.colm,.decision,.chat-list,.chat-main,.erow,.lead-hero){
+  box-shadow:var(--edge),0 18px 40px rgba(0,0,0,.28)}
+:root[data-bg] .side-in{background:linear-gradient(160deg,rgba(255,255,255,.14),rgba(255,255,255,.03) 40%,rgba(255,255,255,.06)),rgba(12,13,22,.34)}
+:root[data-bg] .drawer,:root[data-bg] .pal{background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.02) 45%),rgba(16,17,26,.6)}
+:root[data-bg] .card{background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.025) 50%,rgba(255,255,255,.04)),rgba(22,23,34,.38);border-color:rgba(255,255,255,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+:root[data-bg] :is(.pcard,.dcard,.att,.hs){background:linear-gradient(160deg,rgba(255,255,255,.09),rgba(255,255,255,.025));box-shadow:inset 0 1px 0 rgba(255,255,255,.14)}
+/* кнопки и поля — тоже стекло */
+:root[data-bg] :is(.btn:not(.primary):not(.danger),.icon-btn,.search){background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.04));border-color:rgba(255,255,255,.16);
+  -webkit-backdrop-filter:blur(14px) saturate(170%);backdrop-filter:blur(14px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+:root[data-bg] :is(.btn:not(.primary):not(.danger),.icon-btn):hover{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.07))}
+:root[data-bg] :is(.input,.select,textarea.input,.seg,.tabs,.statusbar){background:rgba(0,0,0,.22);border-color:rgba(255,255,255,.12);box-shadow:inset 0 1px 2px rgba(0,0,0,.25)}
+:root[data-bg] :is(.seg,.tabs,.statusbar) [aria-pressed="true"],:root[data-bg] .tabs [aria-selected="true"]{background:linear-gradient(180deg,rgba(255,255,255,.2),rgba(255,255,255,.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+:root[data-bg] .btn.primary{box-shadow:0 8px 22px var(--acc-bg),inset 0 1px 0 rgba(255,255,255,.45),inset 0 -1px 0 rgba(0,0,0,.15)}
+:root[data-bg] .fab{box-shadow:0 10px 30px var(--acc-bg),inset 0 1px 0 rgba(255,255,255,.45)}
+/* светлая тема: прозрачнее молоко */
+:root[data-theme="light"][data-bg]{--card:linear-gradient(155deg,rgba(255,255,255,.8),rgba(255,255,255,.42) 55%,rgba(255,255,255,.6));--panel-2:rgba(255,255,255,.5);
+  --edge:inset 0 1px 0 rgba(255,255,255,1),inset 0 -1px 0 rgba(20,22,40,.04),0 1px 2px rgba(20,22,40,.04)}
+:root[data-theme="light"][data-bg] :is(.btn:not(.primary):not(.danger),.icon-btn,.search){background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.55));border-color:rgba(20,22,40,.1);box-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(20,22,40,.06)}
+:root[data-theme="light"][data-bg] :is(.input,.select,textarea.input,.seg,.tabs,.statusbar){background:rgba(255,255,255,.55);border-color:rgba(20,22,40,.1);box-shadow:inset 0 1px 2px rgba(20,22,40,.06)}
+:root[data-theme="light"][data-bg] .card{background:linear-gradient(160deg,rgba(255,255,255,.85),rgba(255,255,255,.55));border-color:rgba(20,22,40,.08);box-shadow:inset 0 1px 0 #fff}
+:root[data-theme="light"][data-bg] :is(.pcard,.dcard,.att,.hs){background:rgba(255,255,255,.55);box-shadow:inset 0 1px 0 #fff}
+:root[data-theme="light"][data-bg] .side-in{background:linear-gradient(160deg,rgba(255,255,255,.75),rgba(255,255,255,.4))}
+/* заголовки страниц лежат прямо на цветном фоне — тень, чтобы читались поверх яркого пятна */
+:root[data-bg]:not([data-theme="light"]) .ph :is(h1,p){text-shadow:0 1px 12px rgba(0,0,0,.75),0 0 2px rgba(0,0,0,.5)}
+:root[data-bg]:not([data-theme="light"]) .ph p{color:#D6D8E2}
