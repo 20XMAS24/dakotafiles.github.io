@@ -285,7 +285,7 @@ const S = {me:null, people:{}, tdept:{}, allTasks:[], tasks:[], decisions:[], ed
 /* dfilt / lfilt / bfilt — фильтр по отделу в «Решениях», «Журнале» и «Багах»; приходит из адреса: #/decisions/econ */
 const UI = {route:'today', tab:null, chat:null, board:null, chatDraft:{}, cday:0, filt:{dept:'mine', small:false, mine:false}, drawer:null, edit:false, pal:null, ef:{status:'all', group:'all', q:'', hideFixed:false, hideDone:false}, eDraft:'', dfilt:'all', lfilt:'all', bfilt:'all', bhide:false};
 const PREFS_KEY = 'kyHubPrefs';
-const P = Object.assign({theme:'auto', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
+const P = Object.assign({theme:'auto', bg:'off', calm:false, fs:'m', density:'normal', hidden:[], sysNotif:true}, (() => { try { return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; } catch (e) { return {}; } })());
 const savePrefs = () => { try { localStorage.setItem(PREFS_KEY, JSON.stringify(P)); } catch (e) {} };
 
 const task = id => S.tasks.find(t=>t.id===id);
@@ -681,40 +681,88 @@ function leadData(){
 }
 function leadAlerts(){ const L = leadData(); return L.overdue.length + L.blocked.length + L.crit.length + S.pending.length; }
 function viewLead(){
-  const L = leadData();
-  const tile = (n, k, sub, tone) => `<div class="tile" style="cursor:default"><span class="k">${k}</span><span class="v"${n&&tone?` style="color:var(--${tone})"`:''}>${n}</span><span class="s">${sub}</span></div>`;
-  const box = (icon, title, list, empty, html) => `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic(icon)}</span>${title} · ${list.length}</h2></div><div class="list">${list.length ? list.slice(0,8).map(html).join('') + (list.length>8?`<small style="color:var(--muted)">и ещё ${list.length-8}</small>`:'') : `<div class="empty">${empty}</div>`}</div></section>`;
-  /* нагрузка: открытые задачи по размеру (S=1, M=3, L=8) и просрочки */
-  const load = Object.keys(S.people).map(id => { const ts = L.open.filter(t=>t.who===id);
-    return {id, n:ts.length, w:ts.reduce((a,t)=>a+(SIZE_W[t.size]||3),0), over:ts.filter(isLate).length, blk:ts.filter(t=>t.status==='blocked').length}; })
-    .sort((a,b)=>b.w-a.w);
-  const maxW = Math.max(1, ...load.map(x=>x.w));
-  const depts = DEPTS.map(d => { const ts = L.open.filter(t=>inDept(t,d.id));
-    return {d, n:ts.length, over:ts.filter(isLate).length, rev:ts.filter(t=>t.status==='review').length, blk:ts.filter(t=>t.status==='blocked').length, none:ts.filter(t=>!t.who).length}; });
+  const L = leadData(), t0 = now(), wk = 7*DAY;
+  const closedIn = (a, b) => S.tasks.filter(t=>t.status==='done' && (t.doneAt||0) >= a && (t.doneAt||0) < b);
+  const doneWeek = closedIn(t0-wk, t0+1), donePrev = closedIn(t0-2*wk, t0-wk);
+  const madeWeek = S.tasks.filter(t=>(t.createdAt||0) >= t0-wk);
+  const working = L.open.filter(t=>t.status==='doing' || t.status==='review');
+  const team = Object.keys(S.people), online = team.filter(isOnline);
+  /* закрытые задачи по дням за 14 дней — столбики активности */
+  const days = Array.from({length:14}, (_,i) => dayKey(t0-(13-i)*DAY));
+  const perDay = days.map(k => S.tasks.filter(t=>t.status==='done' && t.doneAt && dayKey(t.doneAt)===k).length);
+  const maxDay = Math.max(1, ...perDay);
+  /* здоровье: доля открытых задач без проблем */
+  const bad = new Set([...L.overdue, ...L.blocked, ...L.stuck].map(t=>t.id));
+  /* без ответственного важно, только когда задача уже в работе или у неё близкий срок; остальное — обычный бэклог */
+  const ownerless = L.noOwner.filter(t => t.status==='doing' || t.status==='review' || (dueLeft(t)!==null && dueLeft(t)<=7)), backlog = L.noOwner.length - ownerless.length;
+  const health = L.open.length ? Math.round((L.open.length - bad.size) / L.open.length * 100) : 100;
+  const fire = L.overdue.length + L.blocked.length + L.crit.length, warnN = L.stuck.length + ownerless.length + L.decs.length + S.pending.length;
+  const mood = fire ? ['red', 'CircleAlert', 'Горит: '+plural(fire,'проблема','проблемы','проблем')] : warnN ? ['warn', 'Eye', 'Есть вопросы: '+warnN] : ['ok', 'CircleCheck', 'Всё под контролем'];
+  const delta = doneWeek.length - donePrev.length;
+  const deltaTxt = delta>0 ? `<span class="up">▲ ${delta}</span> к прошлой неделе` : delta<0 ? `<span class="down">▼ ${-delta}</span> к прошлой неделе` : 'столько же, сколько на прошлой неделе';
+  const summary = `За 7 дней команда закрыла <b>${plural(doneWeek.length,'задачу','задачи','задач')}</b> (${deltaTxt}). Сейчас в работе ${working.length}, всего открыто ${L.open.length}`
+    + (L.overdue.length ? `, просрочено <b class="t-red-tx">${L.overdue.length}</b>` : '') + (L.blocked.length ? `, заблокировано <b class="t-red-tx">${L.blocked.length}</b>` : '') + '.';
+  /* единый список «что требует внимания»: по важности, у каждой строки — причина */
+  const ATT = [];
+  S.pending.forEach(p => ATT.push({w:0, tag:['Заявка в хаб','warn'], title:p.name||p.login||'Новый участник', sub:'ждёт одобрения', go:'people'}));
+  L.crit.forEach(b => ATT.push({w:1, tag:['Критичный баг','red'], title:b.name, sub:(D[b.dept]||{}).name||'', open:b.ref, who:b.who}));
+  L.overdue.forEach(t => ATT.push({w:2, tag:['Просрочено на '+plural(-dueLeft(t),'день','дня','дней'),'red'], title:t.title, sub:tDepts(t).map(x=>D[x].name).join(', '), open:'task:'+t.id, who:t.who}));
+  L.blocked.forEach(t => ATT.push({w:3, tag:['Заблокировано','red'], title:t.title, sub:t.blockedWhy||'причина не указана', open:'task:'+t.id, who:t.who}));
+  L.decs.forEach(d => ATT.push({w:4, tag:['Решение висит '+Math.floor((t0-decAt(d))/DAY)+' дн.','warn'], title:decQ(d), sub:plural(decVoters(d),'голос','голоса','голосов'), dec:d.id}));
+  L.stuck.forEach(t => ATT.push({w:5, tag:['Стоит '+Math.floor((t0-(t.updatedAt||t.createdAt||t0))/DAY)+' дн.','warn'], title:t.title, sub:colName(t.status), open:'task:'+t.id, who:t.who}));
+  ownerless.forEach(t => ATT.push({w:6, tag:['Нет ответственного','muted'], title:t.title, sub:tDepts(t).map(x=>D[x].name).join(', '), open:'task:'+t.id}));
+  ATT.sort((a,b)=>a.w-b.w);
+  const attRow = x => `<div class="att" tabindex="0" ${x.open?`data-open="${esc(x.open)}"`:x.dec?`data-action="open-dec" data-id="${esc(x.dec)}"`:`data-go="${x.go}"`}>
+    ${chip(x.tag[0], x.tag[1])}<div class="bd"><div class="tt">${esc(clip(x.title,90))}</div><small>${esc(clip(x.sub,90))}</small></div>${x.who?av(x.who,24):''}</div>`;
+  /* люди: чем занят сейчас, нагрузка, проблемы */
+  const people = team.map(id => { const p = S.people[id], ts = L.open.filter(t=>t.who===id);
+    const now_ = ts.find(t=>p.focus && p.focus.task===t.id && p.focus.until>t0) || ts.find(t=>t.status==='doing') || ts.find(t=>t.status==='review');
+    return {id, p, ts, now:now_, w:ts.reduce((a,t)=>a+(SIZE_W[t.size]||3),0), over:ts.filter(isLate).length, blk:ts.filter(t=>t.status==='blocked').length,
+      done:doneWeek.filter(t=>t.who===id || t.doneBy===id).length, focus:!!(p.focus && p.focus.until>t0), on:isOnline(id)}; })
+    .sort((a,b)=>(b.on-a.on) || (b.w-a.w));
+  const maxW = Math.max(8, ...people.map(x=>x.w));
+  const personCard = x => `<div class="pcard">
+    <div class="pc-h">${av(x.id,34)}<div class="bd"><b>${esc(pname(x.id))}</b><small>${x.focus ? `<span class="st on">${ic('Headphones')} в фокусе</span>` : x.on ? '<span class="st on">онлайн</span>' : '<span class="st">был(а) '+esc(ago(x.p.seen||0))+'</span>'}${x.p.role?' · '+esc(x.p.role):''}</small></div></div>
+    <div class="pc-now">${x.now ? `<span class="lbl">Сейчас</span><span class="lnk" data-open="task:${esc(x.now.id)}">${esc(clip(x.now.title,70))}</span>` : `<span class="lbl">Сейчас</span><span style="color:var(--muted)">${x.ts.length ? 'нет задачи в работе' : 'свободен(на) — можно дать задачу'}</span>`}</div>
+    <div class="pc-load" title="Нагрузка: S = 1, M = 3, L = 8"><div class="mini-bar"><i style="width:${Math.min(100,Math.round(x.w/maxW*100))}%;${x.w>=16?'background:var(--warn)':''}"></i></div><small>${plural(x.ts.length,'задача','задачи','задач')}</small></div>
+    <div class="pc-f">${x.done?`<span class="chip t-ok">${ic('Check')} ${x.done} за неделю</span>`:''}${x.over?`<span class="chip t-red">просрочено ${x.over}</span>`:''}${x.blk?`<span class="chip t-red">блок ${x.blk}</span>`:''}</div></div>`;
+  /* отделы: прогресс = закрыто за 14 дней от (закрыто + открыто) */
+  const depts = DEPTS.map(d => { const ts = L.open.filter(t=>inDept(t,d.id)), dn = S.tasks.filter(t=>t.status==='done' && inDept(t,d.id) && (t.doneAt||0) >= t0-14*DAY).length;
+    return {d, n:ts.length, dn, over:ts.filter(isLate).length, blk:ts.filter(t=>t.status==='blocked').length, work:ts.filter(t=>t.status==='doing'||t.status==='review').length}; })
+    .filter(x=>x.n || x.dn);
+  const deptCard = x => { const pct = x.n+x.dn ? Math.round(x.dn/(x.n+x.dn)*100) : 0;
+    return `<button class="dcard" data-go="d/${x.d.id}/tasks" style="--dc:${x.d.color}"><div class="dc-h">${ic(x.d.icon)}<b>${esc(x.d.name)}</b><span class="sp"></span>${x.over||x.blk?`<span class="chip t-red">${x.over+x.blk} проблем</span>`:''}</div>
+      <div class="dc-n"><span><b>${x.work}</b> в работе</span><span><b>${x.n}</b> открыто</span><span><b>${x.dn}</b> закрыто за 2 нед.</span></div>
+      <div class="mini-bar"><i style="width:${pct}%;background:var(--dc)"></i></div></button>`; };
   const cur = S.reg.filter(x=>x.key==='release/versions' && x.status==='Готовится').sort(byOrder);
-  const red = n => n ? ' style="color:var(--red)"' : '';
-  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F49A9A">${ic('Gauge')}</span><div><h1>Обзор руководителя</h1><p>Где горит, кто перегружен и что застряло. Застрявшие — в работе или на ревью без изменений больше ${STUCK_DAYS} дней.</p></div></div>
+  const kpi = (label, val, sub, extra='') => `<div class="kpi"><span class="k">${label}</span><span class="v">${val}</span><span class="s">${sub}</span>${extra}</div>`;
+  return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F49A9A">${ic('Gauge')}</span><div><h1>Обзор руководителя</h1><p>Что происходит в команде прямо сейчас — за одну минуту.</p></div></div>
     <button class="btn" data-action="week-report">${ic('FileDown')} Отчёт за неделю</button></div>
-  <div class="tiles">
-    ${tile(L.overdue.length, 'Просрочено', 'задач со сроком в прошлом', 'red')}${tile(L.blocked.length, 'Заблокировано', 'ждут чего-то', 'red')}
-    ${tile(L.stuck.length, 'Застряли', 'больше '+STUCK_DAYS+' дн. без движения', 'warn')}${tile(L.noOwner.length, 'Без ответственного', 'открытых задач', 'warn')}
-    ${tile(L.decs.length, 'Решения висят', 'без итога больше '+DEC_DAYS+' дн.', 'warn')}${tile(L.crit.length, 'Критичные баги', 'открыты', 'red')}
-    ${S.pending.length ? `<a class="tile" href="#/people"><span class="k">Заявки в хаб</span><span class="v" style="color:var(--warn)">${S.pending.length}</span><span class="s">ждут одобрения</span></a>` : ''}
+  <section class="lead-hero tone-${mood[0]}">
+    <div class="lh-main"><span class="lh-state">${ic(mood[1])} ${mood[2]}</span><p>${summary}</p>
+      ${ATT.length ? `<small style="color:var(--text-2)">Главное: ${[...new Set(ATT.map(x=>x.title))].slice(0,3).map(x=>esc(clip(x,40))).join(' · ')}</small>` : '<small style="color:var(--text-2)">Нечего тушить — можно думать о следующей версии.</small>'}</div>
+    <div class="lh-ring"><div class="ring" style="--p:${health};--rc:var(--${health>=80?'ok':health>=55?'warn':'red'})"><span>${health}%</span></div><small>задач идут<br>без проблем</small></div>
+  </section>
+  <div class="kpis">
+    ${kpi('Закрыто за неделю', doneWeek.length, deltaTxt)}
+    ${kpi('В работе сейчас', working.length, plural(L.open.length,'открытая задача','открытые задачи','открытых задач'))}
+    ${kpi('Новых за неделю', madeWeek.length, madeWeek.length > doneWeek.length ? 'задач приходит больше, чем закрывается' : 'закрываем не медленнее, чем приходят')}
+    ${kpi('Онлайн', online.length+'<small> / '+team.length+'</small>', online.length ? online.slice(0,4).map(id=>esc(pname(id).split(' ')[0])).join(', ') : 'сейчас никого')}
   </div>
-  ${metricTiles()}
-  <div class="g2">
-    ${box('Calendar', 'Просрочено', L.overdue, 'Просрочек нет.', t=>taskItem(t,{status:true}))}
-    ${box('CircleAlert', 'Заблокировано', L.blocked, 'Ничего не заблокировано.', t=>taskItem(t))}
-    ${box('Clock', 'Застряли', L.stuck, 'Всё движется.', t=>taskItem(t,{status:true}))}
-    ${box('User', 'Без ответственного', L.noOwner, 'У всех задач есть ответственный.', t=>taskItem(t,{status:true}))}
-    ${box('Scale', 'Решения без итога', L.decs, 'Все решения приняты вовремя.', d=>`<div class="item" tabindex="0" data-action="open-dec" data-id="${esc(d.id)}"><div class="bd"><div class="tt">${esc(decQ(d))}</div><div class="mt">${dchip(decDept(d))}<small style="color:var(--muted)">${plural(decVoters(d),'голос','голоса','голосов')} · ${ago(decAt(d))}</small></div></div></div>`)}
-    ${box('Bug', 'Критичные баги', L.crit, 'Критичных багов нет.', b=>`<div class="item" tabindex="0" data-open="${esc(b.ref)}"><div class="bd"><div class="tt">${esc(b.name)}</div><div class="mt">${dchip(b.dept)}${b.where?`<small class="mono" style="color:var(--muted)">${esc(b.where)}</small>`:''}</div></div>${b.who?eav(b.who):''}</div>`)}
+  <div class="lead-g">
+    <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Flame')}</span>Требует твоего внимания${ATT.length?' · '+ATT.length:''}</h2></div>
+      <div class="att-list">${ATT.slice(0,12).map(attRow).join('') || `<div class="empty"><b>${ic('CircleCheck')} Всё чисто</b>Ни просрочек, ни блоков, ни зависших решений.</div>`}${ATT.length>12?`<small style="color:var(--muted)">и ещё ${ATT.length-12} — смотри задачи отделов</small>`:''}${backlog?`<a class="btn sm ghost" href="#/tasks" style="align-self:flex-start">${ic('Inbox')} В бэклоге без ответственного: ${backlog}</a>`:''}</div></section>
+    <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('TrendingUp')}</span>Темп команды</h2><span class="sub">закрыто задач по дням</span></div>
+      <div class="bars">${perDay.map((n,i)=>`<span title="${new Date(t0-(13-i)*DAY).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}: ${n}"><i style="height:${Math.max(4, Math.round(n/maxDay*100))}%;${n?'':'opacity:.25'}"></i></span>`).join('')}</div>
+      <div class="bars-x"><span>2 недели назад</span><span>сегодня</span></div>
+      <p class="sub-h" style="margin:14px 0 6px">Последние события</p><div class="log">${S.log.slice(0,5).map(logEntry).join('') || '<small style="color:var(--muted)">Пока тихо.</small>'}</div>
+      <a class="btn sm ghost" href="#/log" style="align-self:flex-start">Весь журнал</a></section>
   </div>
-  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Нагрузка по людям</h2><span class="sub">вес: S = 1, M = 3, L = 8</span></div>
-    <div class="tbl-wrap"><table class="grid"><thead><tr><th>Кто</th><th>Открыто</th><th>Нагрузка</th><th>Просрочено</th><th>Заблокировано</th></tr></thead><tbody>${load.map(x=>`<tr><td><span class="who-pick">${av(x.id,22)} ${esc(pname(x.id))}</span></td><td class="m">${x.n}</td><td><div class="mini-bar" style="min-width:90px"><i style="width:${Math.round(x.w/maxW*100)}%"></i></div><small class="mono" style="color:var(--muted)">${x.w}</small></td><td class="m"${red(x.over)}>${x.over}</td><td class="m">${x.blk}</td></tr>`).join('')}</tbody></table></div></section>
-  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('LayoutGrid')}</span>Отделы</h2></div>
-    <div class="tbl-wrap"><table class="grid"><thead><tr><th>Отдел</th><th>Открыто</th><th>Просрочено</th><th>На ревью</th><th>Заблокировано</th><th>Без ответственного</th></tr></thead><tbody>${depts.map(x=>`<tr tabindex="0" data-go="d/${x.d.id}/tasks"><td>${dchip(x.d.id)}</td><td class="m">${x.n}</td><td class="m"${red(x.over)}>${x.over}</td><td class="m">${x.rev}</td><td class="m"${red(x.blk)}>${x.blk}</td><td class="m">${x.none}</td></tr>`).join('')}</tbody></table></div></section>
-  ${cur.length ? `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Rocket')}</span>Готовятся к выходу</h2><a class="btn sm ghost" href="#/d/qa/versions">Все версии</a></div>${cur.map(v=>`<div><b>${esc(v.name)}</b>${v.tldr?` <small style="color:var(--text-2)">${esc(v.tldr)}</small>`:''}${verProgress(v) || '<div><small style="color:var(--muted)">К версии пока не привязано ни одной задачи — укажи версию в карточке задачи.</small></div>'}</div>`).join('')}</section>` : ''}`;
+  <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Users')}</span>Кто чем занят</h2><span class="sub">сначала те, кто онлайн</span></div>
+    <div class="pgrid">${people.map(personCard).join('') || '<div class="empty">В команде пока никого.</div>'}</div></section>
+  ${depts.length ? `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('LayoutGrid')}</span>Отделы</h2><span class="sub">полоска — доля закрытого за 2 недели</span></div><div class="dgrid">${depts.map(deptCard).join('')}</div></section>` : ''}
+  ${cur.length ? `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Rocket')}</span>Готовятся к выходу</h2><a class="btn sm ghost" href="#/d/qa/versions">Все версии</a></div>${cur.map(v=>`<div><b>${esc(v.name)}</b>${v.tldr?` <small style="color:var(--text-2)">${esc(v.tldr)}</small>`:''}${verProgress(v) || '<div><small style="color:var(--muted)">К версии пока не привязано ни одной задачи — укажи версию в карточке задачи.</small></div>'}</div>`).join('')}</section>` : ''}
+  ${metricTiles()}`;
 }
 /* отчёт за неделю в Markdown: что закрыто, что просрочено и заблокировано, какие решения приняты, что вышло */
 function weekReport(){
@@ -2774,6 +2822,7 @@ function palItems(q){
     ['MessagesSquare','Новый чат','',()=>newChat()],
     ['Bot','Забронировать Claude','',()=>{ go('claude'); setTimeout(claudeBookForm, 80); }],
     ['SunMoon','Сменить тему','',()=>{ P.theme = {auto:'dark',dark:'light',light:'auto'}[P.theme]; applyPrefs(); savePrefs(); toast('Тема: '+{auto:'как в системе',dark:'тёмная',light:'светлая'}[P.theme]); }],
+    ['Sparkles','Сменить фон','',()=>{ const i = BGS.findIndex(b=>b[0]===P.bg); P.bg = BGS[(i+1)%BGS.length][0]; applyPrefs(); savePrefs(); toast('Фон: '+BGS.find(b=>b[0]===P.bg)[1]); }],
     ['Leaf','Спокойный режим вкл/выкл','',()=>{ P.calm = !P.calm; applyPrefs(); savePrefs(); toast(P.calm?'Спокойный режим: без конфетти и всплывающих XP':'Спокойный режим выключен'); }],
     ['Settings','Профиль и настройки','',()=>settings()]
   ].map(c=>({g:'Команды', ico:c[0], t:c[1], r:c[2], run:c[3]}));
@@ -2827,15 +2876,20 @@ function settings(){
     <div class="set-row"><div>Цель недели<small>Сколько задач закрывать за неделю. Волонтёру хватит трёх.</small></div><div class="seg">${WEEK_GOALS.map(n=>`<button data-action="week-goal" data-v="${n}" aria-pressed="${weekGoal()===n}">${n}</button>`).join('')}</div></div>
     <h2 style="margin-top:8px">${ic('Settings')} Отображение</h2>
     <div class="set-row"><div>Тема</div>${seg('theme',[['auto','Авто'],['dark','Тёмная'],['light','Светлая']])}</div>
+    <div class="set-row bg-row"><div>Фон и стекло<small>Цветной фон, панели как матовое стекло</small></div><div class="bg-pick">${BGS.map(([v,n,t])=>`<button data-action="pref" data-k="bg" data-v="${v}" aria-pressed="${P.bg===v}" title="${t}"><i class="bgsw bgsw-${v}"></i><span>${n}</span></button>`).join('')}</div></div>
     <div class="set-row"><div>Размер текста</div>${seg('fs',[['s','S'],['m','M'],['l','L']])}</div>
     <div class="set-row"><div>Плотность</div>${seg('density',[['normal','Свободно'],['compact','Плотно']])}</div>
     <div class="set-row"><div>Спокойный режим<small>Без конфетти и всплывающих XP. Прогресс остаётся.</small></div>${seg('calm',[[false,'Выкл'],[true,'Вкл']])}</div>
     <div><p class="sub-h" style="margin:10px 0 8px">Отделы в боковой панели</p><div class="dpick">${DEPTS.map(d=>`<button type="button" class="dchip" style="--dc:${d.color}" data-action="toggle-dept" data-d="${d.id}" aria-pressed="${!P.hidden.includes(d.id)}">${ic(d.icon)} ${esc(d.name)}</button>`).join('')}</div><small style="color:var(--muted)">Скрой то, чем не занимаешься. Меньше шума. Настройки отображения хранятся в этом браузере.</small></div>
     <div style="display:flex;justify-content:flex-end"><button class="btn" data-action="close-overlay">Готово</button></div></div></div>`);
 }
+/* фон и «жидкое стекло»: полупрозрачные панели с размытием поверх цветного фона. off — прежний строгий вид */
+const BGS = [['off','Классика','Без стекла, как раньше'],['orbit','Орбита','Оранжевая планета и бирюза'],['aurora','Сияние','Зелёно-фиолетовые волны'],['ocean','Глубина','Синий и голубой'],['sunset','Закат','Розовый и фиолетовый']];
 function applyPrefs(){
   const r = document.documentElement;
   if (P.theme==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', P.theme);
+  if (!BGS.some(b=>b[0]===P.bg)) P.bg = 'off';
+  if (P.bg==='off') r.removeAttribute('data-bg'); else r.setAttribute('data-bg', P.bg);
   r.setAttribute('data-fs', P.fs); r.setAttribute('data-density', P.density); r.setAttribute('data-calm', P.calm?'1':'0');
 }
 
