@@ -1347,55 +1347,18 @@ form.pal{overflow-y:auto}
 :root[data-bg] :is(.kpi,.tile,.pcard,.dcard):hover{transform:translateY(-3px)}
 
 /* ── фото-фоны (Unsplash, бесплатная лицензия): затемнены, чтобы стекло и текст читались ── */
-:root[data-bg="home"]{--photo:url("https://images.unsplash.com/photo-1641232458416-feace752b346?auto=format&fit=crop&w=2400&q=75");
-  --acc:#F0A04B;--acc-2:#F7C389;--acc-deep:#C9741F;--acc-bg:rgba(240,160,75,.15);--acc-line:rgba(240,160,75,.45);--on-acc:#1E1206}
-:root[data-bg="sunroom"]{--photo:url("https://images.unsplash.com/photo-1631510390389-c1e4fb20ff31?auto=format&fit=crop&w=2400&q=75");
-  --acc:#8DBF8B;--acc-2:#B6DAB4;--acc-deep:#5E9A5C;--acc-bg:rgba(141,191,139,.15);--acc-line:rgba(141,191,139,.45);--on-acc:#0B1A0B}
-:root[data-bg="city"]{--photo:url("https://images.unsplash.com/photo-1758551139137-5cad5a98e99f?auto=format&fit=crop&w=2400&q=75");
-  --acc:#7C8CFF;--acc-2:#AEB8FF;--acc-deep:#5262E8;--acc-bg:rgba(124,140,255,.15);--acc-line:rgba(124,140,255,.45);--on-acc:#fff}
 :root[data-bg="lake"]{--photo:url("https://images.unsplash.com/photo-1695109797036-63678fc04def?auto=format&fit=crop&w=2400&q=75");
   --acc:#2EC4B6;--acc-2:#7FE0D6;--acc-deep:#16958A;--acc-bg:rgba(46,196,182,.15);--acc-line:rgba(46,196,182,.45);--on-acc:#03140F}
-:root:is([data-bg="home"],[data-bg="sunroom"],[data-bg="city"],[data-bg="lake"]){
+:root:is([data-bg="lake"]){
   --orbs:linear-gradient(180deg,rgba(4,6,10,.5),rgba(4,6,10,.66)),var(--photo) center/cover no-repeat}
-:root[data-bg="sunroom"]{--orbs:linear-gradient(180deg,rgba(4,6,10,.62),rgba(4,6,10,.74)),var(--photo) center/cover no-repeat}
 /* фото не «плавают», как цветные пятна — двигается только слой с кругами */
-:root:is([data-bg="home"],[data-bg="sunroom"],[data-bg="city"],[data-bg="lake"]) body::before{animation:none;inset:0}
+:root:is([data-bg="lake"]) body::before{animation:none;inset:0}
 /* светлая тема: та же фотография под молочной вуалью */
-:root[data-theme="light"]:is([data-bg="home"],[data-bg="sunroom"],[data-bg="city"],[data-bg="lake"]){
+:root[data-theme="light"]:is([data-bg="lake"]){
   --orbs:linear-gradient(180deg,rgba(240,242,246,.5),rgba(240,242,246,.62)),var(--photo) center/cover no-repeat}
-:root[data-theme="light"]:is([data-bg="home"],[data-bg="sunroom"],[data-bg="city"],[data-bg="lake"]) body::before{opacity:1}
-.bgsw-home{background:url("https://images.unsplash.com/photo-1641232458416-feace752b346?auto=format&fit=crop&w=200&q=60") center/cover}
-.bgsw-sunroom{background:url("https://images.unsplash.com/photo-1631510390389-c1e4fb20ff31?auto=format&fit=crop&w=200&q=60") center/cover}
-.bgsw-city{background:url("https://images.unsplash.com/photo-1758551139137-5cad5a98e99f?auto=format&fit=crop&w=200&q=60") center/cover}
+:root[data-theme="light"]:is([data-bg="lake"]) body::before{opacity:1}
 .bgsw-lake{background:url("https://images.unsplash.com/photo-1695109797036-63678fc04def?auto=format&fit=crop&w=200&q=60") center/cover}
 
-/* ── «Ночной лёд»: раскладка «Льда» (стеклянный лист под контентом, тёмное меню), но в тёмных тонах ── */
-:root[data-theme][data-bg="frostnight"]{
-  --bg:#031820; --acc:#22D3EE; --acc-2:#67E8F9; --acc-deep:#0891B2; --on-acc:#031820;
-  --acc-bg:rgba(34,211,238,.14); --acc-line:rgba(34,211,238,.45);
-  --line:rgba(140,220,240,.14); --line-2:rgba(140,220,240,.22);
-  --panel-2:rgba(160,230,245,.07); --panel-3:rgba(160,230,245,.12);
-  --orbs:radial-gradient(circle closest-side,rgba(34,211,238,.32),transparent) 85% -10%/760px 760px no-repeat,
-    radial-gradient(circle closest-side,rgba(120,220,240,.12),transparent) 30% 40%/640px 640px no-repeat,
-    radial-gradient(circle closest-side,rgba(14,116,144,.55),transparent) -5% 105%/720px 720px no-repeat,
-    linear-gradient(135deg,#021219 0%,#06303F 40%,#0B4A5E 62%,#04202B 100%);
-}
-:root[data-theme][data-bg="frostnight"] .wrap{margin:2px auto 16px;border-radius:26px;border:1px solid rgba(140,220,240,.18);
-  background:linear-gradient(160deg,rgba(40,110,130,.32),rgba(8,30,40,.38) 50%,rgba(30,90,110,.28));
-  -webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);box-shadow:inset 0 1px 0 rgba(180,240,255,.18),0 30px 60px rgba(0,10,15,.4)}
-@media (min-width:901px){:root[data-theme][data-bg="frostnight"] .wrap{width:calc(100% - 32px)}}
-:root[data-theme][data-bg="frostnight"] :is(.panel,.tile,.kpi,.tbl-wrap,.colm,.decision,.erow,.lead-hero,.chat-list,.chat-main){
-  background:linear-gradient(160deg,rgba(160,230,245,.11),rgba(160,230,245,.03) 55%,rgba(160,230,245,.06)),rgba(4,22,30,.42);border-color:rgba(140,220,240,.16);box-shadow:inset 0 1px 0 rgba(180,240,255,.16),0 10px 28px rgba(0,10,15,.3)}
-:root[data-theme][data-bg="frostnight"] .card{background:linear-gradient(160deg,rgba(160,230,245,.1),rgba(160,230,245,.03)),rgba(4,22,30,.5);border-color:rgba(140,220,240,.13)}
-:root[data-theme][data-bg="frostnight"] .side .side-in{background:linear-gradient(170deg,rgba(160,230,245,.08),rgba(160,230,245,.02) 45%),rgba(1,12,17,.55);border-color:rgba(140,220,240,.14)}
-:root[data-theme][data-bg="frostnight"] .nav a[aria-current="page"]{background:linear-gradient(135deg,#0E7490,#22B8D6);color:#fff}
-:root[data-theme][data-bg="frostnight"] :is(.drawer,.pal){background:linear-gradient(160deg,rgba(160,230,245,.08),rgba(160,230,245,.02) 45%),rgba(3,20,27,.82)}
-/* светлые кнопки-таблетки — зеркально чёрным в «Льде» */
-:root[data-theme][data-bg="frostnight"] .btn.primary{background:#EAF6FA;color:#031820;border-radius:999px;box-shadow:0 6px 18px rgba(34,211,238,.18),inset 0 1px 0 #fff}
-:root[data-theme][data-bg="frostnight"] :is(.seg,.tabs,.statusbar) [aria-pressed="true"],:root[data-theme][data-bg="frostnight"] .tabs [aria-selected="true"]{background:#EAF6FA;color:#031820;box-shadow:none}
-:root[data-theme][data-bg="frostnight"] .fab{background:#EAF6FA;color:#031820}
-:root[data-theme][data-bg="frostnight"] .ph :is(h1,p){text-shadow:none}
-.bgsw-frostnight{background:linear-gradient(90deg,rgba(1,12,17,.9) 0 28%,transparent 28%),linear-gradient(160deg,rgba(60,140,160,.6),rgba(10,40,52,.6)) 34% 18%/62% 64% no-repeat,linear-gradient(135deg,#021219,#06303F 40%,#0B4A5E 65%,#04202B)}
 
 /* верхняя панель в стеклянных стилях: ни фона, ни размытия, ни обводки — прокручивается вместе со страницей, поэтому ничего под неё не заезжает */
 :root[data-bg] .topbar{position:relative;background:none;border-bottom:0;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
