@@ -157,8 +157,10 @@ const DEPTS = [
     tabs:[['overview','Обзор'],['tasks','Задачи'],['assets','Ассеты'],['limits','Лимиты']]},
   {id:'gd', name:'Геймдизайн', icon:'Dice5', color:'#B9A3FF', tldr:'Механики, работы, квесты и фракции. Каждая механика описана карточкой: зачем, как работает, связанные параметры экономики.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['mechanics','Механики'],['jobs','Работы'],['factions','Фракции']]},
-  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', has:['donate','analytics'], tldr:'Деньги сервера целиком: план, параметры, этапы, донат (позиции, акции, курс) и метрики. Баги, решения и журнал экономики — в общих разделах с фильтром «Экономика».',
-    tabs:[['overview','Обзор'],['plan','План'],['params','Параметры'],['stages','Этапы'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['finance','Финансы','analytics/finance'],['tasks','Задачи']]},
+  {id:'econ', name:'Экономика', icon:'Coins', color:'#86D9B0', has:['donate','analytics'], tldr:'Договариваемся о ценах, выплатах и донате, передаём значения разработчику и проверяем результат в игре.',
+    tabs:[['overview','Сейчас'],['params','Цены и выплаты'],['plan','План реформы'],['stages','Этапы реформы'],['items','Донат: позиции','donate/items'],['promos','Донат: акции','donate/promos'],['metrics','Метрики','analytics/metrics'],['reports','Отчёты','analytics/reports'],['finance','Финансы','analytics/finance'],['tasks','Задачи']],
+    /* вкладки на экране: похожие объединены, внутри — переключатель. Старые адреса продолжают работать */
+    nav:[['overview','Сейчас',[]],['params','Цены и выплаты',[]],['plan','План реформы',[['plan','Что задумали'],['stages','Этапы работ']]],['items','Донат',[['items','Позиции'],['promos','Акции']]],['metrics','Цифры сервера',[['metrics','Метрики'],['reports','Отчёты'],['finance','Финансы']]],['tasks','Задачи',[]]]},
   {id:'qa', name:'QA и релизы', icon:'FlaskConical', color:'#F49A9A', has:['release'], tldr:'Все баги команды (с фильтром по отделу), тест-кейсы, чеклист релиза, версии с changelog и деплой. Релиз выходит, когда чеклист закрыт; критичный баг блокирует релиз, пока не исправлен или не принято решение.',
     tabs:[['overview','Обзор'],['tasks','Задачи'],['bugs','Баги'],['cases','Тест-кейсы'],['checklist','Чеклист релиза'],['versions','Версии','release/versions'],['deploy','Деплой','release/deploy']]},
   {id:'admin', name:'Администрация', icon:'Shield', color:'#B8DD8A', tldr:'Фидбек игроков: предложения голосуются и при поддержке становятся задачами. Правила сервера — в Вики.',
@@ -488,16 +490,25 @@ function heatmap(){
   <div class="heat">${rows.map(d=>`<span class="rl" title="${esc(d.name)}">${ic(d.icon)} ${esc(d.name)}</span>`+(counts[d.id]||Array(14).fill(0)).map((n,i)=>`<span class="cell l${lv(n)}" title="${esc(d.name)}: ${n} · ${nums[i]}"></span>`).join('')).join('')}<span></span>${nums.map(n=>`<span class="cl">${n}</span>`).join('')}</div></section>`;
 }
 /* первые шаги новичка: пропадают, когда всё сделано или скрыты */
+function onbSteps(){
+  const m = me(), dep = myDepts()[0], dd = dep && D[dep];
+  /* маленькая свободная задача есть не всегда — тогда ведём в задачи отдела, а не в пустой фильтр */
+  const small = S.tasks.some(t=>t.size==='S' && t.status!=='done' && !t.who && canEdit(t));
+  const taskStep = small ? {act:'go-small', b:'Найти'} : dd ? {href:'#/d/'+dd.id+'/tasks', b:'Задачи отдела'} : {};
+  return [
+    {ok:!!(m.role||'').trim(), t:'Заполни профиль: кто ты в команде', act:'settings', b:'Профиль'},
+    {ok:myDepts().length > 0, t:'Получи отдел. Его назначает руководитель'+(adminNames()?' ('+adminNames()+'), напиши ему':', напиши ему')},
+    {ok:!!P.onbDept, t:dd ? 'Открой «'+dd.name+'»: сверху написано, что делать дальше' : 'Открой свой отдел: сверху написано, что делать дальше', href:dd?'#/d/'+dd.id:'', b:'Открыть'},
+    {ok:S.tasks.some(t=>t.who===S.me), t:small?'Возьми первую задачу, лучше маленькую, до 15 минут':'Возьми первую задачу. Если подходящей нет, спроси у коллег в чате', ...taskStep},
+    {ok:(m.xp||0) >= 10 || S.inbox.length > 0, t:'Появилась мысль не по теме? Нажми Q и запиши, разберёшь потом', act:'capture', b:'Записать'}];
+}
+const onbActive = () => !P.onbHide && onbSteps().some(x=>!x.ok);
 function onboarding(){
-  if (P.onbHide) return '';
-  const m = me(), steps = [
-    [!!(m.role||'').trim(), 'Заполни профиль: роль в команде', 'settings', 'Профиль'],
-    [myDepts().length > 0, 'Получи отдел — его назначает руководитель'+(adminNames()?' ('+adminNames()+')':''), '', ''],
-    [S.tasks.some(t=>t.who===S.me), 'Возьми первую задачу — лучше размера S, «≤ 15 мин»', 'go-small', 'Найти'],
-    [(m.xp||0) >= 10 || S.inbox.length > 0, 'Запиши любую мысль на клавишу Q — разберёшь потом', 'capture', 'Записать']];
-  const done = steps.filter(x=>x[0]).length; if (done===steps.length) return '';
+  if (!onbActive()) return '';
+  const steps = onbSteps(), done = steps.filter(x=>x.ok).length;
   return `<section class="panel glow"><div class="panel-h"><h2><span class="hi">${ic('Sparkles')}</span>Первые шаги · ${done} из ${steps.length}</h2><button class="btn sm ghost" data-action="onb-hide">Скрыть</button></div>
-    <div class="cl">${steps.map(([ok, t, act, b])=>`<div class="row"><label class="${ok?'done':''}"><input type="checkbox" disabled ${ok?'checked':''}><span>${esc(t)}</span></label>${!ok && act ? `<button class="btn sm" data-action="${act}">${b}</button>` : ''}</div>`).join('')}</div></section>`;
+    <p class="ns-lead">Хаб — рабочее место команды: здесь задачи, решения и всё, что нужно по твоему отделу. Начни с этих шагов. Непонятное слово? <a href="#/wiki">Словарь в Вики</a>.</p>
+    <div class="cl">${steps.map(x=>`<div class="row"><label class="${x.ok?'done':''}"><input type="checkbox" disabled ${x.ok?'checked':''}><span>${esc(x.t)}</span></label>${x.ok ? '' : x.href ? `<a class="btn sm" href="${x.href}">${x.b}</a>` : x.act ? `<button class="btn sm" data-action="${x.act}">${x.b}</button>` : ''}</div>`).join('')}</div></section>`;
 }
 function viewToday(){
   const m = me();
@@ -511,7 +522,7 @@ function viewToday(){
   return `
   <section class="hero">
     <div><h1>${hello()}, ${esc((m.name||'').split(' ')[0])}! ${ic('Hand')}</h1><p>${top.length ? (left ? `На сегодня ${left} из ${top.length} главных задач. Начни с самой маленькой.` : 'Главные задачи закрыты. Можно выдохнуть.') : 'Выбери до трёх главных задач на сегодня — кнопка «В день» в карточке задачи.'}</p></div>
-    <div class="hero-stats">
+    <div class="hero-stats"${onbActive()?' hidden':''}>
       <div class="ring" style="--p:${pct}" title="Цель недели"><span>${pct}%</span></div>
       <div class="hs"><b>${wd}/${weekGoal()}</b><small>задач за неделю</small></div>
       <div class="hs"><b>${ic('Flame')} ${streak()}</b><small>дней подряд</small></div>
@@ -935,7 +946,20 @@ function viewWiki(){
   const list = [...S.wiki].sort(byOrder);
   return `<div class="ph"><div class="ph-l"><span class="ph-ico" style="--dc:#F5B98A">${ic('BookOpen')}</span><div><h1>Вики</h1><p>Как всё устроено и правила сервера. Суть сверху — подробности по клику. Текст статей понимает Markdown.</p></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn" title="Открыть файл .md с компьютера в читалке">${ic('BookOpen')} Открыть .md<input type="file" hidden accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain" data-action="md-local"></label><button class="btn primary" data-action="wiki-new">${ic('Plus')} Статья</button></div></div>
   <div class="g2">${list.map(w=>`<section class="panel"><div class="panel-h"><h2>${esc(w.title)}</h2><button class="icon-btn" data-open="wiki:${esc(w.id)}" aria-label="Открыть" title="Открыть и изменить">${ic('Pencil')}</button></div>${w.tldr?`<div class="tldr"><b>Суть</b>${mdLine(w.tldr)}</div>`:''}${w.body?`<details class="more"><summary>Подробнее</summary><div class="body md">${md(w.body)}</div></details>`:''}</section>`).join('') || '<div class="empty"><b>Статей пока нет</b></div>'}</div>
+  ${wikiGlossary()}
   ${wikiRules()}`;
+}
+/* словарь хаба: живёт в коде, чтобы новый участник видел его сразу и никто случайно не удалил */
+const GLOSSARY = [
+  ['Мысль','Быстрая заметка на клавишу Q, чтобы не забыть. Обязательств не создаёт.'],
+  ['Задача','Конкретное дело с исполнителем. Живёт на доске: Новые → К работе → В работе → Ревью → Готово.'],
+  ['Решение','Спорный вопрос: каждый голосует, итог фиксирует кнопка «Принять». Итог потом не теряется в чатах.'],
+  ['Заблокировано','Задача не может двигаться дальше. Обязательно укажи, чего именно не хватает.'],
+  ['Ревью','Работа сделана, её проверяет другой человек.'],
+  ['S, M, L','Размер задачи: S — до 15 минут, M — 1–2 часа, L — полдня и больше.'],
+  ['XP и серия дней','Необязательная игровая статистика: очки за действия и дни активности подряд. На работу не влияет.']];
+function wikiGlossary(){
+  return `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('BookOpen')}</span>Словарь хаба</h2></div><dl class="ns-gloss">${GLOSSARY.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></section>`;
 }
 /* правила сервера (реестр admin/rules) — справочник, поэтому живут в вики */
 function wikiRules(){
@@ -1491,11 +1515,38 @@ function oldChangelog(d){
   return `<h2 class="sub-h">Старые записи changelog · ${items.length}</h2><small style="color:var(--muted)">Перенеси текст в поле «Changelog» нужной версии и удали запись здесь.</small>
   <div class="tiles">${items.map(it=>`<button class="tile" data-open="reg:${esc(it.id)}" style="--dc:${d.color}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><h3>${esc(it.name)}</h3>${it.status?chip(it.status, toneOf(stF, it.status)):''}</div>${it.tldr?`<div class="s">${mdLine(it.tldr)}</div>`:''}</button>`).join('')}</div>`;
 }
+/* пустая вкладка объясняет себя: [что это, зачем, кто заполняет, пример] */
+const REG_HINT = {
+  'dev/events':['Список связей между интерфейсом и сервером','Каждое событие: кто его отправляет и что передаёт. Помогает не сломать чужой экран при правках.','разработчик, когда добавляет или меняет событие.','«phone.buyPlate» из телефона на сервер, передаёт номер.'],
+  'dev/configs':['Файлы настроек сервера','Что в каком файле лежит и кто за него отвечает, чтобы не искать по папкам.','разработчик.','settings/moneySettings.json: стартовые деньги и RB.'],
+  'dev/db':['Таблицы базы данных','Зачем нужна таблица и какой скрипт её менял. Пригодится при обновлениях и откатах.','разработчик, при каждом изменении базы.','characters: персонажи игроков.'],
+  'dev/adr':['Важные технические решения','Что и почему решили по устройству проекта, чтобы через полгода не спорить заново.','разработчик.','Интерфейс переносим с Svelte на React, потому что…'],
+  'cef/screens':['Экраны игрового интерфейса','Какие экраны есть, какой у них макет и готова ли вёрстка.','разработчик.','Телефон → Банк: вёрстка готова, макет утверждён.'],
+  'cef/components':['Общие элементы интерфейса','Кнопки, поля и окна, которые используются на многих экранах.','разработчик.','Кнопка с подсказкой клавиши.'],
+  'design/mockups':['Макеты экранов','Здесь макет проходит путь от черновика до статуса «Утверждён». Только после этого его верстают.','тот, кто рисует макет.','Меню бизнеса: заказ товара, ссылка на Figma.'],
+  'design/handoff':['Чеклист передачи макета в разработку','Что проверить, чтобы разработчику не пришлось переспрашивать.','дизайн вместе с разработкой.','Описаны все состояния: пусто, ошибка, загрузка.'],
+  'art3d/assets':['Реестр моделей и маппинга','Что добавлено в игру, сколько весит и откуда взято, чтобы не превысить лимиты и не нарушить лицензию.','автор модели, сразу при добавлении.','Машина для госслужбы, 18 МБ, лицензия куплена.'],
+  'art3d/limits':['Сколько места уже занято','Общий вес моделей в сравнении с лимитом. От этого зависит, как долго игроки скачивают сервер.','ответственный за 3D, по мере добавления.','Стрим машин: 3,2 из 5 ГБ.'],
+  'gd/mechanics':['Карточки механик','Зачем механика нужна игроку и как она работает. По этой карточке потом ставят задачу разработчику.','автор идеи.','Отмыв денег: зачем нужен, шаги, риски.'],
+  'gd/jobs':['Работы на сервере','Сколько должна приносить работа и сколько приносит на деле.','геймдизайн вместе с экономикой.','Электрик: цель 3 млн $/ч, сейчас 87 млн $/ч.'],
+  'gd/factions':['Фракции сервера','Тип, источник дохода и готовность описания.','геймдизайн.','LSPD, госфракция, доход из казны.'],
+  'qa/cases':['Что проверять перед релизом','Шаги, которые может пройти любой человек, даже без знания кода.','тот, кто проверяет игру.','Купить машину: деньги списались, машина появилась.'],
+  'qa/checklist':['Чеклист релиза','Что обязательно проверить перед выходом обновления.','ответственный за релиз.','Сервер запускается после перезагрузки.'],
+  'release/versions':['Версии сервера','Что вышло и когда, плюс текст для игроков.','ответственный за релиз.','1.4: новая система номеров.'],
+  'release/deploy':['Где какая версия работает','Какая сборка стоит на тесте и на основном сервере.','разработчик.','Основной сервер: версия 1.4, работает.'],
+  'admin/feedback':['Предложения игроков','Идеи с форума и из Discord. Поддержанное идёт в работу как задача.','администрация, по мере поступления.','Добавить слот аксессуаров: Discord, 40 голосов.'],
+  'smm/plan':['План публикаций','Что, где и когда выходит. Каждый анонс привязан к версии, чтобы не обещать неготовое.','тот, кто ведёт соцсети.','Тизер, 15 ноября, YouTube.'],
+  'smm/bloggers':['Блогеры и промокоды','С кем работаем, сколько это стоит и сколько игроков пришло.','тот, кто ведёт соцсети.','Блогер, YouTube, промокод KY10, 120 регистраций.'],
+  'donate/items':['Что продаём за донат','Полный список позиций с ценой в RB и рублях. Отсюда видно, что нужно пересчитать.','экономика.','VIP Gold: 999 RB, примерно 999 ₽.'],
+  'donate/promos':['Акции доната','Какие скидки планируются, чтобы они не ломали экономику.','экономика.','Скидка 20% на RB на выходных запуска.'],
+  'analytics/finance':['Деньги проекта по месяцам','Настоящие рубли: сколько пришло и сколько ушло. Это не игровая валюта.','руководитель или экономика.','Ноябрь: выручка, хостинг, реклама.']
+};
 function regList(key, d){
   const r = REGS[key]; if (!r) return '<div class="empty">Скоро.</div>';
   const items = S.reg.filter(x=>regKeys(key).includes(x.key)).sort(key==='smm/plan' ? (a,b)=>String(a.date||'9').localeCompare(String(b.date||'9')) || byOrder(a,b) : byOrder);
   const tools = `<div class="reg-tools"><small>${plural(items.length,'запись','записи','записей')}</small><span class="sp"></span><button class="btn sm primary" data-open="regnew:${key}">${ic('Plus')} Добавить ${esc(r.noun)}</button></div>`;
-  if (!items.length) return tools + `<div class="empty"><b>Пока пусто</b>Добавь первую запись — её увидит вся команда.</div>`;
+  if (!items.length) { const h = REG_HINT[key];
+    return tools + (h ? `<div class="empty ns-hint"><b>${esc(h[0])}</b>${esc(h[1])}<small><b>Кто заполняет:</b> ${esc(h[2])}</small><small><b>Пример:</b> ${esc(h[3])}</small></div>` : `<div class="empty"><b>Пока пусто</b>Добавь первую запись — её увидит вся команда.</div>`); }
   if (r.type==='table') { const fs = tableFields(r);
     return tools + `<div class="tbl-wrap"><table class="grid"><thead><tr>${fs.map(f=>`<th>${esc(f.l)}</th>`).join('')}</tr></thead><tbody>${items.map(it=>`<tr tabindex="0" data-open="reg:${esc(it.id)}">${fs.map((f,j)=>`<td class="${j===0?'b':f.mono?'m':''}">${j===0?coverMini(it.id):''}${cell(f, it[f.k])}${j===0?decMark(it.id):''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`; }
   const stF = r.fields.find(f=>f.k==='status');
@@ -1515,7 +1566,54 @@ function kit(){
   return `<section class="panel"><div class="panel-h"><h2>Цвета хаба</h2><span class="sub">для примера — замените на палитру игрового UI</span></div><div class="swatches">${sw.map(s=>`<div class="sw"><div style="background:${s[1]}"></div><p>${s[0]}<span>${s[1]}</span></p></div>`).join('')}</div></section>
   <section class="panel"><div class="panel-h"><h2>Шрифты</h2></div><div style="font:800 24px var(--f-display);letter-spacing:-.02em">Manrope 800 — заголовки</div><div style="font:500 16px var(--f-body)">Manrope 500 — основной текст</div><div style="font:600 14px var(--f-mono)">JetBrains Mono — 3 000 000 $</div></section>`;
 }
+/* как работает отдел: 3–4 шага без внутренних терминов */
+const DEPT_HOW = {
+  dev:['Берёшь задачу из «К работе»: в ней должно быть понятно, что сделать.','Если задача про экран, сначала проверяешь, что макет утверждён.','Делаешь, переводишь в «Ревью».','После проверки задача переходит в «Готово».'],
+  design:['Рисуешь макет и заводишь его во вкладке «Макеты».','Команда смотрит и голосует в «Решениях».','Утверждённый макет проходит чеклист «Передача».','Разработчик верстает по нему.'],
+  art3d:['Берёшь задачу или предлагаешь модель.','Заводишь модель в «Ассеты»: вес и лицензия.','Сверяешься с «Лимитами», чтобы не раздуть скачивание.','Готовую модель передаёшь в игру и закрываешь задачу.'],
+  gd:['Описываешь идею карточкой в «Механики»: зачем она игроку и как работает.','Спорное выносишь в «Решения».','Числа согласуешь с экономикой.','По готовому описанию ставишь задачу разработке.'],
+  econ:['Смотришь значения в «Цены и выплаты»: сколько сейчас и сколько предлагается.','Подходит — ставишь «Согласовано». Нет — предлагаешь своё число.','Согласованное передаётся в игру: метка подскажет, нужен ли разработчик.','Проверяешь в игре и ставишь «Внедрено».'],
+  qa:['Смотришь открытые баги и повторяешь их в игре.','Подтвердился — уточняешь шаги. Нет — закрываешь.','Перед обновлением проходишь «Чеклист релиза».','Критичный баг останавливает релиз, пока его не исправят.'],
+  admin:['Собираешь предложения игроков в «Фидбек игроков».','Поддержанное превращаешь в задачу: что и зачем нужно.','Спорное выносишь в «Решения».','Правила сервера ведёшь в Вики.'],
+  smm:['Заводишь публикацию в план с датой и каналом.','Привязываешь её к версии, чтобы не анонсировать неготовое.','Публикуешь и добавляешь ссылку.','Записываешь охват, чтобы видеть, что сработало.']
+};
+/* что делать прямо сейчас: сначала своё, потом дела отдела */
+function deptSteps(d){
+  const steps = [], open = S.tasks.filter(t=>inDept(t,d.id) && t.status!=='done');
+  const mine = open.filter(t=>t.who===S.me), byS = (...st) => st.map(s=>mine.find(t=>t.status===s)).find(Boolean);
+  const tk = (k, t) => ({k, t:t.title, d:t.tldr||'', attrs:`data-open="task:${esc(t.id)}"`, b:'Открыть задачу'});
+  const cur = byS('doing','review'), nx = byS('todo','inbox');
+  if (cur) steps.push(tk('Продолжи свою задачу', cur));
+  if (nx) steps.push(tk('Твоя задача', nx));
+  if (d.id==='econ' && eReady()) {
+    for (const [name, items] of eGroups()) { const n = items.filter(p=>p.status==='proposed').length; if (!n) continue;
+      steps.push({k:'Следующее дело отдела', t:`Проверь ${plural(n,'значение','значения','значений')} в группе «${name}»`, d:'Смотри, не слишком ли много или мало получает игрок. Подходит — ставь «Согласовано», нет — предложи своё число.', attrs:`data-action="e-review" data-g="${esc(name)}"`, b:'Начать проверку'}); break; }
+  }
+  if (d.id==='qa') { const b = allBugs().filter(x=>x.open).sort((a,c)=>(sevRank[a.sev]??2)-(sevRank[c.sev]??2))[0];
+    if (b) steps.push({k:'Следующее дело отдела', t:'Проверь в игре: '+b.name, d:'Повтори баг. Подтвердился — уточни шаги, нет — закрой.', attrs:`data-open="${esc(b.ref)}"`, b:'Открыть баг'}); }
+  const free = open.find(t=>!t.who && (t.status==='todo'||t.status==='inbox'));
+  if (free) steps.push(tk('Свободная задача отдела', free));
+  const dec = pendingDecs().find(x=>decDept(x)===d.id);
+  if (dec) steps.push({k:'Нужен твой голос', t:decQ(dec), d:'Посмотри варианты и проголосуй.', attrs:`data-action="open-dec" data-id="${esc(dec.id)}"`, b:'Голосовать'});
+  return steps;
+}
+function nextStep(d){
+  if (!canSee(d.id)) return '';
+  const st = deptSteps(d), s = st[0], then = st[1], how = DEPT_HOW[d.id]||[];
+  const stuck = S.tasks.filter(t=>inDept(t,d.id) && t.status==='blocked');
+  const main = s ? `<div class="ns-main"><small>${esc(s.k)}</small><b>${esc(s.t)}</b>${s.d?`<p>${mdLine(s.d)}</p>`:''}<button class="btn sm primary" ${s.attrs}>${s.b} ${ic('ArrowRight')}</button></div>`
+    : `<div class="ns-main"><small>Сейчас всё спокойно</small><b>Срочных дел в отделе нет</b><p>Посмотри, как работает отдел, или запиши идею на клавишу Q.</p></div>`;
+  return `<section class="panel ns-card" style="--dc:${d.color}"><div class="ns-kick">Твой следующий шаг</div>${main}
+    ${then?`<div class="ns-then">Потом: <button class="ns-link" ${then.attrs}>${esc(then.t)}</button></div>`:''}
+    ${stuck.length?`<a class="ns-warn" href="#/d/${d.id}/tasks">${ic('CircleAlert')}<span>Заблокировано: ${plural(stuck.length,'задача','задачи','задач')}. Причина: «${esc(clip(stuck[0].blockedWhy||'не указана',40))}»${stuck.length>1?' и другие':''}. Посмотри, можешь ли помочь.</span></a>`:''}
+    ${how.length?`<details class="more ns-how"><summary>Как работает отдел</summary><ol>${how.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></details>`:''}</section>`;
+}
+function qaBugs(){
+  const list = allBugs().filter(b=>b.open).sort((a,c)=>(sevRank[a.sev]??2)-(sevRank[c.sev]??2));
+  return `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Bug')}</span>Открытые баги · ${list.length}</h2><a class="btn sm ghost" href="#/d/qa/bugs">Все баги</a></div><div class="list">${list.slice(0,5).map(b=>`<div class="item" tabindex="0" data-open="${esc(b.ref)}"><div class="bd"><div class="tt">${esc(b.name)}</div><div class="mt">${chip(b.sevL||'Средняя', ETONE[b.sev]||'info')}${dchip(b.dept)}</div></div></div>`).join('') || '<div class="empty">Открытых багов нет.</div>'}</div></section>`;
+}
 function deptOverview(d){
+  if (canSee(d.id) && !P.onbDept) { P.onbDept = true; savePrefs(); }
   const tasks = S.tasks.filter(t=>inDept(t,d.id));
   const open = tasks.filter(t=>t.status!=='done');
   const decs = allDecs().filter(x=>decDept(x)===d.id && decOpen(x));
@@ -1523,13 +1621,14 @@ function deptOverview(d){
   const doing = open.filter(t=>t.status==='doing'||t.status==='review');
   const next = open.filter(t=>t.status==='todo'||t.status==='inbox').slice(0,4);
   return `
-  ${d.id==='econ' ? econOverview(d) : ''}
-  <div class="tiles">
+  ${nextStep(d)}
+  ${d.id==='qa' ? qaBugs() : ''}
+  ${d.id==='econ' ? econOverview(d) : `<div class="tiles">
     <div class="tile" style="cursor:default"><span class="k">Открыто задач</span><span class="v">${open.length}</span><span class="s">${doing.length} в работе</span></div>
     <div class="tile" style="cursor:default"><span class="k">Закрыто</span><span class="v">${tasks.length-open.length}</span><span class="s">всего в отделе</span></div>
     <div class="tile" style="cursor:default"><span class="k">Решения</span><span class="v">${decs.length}</span><span class="s">ждут итога</span></div>
     <div class="tile" style="cursor:default"><span class="k">Люди</span><span class="v">${people.length}</span><span class="s">${people.filter(isOnline).length} онлайн</span></div>
-  </div>
+  </div>`}
   ${canSee(d.id) ? '' : roHint(d)}${`<div class="g2">
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Hammer')}</span>Сейчас в работе</h2></div><div class="list">${doing.map(t=>taskItem(t,{status:true})).join('')||'<div class="empty">Ничего не в работе.</div>'}</div></section>
     <section class="panel"><div class="panel-h"><h2><span class="hi">${ic('SkipForward')}</span>Следующие</h2><a class="btn sm ghost" href="#/d/${d.id}/tasks">Все задачи</a></div><div class="list">${next.map(t=>taskItem(t)).join('')||'<div class="empty">Очередь пуста.</div>'}</div></section>
@@ -1548,7 +1647,10 @@ function viewDept(){
   <div class="ph"><div class="ph-l"><span class="ph-ico">${ic(d.icon)}</span><div><h1>${esc(d.name)}</h1><p>${people.length?esc(people.join(', ')):'В отделе пока никого'}</p></div></div>
   <button class="btn primary" data-action="new-task" data-status="todo" data-dept="${d.id}">${ic('Plus')} Задача</button></div>
   <div class="tldr"><b>Суть раздела</b>${mdLine(d.tldr)}</div>
-  <nav class="tabs" role="tablist">${d.tabs.map(([id,name])=>`<a class="tab" role="tab" href="#/d/${d.id}/${id}" aria-selected="${tab===id}">${esc(name)}${count(id)?`<span class="c">${count(id)}</span>`:''}</a>`).join('')}</nav>
+  ${d.nav ? (() => { const ids = n => n[2].length ? n[2].map(x=>x[0]) : [n[0]], cur = d.nav.find(n=>ids(n).includes(tab)) || d.nav[0];
+    return `<nav class="tabs" role="tablist">${d.nav.map(n=>{ const c = ids(n).reduce((a,id)=>a+count(id),0); return `<a class="tab" role="tab" href="#/d/${d.id}/${n[0]}" aria-selected="${n===cur}">${esc(n[1])}${c?`<span class="c">${c}</span>`:''}</a>`; }).join('')}</nav>
+    ${cur[2].length ? `<div class="seg ns-sub" role="group">${cur[2].map(([id,name])=>`<a href="#/d/${d.id}/${id}" class="ns-subt" aria-current="${tab===id}">${esc(name)}${count(id)?` <span class="mono" style="color:var(--muted)">${count(id)}</span>`:''}</a>`).join('')}</div>` : ''}`; })()
+  : `<nav class="tabs" role="tablist">${d.tabs.map(([id,name])=>`<a class="tab" role="tab" href="#/d/${d.id}/${id}" aria-selected="${tab===id}">${esc(name)}${count(id)?`<span class="c">${count(id)}</span>`:''}</a>`).join('')}</nav>`}
   ${body}</div>`;
 }
 
@@ -1682,18 +1784,25 @@ function econOverview(d){
   const P = E.params, pc = s => P.filter(p=>p.status===s).length, live = P.length - pc('rejected');
   const openB = allBugs().filter(b=>b.dept==='econ' && b.open), crit = openB.filter(b=>b.sev==='critical').length;
   const doneSt = E.stages.filter(s=>s.status==='done').length, curSt = [...E.stages].sort(byOrder).find(s=>s.status!=='done');
-  const decided = E.decisions.filter(x=>x.chosen!=null && x.chosen!=='').length;
+  /* один счётчик решений на весь экран: те же решения, что в списке ниже */
+  const econDecs = allDecs().filter(x=>decDept(x)==='econ'), openDecs = econDecs.filter(decOpen).length;
   const bar = parts => `<div class="sbar">${parts.map(([n,c])=>n?`<i style="flex:${n};background:${c}"></i>`:'').join('')}</div>`;
-  return `<section class="panel glow" style="--dc:${d.color}">
-    <div class="panel-h"><h2><span class="hi">${ic('Coins')}</span>Экономика сейчас</h2>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown для репозитория</button><a class="btn sm ghost" href="#/log/econ">${ic('ScrollText')} Журнал экономики</a><a class="btn sm ghost" href="../economy/" target="_blank" rel="noopener">${ic('ExternalLink')} Старая страница</a></div></div>
+  return `<section class="panel" style="--dc:${d.color}">
+    <div class="panel-h"><h2><span class="hi">${ic('Coins')}</span>Как движутся цены и выплаты</h2></div>
+    <div class="ns-pipe">
+      <a class="ns-st" href="#/d/econ/params"><small>1. Обсуждаем</small><b>${pc('proposed')+pc('idea')}</b><span>ждут согласия</span></a>
+      <a class="ns-st" href="#/d/econ/params"><small>2. Согласовано</small><b>${pc('agreed')}</b><span>осталось внести в игру</span></a>
+      <a class="ns-st" href="#/d/econ/params"><small>3. В игре</small><b>${pc('done')}</b><span>уже внедрено</span></a>
+    </div></section>
+  <section class="panel" style="--dc:${d.color}">
+    <div class="panel-h"><h2><span class="hi">${ic('Gauge')}</span>Экономика сейчас</h2></div>
     <div class="tiles">
-      <a class="tile" href="#/d/econ/params"><span class="k">Параметры</span><span class="v">${pc('agreed')+pc('done')} <small>/ ${live}</small></span>${bar([[pc('done'),'var(--ok)'],[pc('agreed'),'var(--violet)'],[pc('proposed'),'var(--info)'],[pc('idea'),'var(--muted)']])}<span class="s">согласовано · ${pc('done')} внедрено · ${pc('proposed')} ждут</span></a>
       <a class="tile" href="#/d/qa/bugs/econ"><span class="k">Баги</span><span class="v">${openB.length}</span>${bar([[crit,'var(--red)'],[openB.length-crit,'var(--warn)']])}<span class="s">открыто · ${crit ? plural(crit,'критичный','критичных','критичных') : 'критичных нет'}</span></a>
       <a class="tile" href="#/d/econ/stages"><span class="k">Этапы</span><span class="v">${doneSt} <small>/ ${E.stages.length}</small></span>${bar([[doneSt,'var(--ok)'],[E.stages.length-doneSt,'var(--panel-3)']])}<span class="s">${curSt ? 'сейчас: '+esc(clip(curSt.title,48)) : 'все готовы'}</span></a>
-      <a class="tile" href="#/decisions/econ"><span class="k">Решения</span><span class="v">${decided} <small>/ ${E.decisions.length}</small></span>${bar([[decided,'var(--ok)'],[E.decisions.length-decided,'var(--panel-3)']])}<span class="s">${E.decisions.length-decided ? (E.decisions.length-decided)+' ждут решения' : 'все приняты'}</span></a>
-      <div class="tile" style="cursor:default"><span class="k">Якорь</span><span class="v mono" style="font-size:20px">${nfmt.format(E.anchor)} $</span><span class="s">= 1 час работы новичка. От него считается «≈ N ч работы».</span><button class="btn sm" data-action="e-anchor" style="align-self:flex-start">${ic('Pencil')} Изменить</button></div>
-    </div></section>`;
+      <a class="tile" href="#/decisions/econ"><span class="k">Решения</span><span class="v">${openDecs}</span><span class="s">${openDecs ? 'ждут итога' : 'все приняты'}</span></a>
+      <div class="tile" style="cursor:default"><span class="k">Опорная цена: час работы новичка</span><span class="v mono" style="font-size:20px">${nfmt.format(E.anchor)} $</span><span class="s">От неё считается подсказка «≈ N ч работы» рядом с ценами.</span><button class="btn sm" data-action="e-anchor" style="align-self:flex-start">${ic('Pencil')} Изменить</button></div>
+    </div>
+    <details class="more ns-how"><summary>Ещё</summary><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" data-action="e-copy">${ic('Copy')} Markdown для репозитория</button><a class="btn sm ghost" href="#/log/econ">${ic('ScrollText')} Журнал экономики</a><a class="btn sm ghost" href="../economy/" target="_blank" rel="noopener">${ic('ExternalLink')} Старая страница</a></div></details></section>`;
 }
 function eActions(coll, id, movable){
   return `<div class="eact">${movable?`<button class="icon-btn" data-action="e-move" data-dir="-1" data-coll="${coll}" data-id="${esc(id)}" aria-label="Выше" title="Выше">${ic('ArrowUp')}</button><button class="icon-btn" data-action="e-move" data-dir="1" data-coll="${coll}" data-id="${esc(id)}" aria-label="Ниже" title="Ниже">${ic('ArrowDown')}</button>`:''}<button class="icon-btn" data-open="${coll==='sections'&&efind('sections',id)?.kind==='table'?'etable:'+esc(id):'eedit:'+coll+':'+esc(id)}" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button></div>`;
@@ -1717,6 +1826,14 @@ function eGroups(){
   for (const p of [...S.E.params].sort(byOrder)) { const k = p.group || 'Без группы'; if (!g.has(k)) g.set(k, []); g.get(k).push(p); }
   return g;
 }
+/* где меняется значение — определяем по полю «где»; подсказка говорит, кто нужен */
+function whereTags(w){
+  const s = String(w||''), out = [];
+  if (/settings\/|\.json/.test(s)) out.push(['Настройка','ok','Значение в файле настроек: код менять не нужно']);
+  if (/ra3_|таблиц/i.test(s)) out.push(['База','warn','Значение в базе: нужен скрипт и резервная копия, делает разработчик']);
+  if (/\.cs\b/.test(s)) out.push(['Код','red','Значение в коде: менять через разработчика']);
+  return out;
+}
 function eParams(){
   const all = S.E.params, F = UI.ef;
   if (!all.length) return eEmpty('Параметров пока нет','Параметр — одна настройка экономики: где она в коде, сколько сейчас, сколько предлагаем.','params','Добавить параметр');
@@ -1729,13 +1846,14 @@ function eParams(){
     rows += `<tr class="grp"><td colspan="6">${esc(name)}<span>${vis.length}</span></td></tr>` + vis.map(p => {
       const pv = parseMoney(p.proposed);
       return `<tr class="${p.status==='rejected'?'rej':''}">
-        <td><div class="pname">${esc(p.name)}</div>${p.where?`<div class="where mono">${esc(p.where)}</div>`:''}${p.note?`<div class="pnote">${mdBlock(p.note)}</div>`:''}</td>
+        <td><div class="pname">${esc(p.name)}</div>${p.note?`<div class="pnote">${mdBlock(p.note)}</div>`:''}${p.where?`<div class="ns-tags">${whereTags(p.where).map(([l,tone,tip])=>`<span title="${esc(tip)}">${chip(l,tone)}</span>`).join('')}<details class="ns-where"><summary>где лежит</summary><div class="where mono">${esc(p.where)}</div></details></div>`:''}</td>
         <td><div class="val cur">${esc(p.current||'—')}</div></td>
         <td><div class="val">${esc(p.proposed||'—')}</div>${pv && pv >= 1000 ? `<span class="hours">${workTime(pv)}</span>` : ''}</td>
         <td>${eStatusSelect('params', p, PARAM_STATUS)}</td><td>${ewho(p.assignee)}</td>
         <td style="width:44px"><button class="icon-btn" data-open="eedit:params:${esc(p.id)}" aria-label="Изменить" title="Изменить">${ic('Pencil')}</button></td></tr>`; }).join('');
   }
-  return `<div class="toolbar"><div class="seg" role="group" aria-label="Фильтр по статусу">${[['all','Все',all.length], ...PARAM_STATUS.map(([k,l])=>[k,l,cnt(k)])].map(([k,l,n])=>`<button data-action="e-fstatus" data-v="${k}" aria-pressed="${F.status===k}">${l} <span class="mono" style="color:var(--muted)">${n}</span></button>`).join('')}</div></div>
+  return `<div class="tldr"><b>Как читать</b>«Сейчас» — что в игре, «Предлагаю» — новое значение. Подходит: поставь статус «Согласовано». Нет: нажми карандаш и предложи своё. Метка под названием подсказывает, где меняется значение: «Настройка» меняется без кода, «База» и «Код» — через разработчика.</div>
+    <div class="toolbar"><div class="seg" role="group" aria-label="Фильтр по статусу">${[['all','Все',all.length], ...PARAM_STATUS.map(([k,l])=>[k,l,cnt(k)])].map(([k,l,n])=>`<button data-action="e-fstatus" data-v="${k}" aria-pressed="${F.status===k}">${l} <span class="mono" style="color:var(--muted)">${n}</span></button>`).join('')}</div></div>
     <div class="toolbar"><select class="select" id="e-group" aria-label="Группа"><option value="all">Все группы</option>${[...g.keys()].map(k=>`<option${F.group===k?' selected':''}>${esc(k)}</option>`).join('')}</select>
       <input class="input" id="e-q" type="search" placeholder="Поиск: название, файл, значение" value="${esc(F.q)}" aria-label="Поиск по параметрам" style="flex:1 1 220px;width:auto;border-radius:99px">
       <button class="btn primary" data-open="enew:params">${ic('Plus')} Параметр</button></div>
@@ -3053,6 +3171,7 @@ document.addEventListener('click', e => {
       case 'onb-hide': P.onbHide = true; savePrefs(); paint(); break;
       case 'week-goal': patchMe({weekGoal:Number(a.dataset.v)}).then(ok => ok && toast(ic('Target')+' Цель недели: '+a.dataset.v+' задач')); a.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', String(b===a))); break;
       case 'go-small': UI.filt.small = true; go('tasks'); break;
+      case 'e-review': UI.ef.group = a.dataset.g; UI.ef.status = 'proposed'; UI.ef.q = ''; go('d/econ/params'); paint(); break;
       case 'bugs-hide': UI.bhide = !UI.bhide; paint(); break;
       case 'filt-mine': UI.filt.mine = !UI.filt.mine; paint(); break;
       case 'inbox-del': write(()=>col('hub_inbox').doc(id).delete()); break;
