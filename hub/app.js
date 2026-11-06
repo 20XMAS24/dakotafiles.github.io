@@ -135,9 +135,9 @@ const mmss = ms => { const s = Math.max(0, Math.round(ms/1000)); return String(M
 function plural(n, one, few, many){ const m10 = n%10, m100 = n%100; return n+' '+(m10===1&&m100!==11?one:m10>=2&&m10<=4&&(m100<10||m100>=20)?few:many); }
 
 /* ── справочники ────────────────────────────── */
-/* «Новые» (id inbox), чтобы не путать с личными «Входящими» на Q. «Заблокировано» — с причиной (blockedWhy) */
-const COLS = [['inbox','Новые','var(--muted)'],['todo','К работе','var(--info)'],['doing','В работе','var(--warn)'],['review','Ревью','var(--violet)'],['blocked','Заблокировано','var(--red)'],['done','Готово','var(--ok)']];
-const COL_TONE = {inbox:'muted', todo:'info', doing:'warn', review:'violet', blocked:'red', done:'ok'};
+/* «Новые» (id inbox), чтобы не путать с личными «Входящими» на Q. «Отложено» (id blocked) — с причиной (blockedWhy) */
+const COLS = [['inbox','Новые','var(--muted)'],['todo','К работе','var(--info)'],['doing','В работе','var(--warn)'],['review','Ревью','var(--violet)'],['blocked','Отложено','var(--muted)'],['done','Готово','var(--ok)']];
+const COL_TONE = {inbox:'muted', todo:'info', doing:'warn', review:'violet', blocked:'muted', done:'ok'};
 const colName = id => (COLS.find(c=>c[0]===id)||[,id])[1];
 const SIZES = {S:'≤ 15 мин', M:'≈ 1–2 ч', L:'полдня+'};
 const XP_BY_SIZE = {S:10, M:20, L:40};
@@ -477,7 +477,7 @@ function taskItem(t, opts={}){
     ${av(t.who)}
   </div>`;
 }
-const blockedNote = t => t.status==='blocked' ? `<div class="blk" title="Заблокировано ${t.blockedAt?ago(t.blockedAt):''}">${ic('CircleAlert')} ${esc(t.blockedWhy||'причина не указана')}</div>` : '';
+const blockedNote = t => t.status==='blocked' ? `<div class="blk" title="Отложено ${t.blockedAt?ago(t.blockedAt):''}">${ic('Clock')} ${esc(t.blockedWhy||'причина не указана')}</div>` : '';
 function heatmap(){
   const days = Array.from({length:14},(_,i)=>dayKey(now()-(13-i)*86400e3));
   const nums = Array.from({length:14},(_,i)=>new Date(now()-(13-i)*86400e3).getDate());
@@ -677,21 +677,21 @@ function viewTasks(){
 }
 
 /* ── обзор руководителя ───────────────────────
-   Где горит за одну минуту: просрочки, задачи без ответственного, застрявшие, заблокированные,
+   Где горит за одну минуту: просрочки, задачи без ответственного, застрявшие (отложенные задачи сюда не входят),
    решения без итога, критичные баги, заявки. Плюс нагрузка по людям, отделы, текущая версия и метрики. */
 const STUCK_DAYS = 3, DEC_DAYS = 7, SIZE_W = {S:1, M:3, L:8};
 const isLate = t => dueLeft(t)!==null && dueLeft(t)<0;
 function leadData(){
-  const open = S.tasks.filter(t=>t.status!=='done'), idle = t => (t.updatedAt||t.createdAt||0) < now()-STUCK_DAYS*DAY;
+  /* отложенные — сознательное решение, а не проблема: обзор их не считает */
+  const open = S.tasks.filter(t=>t.status!=='done' && t.status!=='blocked'), idle = t => (t.updatedAt||t.createdAt||0) < now()-STUCK_DAYS*DAY;
   return {open,
     overdue: open.filter(isLate).sort((a,b)=>a.due-b.due),
     noOwner: open.filter(t=>!t.who),
     stuck: open.filter(t=>(t.status==='doing'||t.status==='review') && idle(t)),
-    blocked: open.filter(t=>t.status==='blocked'),
     decs: allDecs().filter(d=>decOpen(d) && decAt(d) && decAt(d) < now()-DEC_DAYS*DAY),
     crit: allBugs().filter(b=>b.open && b.sev==='critical')};
 }
-function leadAlerts(){ const L = leadData(); return L.overdue.length + L.blocked.length + L.crit.length + S.pending.length; }
+function leadAlerts(){ const L = leadData(); return L.overdue.length + L.crit.length + S.pending.length; }
 function viewLead(){
   const L = leadData(), t0 = now(), wk = 7*DAY;
   const closedIn = (a, b) => S.tasks.filter(t=>t.status==='done' && (t.doneAt||0) >= a && (t.doneAt||0) < b);
@@ -704,22 +704,21 @@ function viewLead(){
   const perDay = days.map(k => S.tasks.filter(t=>t.status==='done' && t.doneAt && dayKey(t.doneAt)===k).length);
   const maxDay = Math.max(1, ...perDay);
   /* здоровье: доля открытых задач без проблем */
-  const bad = new Set([...L.overdue, ...L.blocked, ...L.stuck].map(t=>t.id));
+  const bad = new Set([...L.overdue, ...L.stuck].map(t=>t.id));
   /* без ответственного важно, только когда задача уже в работе или у неё близкий срок; остальное — обычный бэклог */
   const ownerless = L.noOwner.filter(t => t.status==='doing' || t.status==='review' || (dueLeft(t)!==null && dueLeft(t)<=7)), backlog = L.noOwner.length - ownerless.length;
   const health = L.open.length ? Math.round((L.open.length - bad.size) / L.open.length * 100) : 100;
-  const fire = L.overdue.length + L.blocked.length + L.crit.length, warnN = L.stuck.length + ownerless.length + L.decs.length + S.pending.length;
+  const fire = L.overdue.length + L.crit.length, warnN = L.stuck.length + ownerless.length + L.decs.length + S.pending.length;
   const mood = fire ? ['red', 'CircleAlert', 'Горит: '+plural(fire,'проблема','проблемы','проблем')] : warnN ? ['warn', 'Eye', 'Есть вопросы: '+warnN] : ['ok', 'CircleCheck', 'Всё под контролем'];
   const delta = doneWeek.length - donePrev.length;
   const deltaTxt = delta>0 ? `<span class="up">▲ ${delta}</span> к прошлой неделе` : delta<0 ? `<span class="down">▼ ${-delta}</span> к прошлой неделе` : 'столько же, сколько на прошлой неделе';
   const summary = `За 7 дней команда закрыла <b>${plural(doneWeek.length,'задачу','задачи','задач')}</b> (${deltaTxt}). Сейчас в работе ${working.length}, всего открыто ${L.open.length}`
-    + (L.overdue.length ? `, просрочено <b class="t-red-tx">${L.overdue.length}</b>` : '') + (L.blocked.length ? `, заблокировано <b class="t-red-tx">${L.blocked.length}</b>` : '') + '.';
+    + (L.overdue.length ? `, просрочено <b class="t-red-tx">${L.overdue.length}</b>` : '') + '.';
   /* единый список «что требует внимания»: по важности, у каждой строки — причина */
   const ATT = [];
   S.pending.forEach(p => ATT.push({w:0, tag:['Заявка в хаб','warn'], title:p.name||p.login||'Новый участник', sub:'ждёт одобрения', go:'people'}));
   L.crit.forEach(b => ATT.push({w:1, tag:['Критичный баг','red'], title:b.name, sub:(D[b.dept]||{}).name||'', open:b.ref, who:b.who}));
   L.overdue.forEach(t => ATT.push({w:2, tag:['Просрочено на '+plural(-dueLeft(t),'день','дня','дней'),'red'], title:t.title, sub:tDepts(t).map(x=>D[x].name).join(', '), open:'task:'+t.id, who:t.who}));
-  L.blocked.forEach(t => ATT.push({w:3, tag:['Заблокировано','red'], title:t.title, sub:t.blockedWhy||'причина не указана', open:'task:'+t.id, who:t.who}));
   L.decs.forEach(d => ATT.push({w:4, tag:['Решение висит '+Math.floor((t0-decAt(d))/DAY)+' дн.','warn'], title:decQ(d), sub:plural(decVoters(d),'голос','голоса','голосов'), dec:d.id}));
   L.stuck.forEach(t => ATT.push({w:5, tag:['Стоит '+Math.floor((t0-(t.updatedAt||t.createdAt||t0))/DAY)+' дн.','warn'], title:t.title, sub:colName(t.status), open:'task:'+t.id, who:t.who}));
   ownerless.forEach(t => ATT.push({w:6, tag:['Нет ответственного','muted'], title:t.title, sub:tDepts(t).map(x=>D[x].name).join(', '), open:'task:'+t.id}));
@@ -729,7 +728,7 @@ function viewLead(){
   /* люди: чем занят сейчас, нагрузка, проблемы */
   const people = team.map(id => { const p = S.people[id], ts = L.open.filter(t=>t.who===id);
     const now_ = ts.find(t=>p.focus && p.focus.task===t.id && p.focus.until>t0) || ts.find(t=>t.status==='doing') || ts.find(t=>t.status==='review');
-    return {id, p, ts, now:now_, w:ts.reduce((a,t)=>a+(SIZE_W[t.size]||3),0), over:ts.filter(isLate).length, blk:ts.filter(t=>t.status==='blocked').length,
+    return {id, p, ts, now:now_, w:ts.reduce((a,t)=>a+(SIZE_W[t.size]||3),0), over:ts.filter(isLate).length,
       done:doneWeek.filter(t=>t.who===id || t.doneBy===id).length, focus:!!(p.focus && p.focus.until>t0), on:isOnline(id)}; })
     .sort((a,b)=>(b.on-a.on) || (b.w-a.w));
   const maxW = Math.max(8, ...people.map(x=>x.w));
@@ -737,13 +736,13 @@ function viewLead(){
     <div class="pc-h">${av(x.id,34)}<div class="bd"><b>${esc(pname(x.id))}</b><small>${x.focus ? `<span class="st on">${ic('Headphones')} в фокусе</span>` : x.on ? '<span class="st on">онлайн</span>' : '<span class="st">был(а) '+esc(ago(x.p.seen||0))+'</span>'}${x.p.role?' · '+esc(x.p.role):''}</small></div></div>
     <div class="pc-now">${x.now ? `<span class="lbl">Сейчас</span><span class="lnk" data-open="task:${esc(x.now.id)}">${esc(clip(x.now.title,70))}</span>` : `<span class="lbl">Сейчас</span><span style="color:var(--muted)">${x.ts.length ? 'нет задачи в работе' : 'свободен(на) — можно дать задачу'}</span>`}</div>
     <div class="pc-load" title="Нагрузка: S = 1, M = 3, L = 8"><div class="mini-bar"><i style="width:${Math.min(100,Math.round(x.w/maxW*100))}%;${x.w>=16?'background:var(--warn)':''}"></i></div><small>${plural(x.ts.length,'задача','задачи','задач')}</small></div>
-    <div class="pc-f">${x.done?`<span class="chip t-ok">${ic('Check')} ${x.done} за неделю</span>`:''}${x.over?`<span class="chip t-red">просрочено ${x.over}</span>`:''}${x.blk?`<span class="chip t-red">блок ${x.blk}</span>`:''}</div></div>`;
+    <div class="pc-f">${x.done?`<span class="chip t-ok">${ic('Check')} ${x.done} за неделю</span>`:''}${x.over?`<span class="chip t-red">просрочено ${x.over}</span>`:''}</div></div>`;
   /* отделы: прогресс = закрыто за 14 дней от (закрыто + открыто) */
   const depts = DEPTS.map(d => { const ts = L.open.filter(t=>inDept(t,d.id)), dn = S.tasks.filter(t=>t.status==='done' && inDept(t,d.id) && (t.doneAt||0) >= t0-14*DAY).length;
-    return {d, n:ts.length, dn, over:ts.filter(isLate).length, blk:ts.filter(t=>t.status==='blocked').length, work:ts.filter(t=>t.status==='doing'||t.status==='review').length}; })
+    return {d, n:ts.length, dn, over:ts.filter(isLate).length, work:ts.filter(t=>t.status==='doing'||t.status==='review').length}; })
     .filter(x=>x.n || x.dn);
   const deptCard = x => { const pct = x.n+x.dn ? Math.round(x.dn/(x.n+x.dn)*100) : 0;
-    return `<button class="dcard" data-go="d/${x.d.id}/tasks" style="--dc:${x.d.color}"><div class="dc-h">${ic(x.d.icon)}<b>${esc(x.d.name)}</b><span class="sp"></span>${x.over||x.blk?`<span class="chip t-red">${x.over+x.blk} проблем</span>`:''}</div>
+    return `<button class="dcard" data-go="d/${x.d.id}/tasks" style="--dc:${x.d.color}"><div class="dc-h">${ic(x.d.icon)}<b>${esc(x.d.name)}</b><span class="sp"></span>${x.over?`<span class="chip t-red">${plural(x.over,'проблема','проблемы','проблем')}</span>`:''}</div>
       <div class="dc-n"><span><b>${x.work}</b> в работе</span><span><b>${x.n}</b> открыто</span><span><b>${x.dn}</b> закрыто за 2 нед.</span></div>
       <div class="mini-bar"><i style="width:${pct}%;background:var(--dc)"></i></div></button>`; };
   const cur = S.reg.filter(x=>x.key==='release/versions' && x.status==='Готовится').sort(byOrder);
@@ -776,7 +775,7 @@ function viewLead(){
   ${cur.length ? `<section class="panel"><div class="panel-h"><h2><span class="hi">${ic('Rocket')}</span>Готовятся к выходу</h2><a class="btn sm ghost" href="#/d/qa/versions">Все версии</a></div>${cur.map(v=>`<div><b>${esc(v.name)}</b>${v.tldr?` <small style="color:var(--text-2)">${esc(v.tldr)}</small>`:''}${verProgress(v) || '<div><small style="color:var(--muted)">К версии пока не привязано ни одной задачи — укажи версию в карточке задачи.</small></div>'}</div>`).join('')}</section>` : ''}
   ${metricTiles()}`;
 }
-/* отчёт за неделю в Markdown: что закрыто, что просрочено и заблокировано, какие решения приняты, что вышло */
+/* отчёт за неделю в Markdown: что закрыто, что просрочено, какие решения приняты, что вышло */
 function weekReport(){
   const from = now()-7*DAY, L = leadData(), line = t => '- '+t.title+' — '+tDepts(t).map(x=>D[x].name).join(', ')+(t.who?' · '+pname(t.who):'');
   const done = S.tasks.filter(t=>t.status==='done' && (t.doneAt||0) >= from);
@@ -785,13 +784,12 @@ function weekReport(){
   const vers = S.reg.filter(x=>x.key==='release/versions' && x.status==='Вышла' && (x.updatedAt||0) >= from);
   const out = ['# Отчёт за неделю', '', '_'+fullDt.format(from)+' — '+fullDt.format(now())+'_', '',
     '| | |', '|---|---|', '| Закрыто задач | '+done.length+' |', '| Создано задач | '+made.length+' |', '| Просрочено сейчас | '+L.overdue.length+' |',
-    '| Заблокировано | '+L.blocked.length+' |', '| Без ответственного | '+L.noOwner.length+' |', '| Критичных багов | '+L.crit.length+' |', ''];
+    '| Без ответственного | '+L.noOwner.length+' |', '| Критичных багов | '+L.crit.length+' |', ''];
   const sec = (h, list, f) => { if (list.length) out.push('## '+h, '', ...list.map(f), ''); };
   sec('Закрыто', done, line);
   sec('Вышли версии', vers, v => '- **'+v.name+'**'+(v.tldr?' — '+v.tldr:''));
   sec('Приняты решения', decs, d => '- '+decQ(d)+' → **'+decChoice(d)+'**');
   sec('Просрочено', L.overdue, t => line(t)+' · срок '+dateFmt(t.due));
-  sec('Заблокировано', L.blocked, t => line(t)+' · '+(t.blockedWhy||''));
   sec('Застряли (больше '+STUCK_DAYS+' дн. без движения)', L.stuck, line);
   sec('Критичные баги', L.crit, b => '- '+b.name+' — '+D[b.dept].name);
   sec('Метрики', S.reg.filter(x=>x.key==='analytics/metrics'), m => '- '+m.name+': **'+(m.value||'—')+'**'+(m.target?' (цель: '+m.target+')':'')+(m.at?' · снимок '+m.at:''));
@@ -954,7 +952,7 @@ const GLOSSARY = [
   ['Мысль','Быстрая заметка на клавишу Q, чтобы не забыть. Обязательств не создаёт.'],
   ['Задача','Конкретное дело с исполнителем. Живёт на доске: Новые → К работе → В работе → Ревью → Готово.'],
   ['Решение','Спорный вопрос: каждый голосует, итог фиксирует кнопка «Принять». Итог потом не теряется в чатах.'],
-  ['Заблокировано','Задача не может двигаться дальше. Обязательно укажи, чего именно не хватает.'],
+  ['Отложено','Задачу решили пока не делать: не срочно или чего-то не хватает. Укажи причину.'],
   ['Ревью','Работа сделана, её проверяет другой человек.'],
   ['S, M, L','Размер задачи: S — до 15 минут, M — 1–2 часа, L — полдня и больше.'],
   ['XP и серия дней','Необязательная игровая статистика: очки за действия и дни активности подряд. На работу не влияет.']];
@@ -1503,11 +1501,11 @@ function registry(key, d){
   return (key==='analytics/finance' ? financeSummary() : '') + regList(key, d) + (key==='release/versions' ? oldChangelog(d) : '');
 }
 /* changelog теперь живёт в карточке версии; старые отдельные записи видны под версиями, пока их не перенесут */
-/* что входит в версию: задачи с этой версией, сколько готово, что заблокировано */
+/* что входит в версию: задачи с этой версией, сколько готово, что отложено */
 function verProgress(it){
   const ts = S.allTasks.filter(t=>t.ver===it.name); if (!ts.length) return '';
   const done = ts.filter(t=>t.status==='done').length, bl = ts.filter(t=>t.status==='blocked').length;
-  return `<div class="ver-p"><div class="mini-bar"><i style="width:${Math.round(done/ts.length*100)}%"></i></div><small>Задачи: ${done} из ${ts.length} готовы${bl?` · <span style="color:var(--red)">заблокировано ${bl}</span>`:''}</small></div>`;
+  return `<div class="ver-p"><div class="mini-bar"><i style="width:${Math.round(done/ts.length*100)}%"></i></div><small>Задачи: ${done} из ${ts.length} готовы${bl?` · отложено ${bl}`:''}</small></div>`;
 }
 function oldChangelog(d){
   const items = S.reg.filter(x=>x.key==='release/changelog').sort(byOrder); if (!items.length) return '';
@@ -1600,12 +1598,10 @@ function deptSteps(d){
 function nextStep(d){
   if (!canSee(d.id)) return '';
   const st = deptSteps(d), s = st[0], then = st[1], how = DEPT_HOW[d.id]||[];
-  const stuck = S.tasks.filter(t=>inDept(t,d.id) && t.status==='blocked');
   const main = s ? `<div class="ns-main"><small>${esc(s.k)}</small><b>${esc(s.t)}</b>${s.d?`<p>${mdLine(s.d)}</p>`:''}<button class="btn sm primary" ${s.attrs}>${s.b} ${ic('ArrowRight')}</button></div>`
     : `<div class="ns-main"><small>Сейчас всё спокойно</small><b>Срочных дел в отделе нет</b><p>Посмотри, как работает отдел, или запиши идею на клавишу Q.</p></div>`;
   return `<section class="panel ns-card" style="--dc:${d.color}"><div class="ns-kick">Твой следующий шаг</div>${main}
     ${then?`<div class="ns-then">Потом: <button class="ns-link" ${then.attrs}>${esc(then.t)}</button></div>`:''}
-    ${stuck.length?`<a class="ns-warn" href="#/d/${d.id}/tasks">${ic('CircleAlert')}<span>Заблокировано: ${plural(stuck.length,'задача','задачи','задач')}. Причина: «${esc(clip(stuck[0].blockedWhy||'не указана',40))}»${stuck.length>1?' и другие':''}. Посмотри, можешь ли помочь.</span></a>`:''}
     ${how.length?`<details class="more ns-how"><summary>Как работает отдел</summary><ol>${how.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></details>`:''}</section>`;
 }
 function qaBugs(){
@@ -2278,7 +2274,7 @@ function drawerTask(t){
     <div class="statusbar" role="group" aria-label="Статус">${COLS.map(([id,n])=>`<button data-action="set-status" data-id="${esc(t.id)}" data-s="${id}" aria-pressed="${t.status===id}" ${ro?'disabled':''}>${n}</button>`).join('')}</div>
     <dl class="kv">${isKid(t)?`<dt>Часть задачи</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="link" data-open="task:${esc(t.parent)}" style="cursor:pointer">${ic('Layers')} ${esc(clip(task(t.parent).title,60))}</span>${ro?'':`<button class="btn sm ghost" data-action="kid-out" data-id="${esc(t.id)}">Вынести отдельно</button>`}</dd>`:''}<dt>${tDepts(t).length>1?'Отделы':'Отдел'}</dt><dd style="display:flex;gap:6px;flex-wrap:wrap">${dchips(t)}</dd>
       <dt>Ответственный</dt><dd style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${av(t.who)} ${esc(pname(t.who))}${t.who!==S.me && !ro?`<button class="btn sm ghost" data-action="take" data-id="${esc(t.id)}">${ic('UserCheck')} Взять себе</button>`:''}</dd>
-      ${t.status==='blocked'?`<dt>Заблокировано</dt><dd>${blockedNote(t)}</dd>`:''}
+      ${t.status==='blocked'?`<dt>Отложено</dt><dd>${blockedNote(t)}</dd>`:''}
       ${t.ver?`<dt>Версия</dt><dd><span class="link" data-go="d/qa/versions">${ic('Rocket')} ${esc(t.ver)}</span></dd>`:''}
       ${t.reg && regItem(t.reg)?`<dt>Из записи</dt><dd><span class="link" data-action="open-reg" data-id="${esc(t.reg)}" style="cursor:pointer">${ic('BookOpen')} ${esc(clip(regItem(t.reg).name,60))}</span></dd>`:''}
       <dt>Срок</dt><dd>${t.due ? dueChip(t)+` <small style="color:var(--muted)">${esc(dateFmt(t.due))}</small>` : '<span style="color:var(--muted)">не задан</span>'}</dd>
@@ -3067,8 +3063,8 @@ function setStatus(id, s, x, y){
   const patch = Object.assign({status:s}, stamp());
   if (s==='done') { patch.doneAt = now(); patch.doneBy = S.me; }
   else if (t.status==='done') { patch.doneAt = FV().delete(); patch.doneBy = FV().delete(); }
-  /* заблокировано — только с причиной: руководитель видит, кто и что держит */
-  if (s==='blocked') { const why = prompt('Чем заблокирована задача? Например: «ждём макет», «нет доступа к серверу».', t.blockedWhy||''); if (why===null) return; patch.blockedWhy = clip(why,200) || 'причина не указана'; patch.blockedAt = now(); }
+  /* отложено — с причиной, чтобы потом было понятно, почему задачу не делаем */
+  if (s==='blocked') { const why = prompt('Почему откладываем задачу? Например: «не срочно», «ждём макет».', t.blockedWhy||''); if (why===null) return; patch.blockedWhy = clip(why,200) || 'причина не указана'; patch.blockedAt = now(); }
   else if (t.status==='blocked') { patch.blockedWhy = FV().delete(); patch.blockedAt = FV().delete(); }
   write(()=>col('hub_tasks').doc(id).update(patch)).then(ok => {
     if (!ok) return;

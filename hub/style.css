@@ -896,7 +896,7 @@ details.mdp>.md{margin-top:8px;padding:10px 12px;border:1px dashed var(--line-2)
 .gate-wait p{margin:0;color:var(--text-2);font-size:13.5px;line-height:1.5}
 
 /* ── причина блокировки задачи ── */
-.blk{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;color:var(--red);line-height:1.35}
+.blk{display:flex;gap:6px;align-items:flex-start;font-size:12.5px;color:var(--text-2);line-height:1.35}
 .blk .ic{width:14px;height:14px;flex:none;margin-top:1px}
 .ver-p{display:flex;flex-direction:column;gap:4px;margin:6px 0}
 .ver-p small{color:var(--text-2);font-size:12.5px}
@@ -1392,8 +1392,6 @@ form.pal{overflow-y:auto}
 .ns-then{margin-top:12px;font-size:13px;color:var(--text-2)}
 .ns-link{all:unset;cursor:pointer;color:var(--text);text-decoration:underline;text-underline-offset:3px}
 .ns-link:focus-visible{outline:2px solid var(--dc,currentColor);outline-offset:2px}
-.ns-warn{display:flex;gap:8px;align-items:center;margin-top:12px;padding:9px 12px;border-radius:10px;background:var(--panel-2);border:1px solid var(--warn);color:var(--text);font-size:13px;text-decoration:none}
-.ns-warn svg{flex:none;color:var(--warn)}
 .ns-how{margin-top:12px;font-size:13.5px}
 .ns-how ol{margin:8px 0 0;padding-left:20px;color:var(--text-2)}
 .ns-how li{margin:4px 0}
